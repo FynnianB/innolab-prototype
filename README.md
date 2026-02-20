@@ -8,6 +8,8 @@ Run `npm i` to install the dependencies.
 
 Run `npm run dev` to start the development server.
 
+**Customer Journey (nur für Devs):** Der Tab „Customer Journey“ ist standardmäßig ausgeblendet. Zum Anzeigen in der Konsole setzen: `document.cookie = 'customer-journey=1; path=/'`, dann Seite neu laden.
+
 ## Hosting: Cloudflare Pages (kostenlos)
 
 Die App ist für **Cloudflare Pages** eingerichtet: saubere URL (z. B. `https://innolab-prototype.pages.dev`), unbegrenzte Bandbreite, automatischer Deploy bei jedem Push.

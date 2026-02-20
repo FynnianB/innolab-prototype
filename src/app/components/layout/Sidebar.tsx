@@ -16,15 +16,22 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 
-const navItems = [
+/** Feature-Cookie: Tab "Customer Journey" nur anzeigen, wenn Cookie "customer-journey" gesetzt ist (z. B. für Devs). */
+function hasCustomerJourneyCookie(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie.split(";").some((part) => part.trim().startsWith("customer-journey="));
+}
+
+const baseNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Sparkles, label: "Story Generator", path: "/story-generator" },
   { icon: ShieldCheck, label: "Compliance Checker", path: "/compliance" },
   { icon: GitCompare, label: "Jira-Story Abgleich", path: "/jira-comparison" },
   { icon: BookOpen, label: "Regel-Management", path: "/rules" },
   { icon: FolderOpen, label: "Projekte", path: "/projects" },
-  { icon: TrendingUp, label: "Customer Journey", path: "/customer-journey" },
 ];
+
+const customerJourneyItem = { icon: TrendingUp, label: "Customer Journey", path: "/customer-journey" };
 
 const bottomItems = [
   { icon: Settings, label: "Einstellungen", path: "/settings" },
@@ -40,6 +47,10 @@ export function Sidebar() {
     if (path === "/") return location.pathname === "/";
     return location.pathname.startsWith(path);
   };
+
+  const navItems = hasCustomerJourneyCookie()
+    ? [...baseNavItems, customerJourneyItem]
+    : baseNavItems;
 
   return (
     <TooltipProvider delayDuration={0}>
