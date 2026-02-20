@@ -52,7 +52,7 @@ export function Breadcrumb() {
   if (items.length <= 1) return null;
 
   return (
-    <nav className="flex items-center gap-1.5 px-8 py-2.5 bg-[#fafbfc] border-b border-border text-[12px]">
+    <nav className="flex items-center gap-1.5 px-4 sm:px-6 lg:px-8 py-2.5 bg-[#fafbfc] border-b border-border text-[12px] min-w-0 overflow-x-auto overflow-y-hidden">
       {items.map((item, i) => (
         <div key={i} className="flex items-center gap-1.5">
           {i > 0 && <ChevronRight className="w-3 h-3 text-[#cbd5e1]" />}

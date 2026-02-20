@@ -119,11 +119,11 @@ export function Dashboard() {
 
   return (
     <TooltipProvider>
-      <div className="p-8 max-w-[1440px] mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-[1440px] mx-auto min-w-0">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-[#1e1e2e]">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
+          <div className="min-w-0">
+            <h1 className="text-[#1e1e2e] text-xl sm:text-2xl">
               Willkommen zurück, Sarah
             </h1>
             <p className="text-[14px] text-muted-foreground mt-1">
@@ -132,7 +132,7 @@ export function Dashboard() {
           </div>
           <Button
             onClick={() => navigate("/story-generator")}
-            className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 h-11 px-6 shadow-sm"
+            className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 h-11 px-4 sm:px-6 shadow-sm w-full sm:w-auto flex-shrink-0"
           >
             <Zap className="w-4 h-4" />
             Neue Analyse starten
@@ -140,7 +140,7 @@ export function Dashboard() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-4 gap-5 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5 mb-6 sm:mb-8">
           {kpiCards.map((kpi, i) => (
             <Card
               key={i}
@@ -183,9 +183,9 @@ export function Dashboard() {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
           {/* Recent Projects - 2 columns */}
-          <div className="col-span-2">
+          <div className="lg:col-span-2 min-w-0">
             <Card className="border border-border bg-white">
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
                 <CardTitle className="text-[16px]" style={{ fontWeight: 600 }}>Letzte Projekte</CardTitle>
@@ -194,10 +194,10 @@ export function Dashboard() {
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
               </CardHeader>
-              <CardContent className="px-5 pb-5">
-                <div className="space-y-1">
+              <CardContent className="px-3 sm:px-5 pb-5 overflow-x-auto">
+                <div className="space-y-1 min-w-[480px]">
                   {/* Table Header */}
-                  <div className="grid grid-cols-[1fr_100px_80px_120px_100px] gap-3 px-3 py-2 text-[12px] text-muted-foreground" style={{ fontWeight: 500 }}>
+                  <div className="grid grid-cols-[1fr_80px_60px_90px_80px] sm:grid-cols-[1fr_100px_80px_120px_100px] gap-2 sm:gap-3 px-2 sm:px-3 py-2 text-[12px] text-muted-foreground" style={{ fontWeight: 500 }}>
                     <span>Projekt</span>
                     <span>Status</span>
                     <span className="text-center">Stories</span>
@@ -207,13 +207,13 @@ export function Dashboard() {
                   {recentProjects.map((project, i) => (
                     <div
                       key={i}
-                      className="grid grid-cols-[1fr_100px_80px_120px_100px] gap-3 px-3 py-3 rounded-lg hover:bg-[#f8fafc] transition-colors cursor-pointer group items-center"
+                      className="grid grid-cols-[1fr_80px_60px_90px_80px] sm:grid-cols-[1fr_100px_80px_120px_100px] gap-2 sm:gap-3 px-2 sm:px-3 py-3 rounded-lg hover:bg-[#f8fafc] transition-colors cursor-pointer group items-center"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                         <div className="w-8 h-8 rounded-lg bg-[#f1f5f9] flex items-center justify-center flex-shrink-0">
                           <FileText className="w-4 h-4 text-[#64748b]" />
                         </div>
-                        <span className="text-[13px] text-[#1e1e2e] group-hover:text-[#4f46e5] transition-colors" style={{ fontWeight: 500 }}>
+                        <span className="text-[13px] text-[#1e1e2e] group-hover:text-[#4f46e5] transition-colors truncate" style={{ fontWeight: 500 }}>
                           {project.name}
                         </span>
                       </div>
@@ -244,7 +244,7 @@ export function Dashboard() {
             </Card>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-3 gap-4 mt-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
               <Card
                 className="border border-border bg-white hover:shadow-md hover:border-[#4f46e5]/20 transition-all duration-200 cursor-pointer group"
                 onClick={() => navigate("/story-generator")}
@@ -285,7 +285,7 @@ export function Dashboard() {
           </div>
 
           {/* Right Column - Activity Feed */}
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5 min-w-0">
             <Card className="border border-border bg-white">
               <CardHeader className="pb-3">
                 <CardTitle className="text-[16px]" style={{ fontWeight: 600 }}>Letzte Aktivitäten</CardTitle>

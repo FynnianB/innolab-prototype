@@ -50,20 +50,20 @@ export function Topbar() {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-border flex items-center justify-between px-6 flex-shrink-0">
-      {/* Left side */}
-      <div className="flex items-center gap-4">
+    <header className="h-16 bg-white border-b border-border flex items-center justify-between gap-2 px-4 sm:px-6 flex-shrink-0 min-w-0">
+      {/* Left side: can shrink */}
+      <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
         {/* Workspace selector */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-[#f1f5f9] transition-colors text-[14px]">
-              <div className="w-6 h-6 rounded bg-[#4f46e5]/10 flex items-center justify-center">
+            <button className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg hover:bg-[#f1f5f9] transition-colors text-[14px] min-w-0 flex-shrink-0">
+              <div className="w-6 h-6 rounded bg-[#4f46e5]/10 flex items-center justify-center flex-shrink-0">
                 <span className="text-[11px] text-[#4f46e5]" style={{ fontWeight: 600 }}>
                   {selectedWorkspace.charAt(0)}
                 </span>
               </div>
-              <span style={{ fontWeight: 500 }}>{selectedWorkspace}</span>
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              <span className="hidden sm:inline truncate max-w-[140px] lg:max-w-[200px]" style={{ fontWeight: 500 }}>{selectedWorkspace}</span>
+              <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-[260px]">
@@ -85,45 +85,45 @@ export function Topbar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Search */}
+        {/* Search: flexible width */}
         <div
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all duration-200 ${
-            searchFocused ? "border-[#4f46e5] bg-white w-[320px] shadow-sm" : "border-border bg-[#f8fafc] w-[280px]"
+          className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg border transition-all duration-200 min-w-[120px] max-w-[280px] sm:max-w-[320px] flex-1 ${
+            searchFocused ? "border-[#4f46e5] bg-white shadow-sm" : "border-border bg-[#f8fafc]"
           }`}
         >
           <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           <input
             placeholder="Suchen... (Ctrl+K)"
-            className="bg-transparent outline-none w-full text-[13px] placeholder:text-muted-foreground"
+            className="bg-transparent outline-none w-full min-w-0 text-[13px] placeholder:text-muted-foreground"
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
           />
         </div>
       </div>
 
-      {/* Right side */}
-      <div className="flex items-center gap-3">
+      {/* Right side: don't shrink below content size */}
+      <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
         {/* Export Button */}
         <Button
           variant="outline"
           size="sm"
-          className="text-[13px] gap-2 h-9 px-3 border-border"
+          className="text-[13px] gap-1.5 sm:gap-2 h-9 px-2 sm:px-3 border-border"
           onClick={() => {
             setExportScope("all");
             setShowExportDialog(true);
           }}
         >
           <Download className="w-4 h-4" />
-          Export
+          <span className="hidden sm:inline">Export</span>
         </Button>
 
         <Button
           variant="default"
           size="sm"
-          className="bg-[#4f46e5] hover:bg-[#4338ca] text-white text-[13px] gap-2 h-9 px-4"
+          className="bg-[#4f46e5] hover:bg-[#4338ca] text-white text-[13px] gap-1.5 sm:gap-2 h-9 px-2 sm:px-4"
         >
           <Upload className="w-4 h-4" />
-          Hochladen
+          <span className="hidden sm:inline">Hochladen</span>
         </Button>
 
         {/* Notifications */}
@@ -174,12 +174,12 @@ export function Topbar() {
         {/* User Avatar */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 pl-3 pr-1 py-1 rounded-lg hover:bg-[#f1f5f9] transition-colors">
-              <div className="text-right mr-1">
-                <p className="text-[13px]" style={{ fontWeight: 500 }}>Dr. Sarah Mueller</p>
-                <p className="text-[11px] text-muted-foreground -mt-0.5">Requirements Lead</p>
+            <button className="flex items-center gap-1.5 sm:gap-2 pl-2 sm:pl-3 pr-1 py-1 rounded-lg hover:bg-[#f1f5f9] transition-colors min-w-0">
+              <div className="text-right mr-0 sm:mr-1 min-w-0 hidden md:block">
+                <p className="text-[13px] truncate" style={{ fontWeight: 500 }}>Dr. Sarah Mueller</p>
+                <p className="text-[11px] text-muted-foreground -mt-0.5 truncate">Requirements Lead</p>
               </div>
-              <Avatar className="h-8 w-8">
+              <Avatar className="h-8 w-8 flex-shrink-0">
                 <AvatarFallback className="bg-[#4f46e5] text-white text-[12px]">SM</AvatarFallback>
               </Avatar>
             </button>
