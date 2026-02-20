@@ -49,11 +49,11 @@ Nach 1–2 Minuten erscheint die Live-URL, z. B.
 **`https://innolab-prototype.pages.dev`**  
 (die genaue URL steht auf der Projektseite unter **Deployments** → neues Deployment → **View build** / **Visit site**).
 
-**Später:** Jeder Push auf die Production-Branch (z. B. `main`) löst automatisch einen neuen Build und Deploy aus. Die Datei `public/_redirects` sorgt dafür, dass alle Pfade (z. B. `/story/US-001`) korrekt auf die SPA zeigen.
+**Später:** Jeder Push auf die Production-Branch (z. B. `main`) löst automatisch einen neuen Build und Deploy aus. SPA-Routing (z. B. `/story/US-001`) übernimmt `wrangler.toml` (`not_found_handling = "single-page-application"`).
 
 ### Alternative: Netlify
 
-[netlify.com](https://www.netlify.com) → **Import from Git** → **Build:** `npm run build`, **Publish directory:** `dist`. `public/_redirects` wird für SPA-Routing genutzt.
+[netlify.com](https://www.netlify.com) → **Import from Git** → **Build:** `npm run build`, **Publish directory:** `dist`. Unter **Site settings** → **Redirects** eine Regel hinzufügen: `/* /index.html 200` (SPA-Routing).
 
 ### Lokale Vorschau des Production-Builds
 

@@ -1,6 +1,6 @@
 # Cloudflare – Static SPA (dist/ nach Build)
 # Für "Deploy command: npx wrangler deploy" in Cloudflare Pages/Workers
-name = "innolab-prototype"
+name = "reqwise-ai"
 compatibility_date = "2026-02-20"
 
 [assets]
