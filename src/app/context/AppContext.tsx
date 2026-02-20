@@ -25,6 +25,16 @@ export interface ExportRecord {
   status: "completed" | "failed";
 }
 
+interface StoryUpdate {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface JiraTicketUpdate {
+  key: string;
+  [key: string]: unknown;
+}
+
 interface AppState {
   // Workspace
   selectedWorkspace: string;
@@ -33,6 +43,8 @@ interface AppState {
   // Stories
   stories: StoryData[];
   jiraTickets: JiraTicketData[];
+  updateStories: (updates: StoryUpdate[]) => void;
+  updateJiraTickets: (updates: JiraTicketUpdate[]) => void;
 
   // Story Actions (kept / rejected globally)
   storyActions: Record<string, StoryAction>;
@@ -75,11 +87,33 @@ const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [selectedWorkspace, setSelectedWorkspace] = useState("Automobil-Projekt Alpha");
+  const [stories, setStories] = useState<StoryData[]>(allStories);
+  const [jiraTickets, setJiraTickets] = useState<JiraTicketData[]>(allJiraTickets);
   const [storyActions, setStoryActions] = useState<Record<string, StoryAction>>({});
   const [notifications, setNotifications] = useState<Notification[]>(defaultNotifications);
   const [exportHistory, setExportHistory] = useState<ExportRecord[]>([]);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportScope, setExportScope] = useState<"stories" | "compliance" | "jira" | "all">("all");
+
+  const updateStories = useCallback((updates: StoryUpdate[]) => {
+    setStories((prev) => {
+      const updateMap = new Map(updates.map((u) => [u.id, u]));
+      return prev.map((s) => {
+        const upd = updateMap.get(s.id);
+        return upd ? { ...s, ...upd } : s;
+      });
+    });
+  }, []);
+
+  const updateJiraTickets = useCallback((updates: JiraTicketUpdate[]) => {
+    setJiraTickets((prev) => {
+      const updateMap = new Map(updates.map((u) => [u.key, u]));
+      return prev.map((t) => {
+        const upd = updateMap.get(t.key);
+        return upd ? { ...t, ...upd } : t;
+      });
+    });
+  }, []);
 
   const setStoryAction = useCallback((storyId: string, action: StoryAction) => {
     setStoryActions((prev) => {
@@ -112,8 +146,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value: AppState = {
     selectedWorkspace,
     setSelectedWorkspace,
-    stories: allStories,
-    jiraTickets: allJiraTickets,
+    stories,
+    jiraTickets,
+    updateStories,
+    updateJiraTickets,
     storyActions,
     setStoryAction,
     resetStoryActions,

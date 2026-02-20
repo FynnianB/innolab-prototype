@@ -4,6 +4,7 @@ import { Topbar } from "./Topbar";
 import { Breadcrumb } from "./Breadcrumb";
 import { motion, AnimatePresence } from "motion/react";
 import { ExportDialog } from "../ExportDialog";
+import { ChatBubble } from "../chat/ChatBubble";
 
 export function Layout() {
   const location = useLocation();
@@ -30,6 +31,7 @@ export function Layout() {
         </main>
       </div>
       <ExportDialog />
+      <ChatBubble />
     </div>
   );
 }
