@@ -98,6 +98,24 @@ export function ExportDialog() {
     }, 300);
   };
 
+  const handleDownload = () => {
+    const now = new Date();
+    const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}`;
+    const filename = `ReqWise_${scopeInfo.label.replace(/\s+/g, "_")}_${timestamp}.${selectedFormat.toLowerCase()}`;
+    const content = selectedFormat === "PDF"
+      ? "%PDF-1.4 (Prototyp – keine echten Daten)\n"
+      : selectedFormat === "CSV"
+        ? "id;title;status;project\n(Prototyp – keine echten Daten)\n"
+        : "(Prototyp – XLSX würde hier stehen, keine echten Daten)";
+    const blob = new Blob([content], { type: selectedFormat === "PDF" ? "application/pdf" : "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const startExport = () => {
     setPhase("exporting");
     setProgress(0);
@@ -340,6 +358,7 @@ export function ExportDialog() {
                 <Button
                   size="sm"
                   className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-1 text-[12px]"
+                  onClick={handleDownload}
                 >
                   <Download className="w-3.5 h-3.5" />
                   Download

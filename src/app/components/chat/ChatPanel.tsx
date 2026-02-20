@@ -1,11 +1,11 @@
 import { motion } from "motion/react";
-import { Sparkles, Minus } from "lucide-react";
+import { Sparkles, Minus, Plus } from "lucide-react";
 import { useChatContext } from "../../context/ChatContext";
 import { MessageList } from "./MessageList";
 import { ChatInput } from "./ChatInput";
 
 export function ChatPanel() {
-  const { setOpen } = useChatContext();
+  const { setOpen, startNewChat } = useChatContext();
 
   return (
     <motion.div
@@ -33,13 +33,23 @@ export function ChatPanel() {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => setOpen(false)}
-          className="w-7 h-7 rounded-md hover:bg-white/20 flex items-center justify-center transition-colors"
-          aria-label="Chat minimieren"
-        >
-          <Minus className="w-4 h-4 text-white" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={startNewChat}
+            className="w-7 h-7 rounded-md hover:bg-white/20 flex items-center justify-center transition-colors"
+            aria-label="Neuer Chat"
+            title="Neuer Chat"
+          >
+            <Plus className="w-4 h-4 text-white" />
+          </button>
+          <button
+            onClick={() => setOpen(false)}
+            className="w-7 h-7 rounded-md hover:bg-white/20 flex items-center justify-center transition-colors"
+            aria-label="Chat minimieren"
+          >
+            <Minus className="w-4 h-4 text-white" />
+          </button>
+        </div>
       </div>
 
       {/* Messages */}

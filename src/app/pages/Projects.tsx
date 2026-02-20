@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import {
   FolderOpen,
   Plus,
@@ -291,10 +291,14 @@ const effortConfig: Record<string, { color: string; bg: string }> = {
 
 export function Projects() {
   const navigate = useNavigate();
+  const { projectId } = useParams<{ projectId?: string }>();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "stories" | "history">("overview");
   const [editingStory, setEditingStory] = useState<SavedStory | null>(null);
+
+  const selectedProject = projectId
+    ? (projects.find((p) => p.id === projectId) || null)
+    : null;
 
   const filteredProjects = projects.filter(
     (p) =>
@@ -313,7 +317,7 @@ export function Projects() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => { setSelectedProject(null); setActiveTab("overview"); }}
+                onClick={() => { navigate("/projects"); setActiveTab("overview"); }}
                 className="text-muted-foreground gap-1"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -844,7 +848,7 @@ export function Projects() {
             <Card
               key={project.id}
               className="border border-border bg-white hover:shadow-md transition-all duration-200 cursor-pointer group"
-              onClick={() => setSelectedProject(project)}
+              onClick={() => navigate(`/projects/${project.id}`)}
             >
               <CardContent className="p-5">
                 {/* Header Row */}

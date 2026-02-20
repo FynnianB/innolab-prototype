@@ -6,7 +6,7 @@ const routeLabels: Record<string, string> = {
   "": "Dashboard",
   "story-generator": "Story Generator",
   compliance: "Compliance Checker",
-  "jira-comparison": "Jira-Story Abgleich",
+  "story-analysis": "Story-Analyse",
   rules: "Regel-Management",
   projects: "Projekte",
   "customer-journey": "Customer Journey",
@@ -44,6 +44,10 @@ export function Breadcrumb() {
       const title = getItemTitle(decodedId);
       const displayLabel = title !== decodedId ? `${decodedId} - ${title}` : decodedId;
       items.push({ label: displayLabel, path: location.pathname, isCurrent: true });
+    } else if (firstSegment === "projects" && segments[1]) {
+      // Project detail: Dashboard > Projekte > [projectId]
+      items.push({ label: "Projekte", path: "/projects", isCurrent: false });
+      items.push({ label: decodeURIComponent(segments[1]), path: location.pathname, isCurrent: true });
     } else {
       items.push({ label, path: `/${firstSegment}`, isCurrent: true });
     }

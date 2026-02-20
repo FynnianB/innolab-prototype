@@ -8,7 +8,6 @@ import {
   ArrowRight,
   Clock,
   FileText,
-  MoreHorizontal,
   Zap,
   BarChart3,
   BookOpen,
@@ -21,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip";
+import { TooltipProvider } from "../components/ui/tooltip";
 
 const kpiCards = [
   {
@@ -63,46 +62,11 @@ const kpiCards = [
 ];
 
 const recentProjects = [
-  {
-    name: "Automobil-Plattform Redesign",
-    status: "In Analyse",
-    stories: 234,
-    compliance: 91,
-    updated: "vor 2 Stunden",
-    statusColor: "#4f46e5",
-  },
-  {
-    name: "Banking App v3.2 Migration",
-    status: "Review",
-    stories: 187,
-    compliance: 96,
-    updated: "vor 5 Stunden",
-    statusColor: "#f59e0b",
-  },
-  {
-    name: "Healthcare Portal DSGVO",
-    status: "Abgeschlossen",
-    stories: 342,
-    compliance: 99,
-    updated: "Gestern",
-    statusColor: "#10b981",
-  },
-  {
-    name: "E-Commerce Checkout Flow",
-    status: "In Analyse",
-    stories: 89,
-    compliance: 78,
-    updated: "vor 1 Tag",
-    statusColor: "#4f46e5",
-  },
-  {
-    name: "IoT Dashboard Spezifikation",
-    status: "Entwurf",
-    stories: 56,
-    compliance: 65,
-    updated: "vor 3 Tagen",
-    statusColor: "#94a3b8",
-  },
+  { id: "P-001", name: "Automobil-Plattform Redesign", status: "In Analyse", stories: 234, compliance: 91, updated: "vor 2 Stunden", statusColor: "#4f46e5" },
+  { id: "P-002", name: "Banking App v3.2 Migration", status: "Review", stories: 187, compliance: 96, updated: "vor 5 Stunden", statusColor: "#f59e0b" },
+  { id: "P-003", name: "Healthcare Portal DSGVO", status: "Abgeschlossen", stories: 342, compliance: 99, updated: "Gestern", statusColor: "#10b981" },
+  { id: "P-004", name: "E-Commerce Checkout Flow", status: "In Analyse", stories: 89, compliance: 78, updated: "vor 1 Tag", statusColor: "#4f46e5" },
+  { id: "P-005", name: "IoT Dashboard Spezifikation", status: "Entwurf", stories: 56, compliance: 65, updated: "vor 3 Tagen", statusColor: "#94a3b8" },
 ];
 
 const recentActivity = [
@@ -159,14 +123,6 @@ export function Dashboard() {
                   >
                     <kpi.icon className="w-5 h-5" style={{ color: kpi.color }} />
                   </div>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button className="p-1 rounded hover:bg-[#f1f5f9] transition-colors">
-                        <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>Details anzeigen</TooltipContent>
-                  </Tooltip>
                 </div>
                 <p className="text-[13px] text-muted-foreground mb-1">{kpi.title}</p>
                 <p className="text-[28px] text-[#1e1e2e] tracking-tight" style={{ fontWeight: 600, lineHeight: 1.2 }}>
@@ -189,7 +145,12 @@ export function Dashboard() {
             <Card className="border border-border bg-white">
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
                 <CardTitle className="text-[16px]" style={{ fontWeight: 600 }}>Letzte Projekte</CardTitle>
-                <Button variant="ghost" size="sm" className="text-[13px] text-[#4f46e5] hover:text-[#4338ca] hover:bg-[#f1f0ff] gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-[13px] text-[#4f46e5] hover:text-[#4338ca] hover:bg-[#f1f0ff] gap-1"
+                  onClick={() => navigate("/projects")}
+                >
                   Alle anzeigen
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Button>
@@ -204,9 +165,13 @@ export function Dashboard() {
                     <span>Compliance</span>
                     <span className="text-right">Aktualisiert</span>
                   </div>
-                  {recentProjects.map((project, i) => (
+                  {recentProjects.map((project) => (
                     <div
-                      key={i}
+                      key={project.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate(`/projects/${project.id}`)}
+                      onKeyDown={(e) => e.key === "Enter" && navigate(`/projects/${project.id}`)}
                       className="grid grid-cols-[1fr_80px_60px_90px_80px] sm:grid-cols-[1fr_100px_80px_120px_100px] gap-2 sm:gap-3 px-2 sm:px-3 py-3 rounded-lg hover:bg-[#f8fafc] transition-colors cursor-pointer group items-center"
                     >
                       <div className="flex items-center gap-2 sm:gap-3 min-w-0">

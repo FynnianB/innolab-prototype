@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
-import { allStories, allJiraTickets, type StoryData, type JiraTicketData } from "../data/stories";
+import { allStories, type Story } from "../data/stories";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -30,37 +30,24 @@ interface StoryUpdate {
   [key: string]: unknown;
 }
 
-interface JiraTicketUpdate {
-  key: string;
-  [key: string]: unknown;
-}
-
 interface AppState {
-  // Workspace
   selectedWorkspace: string;
   setSelectedWorkspace: (ws: string) => void;
 
-  // Stories
-  stories: StoryData[];
-  jiraTickets: JiraTicketData[];
+  stories: Story[];
   updateStories: (updates: StoryUpdate[]) => void;
-  updateJiraTickets: (updates: JiraTicketUpdate[]) => void;
 
-  // Story Actions (kept / rejected globally)
   storyActions: Record<string, StoryAction>;
   setStoryAction: (storyId: string, action: StoryAction) => void;
   resetStoryActions: () => void;
 
-  // Notifications
   notifications: Notification[];
   markNotificationRead: (id: string) => void;
   unreadCount: number;
 
-  // Export history
   exportHistory: ExportRecord[];
   addExportRecord: (record: Omit<ExportRecord, "id">) => void;
 
-  // Export dialog
   showExportDialog: boolean;
   setShowExportDialog: (show: boolean) => void;
   exportScope: "stories" | "compliance" | "jira" | "all";
@@ -73,9 +60,9 @@ interface AppState {
 
 const defaultNotifications: Notification[] = [
   { id: "N-001", text: "23 neue Stories generiert", project: "Automobil-Plattform", time: "vor 15 Min.", read: false, type: "success" },
-  { id: "N-002", text: "3 Widersprueche erkannt", project: "Banking App v3.2", time: "vor 1 Std.", read: false, type: "warning" },
+  { id: "N-002", text: "3 Widerspr\u00fcche erkannt", project: "Banking App v3.2", time: "vor 1 Std.", read: false, type: "warning" },
   { id: "N-003", text: "Compliance-Check bestanden", project: "Healthcare Portal", time: "vor 2 Std.", read: true, type: "success" },
-  { id: "N-004", text: "Jira-Export abgeschlossen (7 Tickets)", project: "Automobil-Plattform", time: "vor 3 Std.", read: true, type: "info" },
+  { id: "N-004", text: "Export abgeschlossen (7 Stories)", project: "Automobil-Plattform", time: "vor 3 Std.", read: true, type: "info" },
   { id: "N-005", text: "Neue Compliance-Regeln importiert", project: "Global", time: "vor 5 Std.", read: true, type: "info" },
 ];
 
@@ -87,8 +74,7 @@ const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [selectedWorkspace, setSelectedWorkspace] = useState("Automobil-Projekt Alpha");
-  const [stories, setStories] = useState<StoryData[]>(allStories);
-  const [jiraTickets, setJiraTickets] = useState<JiraTicketData[]>(allJiraTickets);
+  const [stories, setStories] = useState<Story[]>(allStories);
   const [storyActions, setStoryActions] = useState<Record<string, StoryAction>>({});
   const [notifications, setNotifications] = useState<Notification[]>(defaultNotifications);
   const [exportHistory, setExportHistory] = useState<ExportRecord[]>([]);
@@ -101,16 +87,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return prev.map((s) => {
         const upd = updateMap.get(s.id);
         return upd ? { ...s, ...upd } : s;
-      });
-    });
-  }, []);
-
-  const updateJiraTickets = useCallback((updates: JiraTicketUpdate[]) => {
-    setJiraTickets((prev) => {
-      const updateMap = new Map(updates.map((u) => [u.key, u]));
-      return prev.map((t) => {
-        const upd = updateMap.get(t.key);
-        return upd ? { ...t, ...upd } : t;
       });
     });
   }, []);
@@ -147,9 +123,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     selectedWorkspace,
     setSelectedWorkspace,
     stories,
-    jiraTickets,
     updateStories,
-    updateJiraTickets,
     storyActions,
     setStoryAction,
     resetStoryActions,

@@ -1,4 +1,4 @@
-import type { StoryData, JiraTicketData } from "../../data/stories";
+import type { Story } from "../../data/stories";
 
 /* ------------------------------------------------------------------ */
 /*  Message types                                                      */
@@ -25,8 +25,6 @@ export interface ChatMessage {
 /*  Bulk operations                                                    */
 /* ------------------------------------------------------------------ */
 
-export type EntityType = "story" | "jira_ticket";
-
 export interface BulkChange {
   id: string;
   title: string;
@@ -36,7 +34,6 @@ export interface BulkChange {
 }
 
 export interface BulkOperationPreview {
-  entityType: EntityType;
   field: string;
   newValue: string;
   changes: BulkChange[];
@@ -50,11 +47,12 @@ export interface BulkOperationPreview {
 export interface QueryResultItem {
   id: string;
   title: string;
-  type: "story" | "jira_ticket";
+  type: string;
   status: string;
   priority?: string;
   project: string;
   effort?: string;
+  source?: string;
 }
 
 export interface QueryResultData {
@@ -75,8 +73,7 @@ export interface SuggestionChipsData {
 /* ------------------------------------------------------------------ */
 
 export interface ChatDataContext {
-  stories: StoryData[];
-  jiraTickets: JiraTicketData[];
+  stories: Story[];
 }
 
 export interface ChatServiceResponse {

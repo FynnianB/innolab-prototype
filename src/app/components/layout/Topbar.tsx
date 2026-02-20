@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import {
   Upload,
   Bell,
@@ -30,6 +31,7 @@ const workspaces = [
 ];
 
 export function Topbar() {
+  const navigate = useNavigate();
   const {
     selectedWorkspace,
     setSelectedWorkspace,
@@ -121,6 +123,7 @@ export function Topbar() {
           variant="default"
           size="sm"
           className="bg-[#4f46e5] hover:bg-[#4338ca] text-white text-[13px] gap-1.5 sm:gap-2 h-9 px-2 sm:px-4"
+          onClick={() => navigate("/story-generator")}
         >
           <Upload className="w-4 h-4" />
           <span className="hidden sm:inline">Hochladen</span>

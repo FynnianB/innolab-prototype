@@ -21,7 +21,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 function ResultItem({ item }: { item: QueryResultItem }) {
   const navigate = useNavigate();
   const { setOpen } = useChatContext();
-  const isStory = item.type === "story";
+  const isEpicOrTask = item.type === "Epic" || item.type === "Task";
 
   const handleClick = () => {
     setOpen(false);
@@ -34,10 +34,10 @@ function ResultItem({ item }: { item: QueryResultItem }) {
       className="w-full flex items-start gap-2.5 px-3 py-2 rounded-lg hover:bg-[#f8fafc] transition-colors text-left group"
     >
       <div className="w-7 h-7 rounded-md bg-[#f1f5f9] flex items-center justify-center flex-shrink-0 mt-0.5">
-        {isStory ? (
-          <FileText className="w-3.5 h-3.5 text-[#4f46e5]" />
-        ) : (
+        {isEpicOrTask ? (
           <Ticket className="w-3.5 h-3.5 text-[#f59e0b]" />
+        ) : (
+          <FileText className="w-3.5 h-3.5 text-[#4f46e5]" />
         )}
       </div>
       <div className="flex-1 min-w-0">

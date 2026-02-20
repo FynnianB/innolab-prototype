@@ -26,6 +26,7 @@ interface ChatState {
   toggleOpen: () => void;
   setOpen: (open: boolean) => void;
   sendMessage: (text: string) => void;
+  startNewChat: () => void;
   applyBulkOperation: () => void;
   dismissBulkOperation: () => void;
 }
@@ -84,8 +85,7 @@ const WELCOME_MESSAGES: ChatMessage[] = [
 const ChatContext = createContext<ChatState | null>(null);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const { stories, jiraTickets, updateStories, updateJiraTickets } =
-    useAppContext();
+  const { stories, updateStories } = useAppContext();
   const serviceRef = useRef<ChatService>(new SimulatedChatService());
 
   const [messages, setMessages] = useState<ChatMessage[]>(WELCOME_MESSAGES);
@@ -113,7 +113,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setIsTyping(true);
 
       serviceRef.current
-        .processMessage(trimmed, { stories, jiraTickets })
+        .processMessage(trimmed, { stories })
         .then((response) => {
           const newMessages: ChatMessage[] = response.messages.map((m) => ({
             ...m,
@@ -127,27 +127,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         })
         .finally(() => setIsTyping(false));
     },
-    [stories, jiraTickets],
+    [stories],
   );
 
   const applyBulkOperation = useCallback(() => {
     if (!pendingOperation) return;
 
-    const { entityType, field, changes } = pendingOperation;
-
-    if (entityType === "story") {
-      const updates = changes.map((c) => ({
-        id: c.id,
-        [field]: c.newValue,
-      }));
-      updateStories(updates);
-    } else {
-      const updates = changes.map((c) => ({
-        key: c.id,
-        [field]: c.newValue,
-      }));
-      updateJiraTickets(updates);
-    }
+    const { field, changes } = pendingOperation;
+    const updates = changes.map((c) => ({
+      id: c.id,
+      [field]: c.newValue,
+    }));
+    updateStories(updates);
 
     // Mark the preview as applied
     setMessages((prev) =>
@@ -176,7 +167,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
     setMessages((prev) => [...prev, successMsg]);
     setPendingOperation(null);
-  }, [pendingOperation, updateStories, updateJiraTickets]);
+  }, [pendingOperation, updateStories]);
+
+  const startNewChat = useCallback(() => {
+    setMessages([...WELCOME_MESSAGES]);
+    setPendingOperation(null);
+    setIsTyping(false);
+  }, []);
 
   const dismissBulkOperation = useCallback(() => {
     setPendingOperation(null);
@@ -216,6 +213,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     toggleOpen,
     setOpen,
     sendMessage,
+    startNewChat,
     applyBulkOperation,
     dismissBulkOperation,
   };

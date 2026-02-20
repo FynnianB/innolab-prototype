@@ -20,7 +20,6 @@ import {
   XCircle,
   AlertTriangle,
   Link2,
-  ExternalLink,
   Lightbulb,
   ChevronRight,
 } from "lucide-react";
@@ -30,13 +29,10 @@ import { Progress } from "../components/ui/progress";
 import { TicketTypeIcon } from "../components/TicketTypeIcon";
 import {
   allStories,
-  allJiraTickets,
   getRelationsForId,
   getItemTitle,
   getItemProject,
-  isUserStory,
-  type StoryData,
-  type JiraTicketData,
+  type Story,
   type TicketRelation,
 } from "../data/stories";
 
@@ -48,7 +44,7 @@ interface TicketNodeData {
   label: string;
   project: string;
   isCurrent: boolean;
-  isStory: boolean;
+  isStory?: boolean;
   [key: string]: unknown;
 }
 
@@ -166,7 +162,7 @@ function buildGraph(
         label: getItemTitle(currentId),
         project: getItemProject(currentId),
         isCurrent: true,
-        isStory: isUserStory(currentId),
+        isStory: currentId.startsWith("US-"),
       },
     },
     ...otherNodes.map((id, i) => {
@@ -182,7 +178,7 @@ function buildGraph(
           label: getItemTitle(id),
           project: getItemProject(id),
           isCurrent: false,
-          isStory: isUserStory(id),
+          isStory: id.startsWith("US-"),
         },
       };
     }),
@@ -263,18 +259,14 @@ export function StoryDetail() {
   const { id } = useParams<{ id: string }>();
   const decodedId = id ? decodeURIComponent(id) : "";
 
-  // Find the item
   const story = allStories.find((s) => s.id === decodedId);
-  const ticket = allJiraTickets.find((t) => t.key === decodedId);
 
-  // Build graph data (always computed, even if not found)
   const relations = getRelationsForId(decodedId);
   const { nodes, edges } = useMemo(
     () => buildGraph(decodedId, relations),
     [decodedId, relations.length]
   );
 
-  // Related items list (for the bottom section)
   const relatedItems = useMemo(() => {
     return relations.map((r) => {
       const otherId = r.sourceId === decodedId ? r.targetId : r.sourceId;
@@ -283,7 +275,7 @@ export function StoryDetail() {
         id: otherId,
         title: getItemTitle(otherId),
         project: getItemProject(otherId),
-        isStory: isUserStory(otherId),
+        isStory: true,
       };
     });
   }, [decodedId, relations.length]);
@@ -297,8 +289,7 @@ export function StoryDetail() {
     [navigate, decodedId]
   );
 
-  // Not found state
-  if (!story && !ticket) {
+  if (!story) {
     return (
       <div className="p-8 max-w-[1000px] mx-auto">
         <button
@@ -310,22 +301,16 @@ export function StoryDetail() {
         </button>
         <div className="text-center py-20">
           <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-          <h2 className="text-slate-900 mb-2">Ticket nicht gefunden</h2>
+          <h2 className="text-slate-900 mb-2">Story nicht gefunden</h2>
           <p className="text-slate-500 text-[14px]">
-            Das Ticket mit der ID &quot;{decodedId}&quot; konnte nicht gefunden werden.
+            Die Story mit der ID &quot;{decodedId}&quot; konnte nicht gefunden werden.
           </p>
         </div>
       </div>
     );
   }
 
-  /* ── Render: User Story ── */
-  if (story) {
-    return <StoryView story={story} nodes={nodes} edges={edges} relatedItems={relatedItems} onNodeClick={handleNodeClick} />;
-  }
-
-  /* ── Render: Jira Ticket ── */
-  return <TicketView ticket={ticket!} nodes={nodes} edges={edges} relatedItems={relatedItems} onNodeClick={handleNodeClick} />;
+  return <StoryView story={story} nodes={nodes} edges={edges} relatedItems={relatedItems} onNodeClick={handleNodeClick} />;
 }
 
 /* ------------------------------------------------------------------ */
@@ -339,7 +324,7 @@ function StoryView({
   relatedItems,
   onNodeClick,
 }: {
-  story: StoryData;
+  story: Story;
   nodes: Node[];
   edges: Edge[];
   relatedItems: { relation: TicketRelation; id: string; title: string; project: string; isStory: boolean }[];
@@ -347,10 +332,14 @@ function StoryView({
 }) {
   const navigate = useNavigate();
 
+  const hasCompliance = story.complianceScore != null && story.complianceChecks;
+  const hasAcQuality = story.acQuality && story.acQuality.length > 0;
+  const hasAcceptance = story.acceptance && story.acceptance.length > 0;
+  const hasSuggestions = story.suggestions && story.suggestions.length > 0;
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="p-8 max-w-[1100px] mx-auto pb-16">
-        {/* Back */}
         <motion.button
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
@@ -369,10 +358,11 @@ function StoryView({
         >
           <div className="flex items-start justify-between mb-3">
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <Badge variant="outline" className="text-[11px] text-[#4f46e5] border-[#4f46e5]/30 bg-[#f1f0ff]">
                   {story.id}
                 </Badge>
+                <TicketTypeIcon type={story.type} size="md" showLabel />
                 <StatusBadge status={story.status} />
                 <PriorityBadge priority={story.priority} />
               </div>
@@ -393,101 +383,137 @@ function StoryView({
           </div>
 
           {/* Tags */}
-          <div className="flex items-center gap-2 mb-4">
-            {story.tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-[11px]">
-                {tag}
-              </Badge>
-            ))}
-          </div>
+          {story.tags.length > 0 && (
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              {story.tags.map((tag) => (
+                <Badge key={tag} variant="secondary" className="text-[11px]">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
 
           {/* Description */}
           <p className="text-[14px] text-slate-600 leading-relaxed mb-5">
             {story.description}
           </p>
 
-          {/* Acceptance Criteria */}
-          <div>
-            <h3 className="text-[14px] text-slate-900 mb-3" style={{ fontWeight: 600 }}>
-              Acceptance Criteria
-            </h3>
-            <div className="space-y-2">
-              {story.acceptance.map((ac, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 bg-slate-50 rounded-lg border border-slate-100 px-4 py-3"
-                >
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                  <span className="text-[13px] text-slate-700">{ac}</span>
+          {/* Jira-specific meta */}
+          {(story.assignee || story.sprint || story.storyPoints != null) && (
+            <div className="grid grid-cols-4 gap-4 mb-5">
+              {story.assignee && (
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-[11px] text-slate-400 mb-1">Assignee</div>
+                  <div className="text-[13px] text-slate-700" style={{ fontWeight: 500 }}>{story.assignee}</div>
                 </div>
-              ))}
+              )}
+              {story.sprint && (
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-[11px] text-slate-400 mb-1">Sprint</div>
+                  <div className="text-[13px] text-slate-700" style={{ fontWeight: 500 }}>{story.sprint}</div>
+                </div>
+              )}
+              {story.storyPoints != null && (
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-[11px] text-slate-400 mb-1">Story Points</div>
+                  <div className="text-[13px] text-slate-700" style={{ fontWeight: 500 }}>{story.storyPoints}</div>
+                </div>
+              )}
+              <div className="bg-slate-50 rounded-lg p-3">
+                <div className="text-[11px] text-slate-400 mb-1">Project</div>
+                <div className="text-[13px] text-slate-700" style={{ fontWeight: 500 }}>{story.project}</div>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Acceptance Criteria */}
+          {hasAcceptance && (
+            <div>
+              <h3 className="text-[14px] text-slate-900 mb-3" style={{ fontWeight: 600 }}>
+                Acceptance Criteria
+              </h3>
+              <div className="space-y-2">
+                {story.acceptance!.map((ac, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-3 bg-slate-50 rounded-lg border border-slate-100 px-4 py-3"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                    <span className="text-[13px] text-slate-700">{ac}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </motion.div>
 
         {/* Analysis Results */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 gap-5 mb-5"
-        >
-          {/* Compliance Check */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[15px] text-slate-900" style={{ fontWeight: 600 }}>
-                Compliance Check
-              </h3>
-              <span className="text-[22px] text-emerald-500" style={{ fontWeight: 700 }}>
-                {story.complianceScore}%
-              </span>
-            </div>
-            <Progress value={story.complianceScore} className="mb-5 h-2 [&>div]:bg-emerald-500" />
-            <div className="space-y-3">
-              {story.complianceChecks.map((check, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  {check.passed ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
-                  ) : (
-                    <XCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-                  )}
-                  <div>
-                    <div className="text-[13px] text-slate-800" style={{ fontWeight: 500 }}>
-                      {check.label}
+        {(hasCompliance || hasAcQuality) && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="grid grid-cols-2 gap-5 mb-5"
+          >
+            {hasCompliance && (
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-[15px] text-slate-900" style={{ fontWeight: 600 }}>
+                    Compliance Check
+                  </h3>
+                  <span className="text-[22px] text-emerald-500" style={{ fontWeight: 700 }}>
+                    {story.complianceScore}%
+                  </span>
+                </div>
+                <Progress value={story.complianceScore!} className="mb-5 h-2 [&>div]:bg-emerald-500" />
+                <div className="space-y-3">
+                  {story.complianceChecks!.map((check, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      {check.passed ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+                      )}
+                      <div>
+                        <div className="text-[13px] text-slate-800" style={{ fontWeight: 500 }}>
+                          {check.label}
+                        </div>
+                        <div className="text-[11px] text-slate-500">{check.description}</div>
+                      </div>
                     </div>
-                    <div className="text-[11px] text-slate-500">{check.description}</div>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+            )}
 
-          {/* AC Quality */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-            <h3 className="text-[15px] text-slate-900 mb-4" style={{ fontWeight: 600 }}>
-              Acceptance Criteria Quality
-            </h3>
-            <div className="space-y-4">
-              {story.acQuality.map((ac, i) => (
-                <div key={i}>
-                  <div className="flex items-start justify-between gap-3 mb-1">
-                    <span className="text-[12px] text-slate-700 leading-snug flex-1">
-                      {ac.criterion}
-                    </span>
-                    <span className="text-[12px] text-emerald-600 shrink-0" style={{ fontWeight: 600 }}>
-                      {ac.score}%
-                    </span>
-                  </div>
-                  <Progress value={ac.score} className="mb-1 h-1.5 [&>div]:bg-emerald-500" />
-                  <p className="text-[10px] text-amber-600">{ac.suggestion}</p>
+            {hasAcQuality && (
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+                <h3 className="text-[15px] text-slate-900 mb-4" style={{ fontWeight: 600 }}>
+                  Acceptance Criteria Quality
+                </h3>
+                <div className="space-y-4">
+                  {story.acQuality!.map((ac, i) => (
+                    <div key={i}>
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <span className="text-[12px] text-slate-700 leading-snug flex-1">
+                          {ac.criterion}
+                        </span>
+                        <span className="text-[12px] text-emerald-600 shrink-0" style={{ fontWeight: 600 }}>
+                          {ac.score}%
+                        </span>
+                      </div>
+                      <Progress value={ac.score} className="mb-1 h-1.5 [&>div]:bg-emerald-500" />
+                      <p className="text-[10px] text-amber-600">{ac.suggestion}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
+              </div>
+            )}
+          </motion.div>
+        )}
 
-        {/* Contradictions & Suggestions */}
-        {story.suggestions.length > 0 && (
+        {/* Suggestions */}
+        {hasSuggestions && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -503,7 +529,7 @@ function StoryView({
             <div className="text-[11px] text-slate-400 uppercase tracking-wider mb-2" style={{ fontWeight: 600 }}>
               Suggestions
             </div>
-            {story.suggestions.map((s, i) => (
+            {story.suggestions!.map((s, i) => (
               <div key={i} className="flex items-start gap-2">
                 <Lightbulb className="w-3.5 h-3.5 text-blue-500 mt-0.5 shrink-0" />
                 <span className="text-[13px] text-slate-600">{s}</span>
@@ -525,93 +551,7 @@ function StoryView({
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  JIRA TICKET VIEW (simplified)                                       */
-/* ------------------------------------------------------------------ */
-
-function TicketView({
-  ticket,
-  nodes,
-  edges,
-  relatedItems,
-  onNodeClick,
-}: {
-  ticket: JiraTicketData;
-  nodes: Node[];
-  edges: Edge[];
-  relatedItems: { relation: TicketRelation; id: string; title: string; project: string; isStory: boolean }[];
-  onNodeClick: (event: React.MouseEvent, node: Node) => void;
-}) {
-  const navigate = useNavigate();
-
-  return (
-    <div className="h-full overflow-y-auto">
-      <div className="p-8 max-w-[1100px] mx-auto pb-16">
-        <motion.button
-          initial={{ opacity: 0, x: -8 }}
-          animate={{ opacity: 1, x: 0 }}
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-[14px] text-slate-500 hover:text-[#4f46e5] transition-colors mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </motion.button>
-
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-5"
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="outline" className="text-[11px] text-[#4f46e5] border-[#4f46e5]/30 bg-[#f1f0ff]">
-                  {ticket.key}
-                </Badge>
-                <TicketTypeIcon type={ticket.type} size="md" showLabel />
-                <StatusBadge status={ticket.status} />
-              </div>
-              <h1 className="text-[22px] text-slate-900" style={{ fontWeight: 600 }}>
-                {ticket.summary}
-              </h1>
-            </div>
-            <Button variant="outline" size="sm" className="gap-1.5 text-[12px] shrink-0 ml-4">
-              <ExternalLink className="w-3.5 h-3.5" />
-              Open in Jira
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-4 gap-4 mt-4">
-            <div className="bg-slate-50 rounded-lg p-3">
-              <div className="text-[11px] text-slate-400 mb-1">Assignee</div>
-              <div className="text-[13px] text-slate-700" style={{ fontWeight: 500 }}>{ticket.assignee}</div>
-            </div>
-            <div className="bg-slate-50 rounded-lg p-3">
-              <div className="text-[11px] text-slate-400 mb-1">Sprint</div>
-              <div className="text-[13px] text-slate-700" style={{ fontWeight: 500 }}>{ticket.sprint}</div>
-            </div>
-            <div className="bg-slate-50 rounded-lg p-3">
-              <div className="text-[11px] text-slate-400 mb-1">Story Points</div>
-              <div className="text-[13px] text-slate-700" style={{ fontWeight: 500 }}>{ticket.storyPoints}</div>
-            </div>
-            <div className="bg-slate-50 rounded-lg p-3">
-              <div className="text-[11px] text-slate-400 mb-1">Project</div>
-              <div className="text-[13px] text-slate-700" style={{ fontWeight: 500 }}>{ticket.project}</div>
-            </div>
-          </div>
-        </motion.div>
-
-        <DependencyGraph
-          nodes={nodes}
-          edges={edges}
-          relatedItems={relatedItems}
-          onNodeClick={onNodeClick}
-          delay={0.1}
-        />
-      </div>
-    </div>
-  );
-}
+/* TicketView removed - unified into StoryView */
 
 /* ------------------------------------------------------------------ */
 /*  DEPENDENCY GRAPH + RELATED TICKETS                                  */

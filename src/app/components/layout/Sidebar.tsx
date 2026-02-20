@@ -26,7 +26,7 @@ const baseNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Sparkles, label: "Story Generator", path: "/story-generator" },
   { icon: ShieldCheck, label: "Compliance Checker", path: "/compliance" },
-  { icon: GitCompare, label: "Jira-Story Abgleich", path: "/jira-comparison" },
+  { icon: GitCompare, label: "Story-Analyse", path: "/story-analysis" },
   { icon: BookOpen, label: "Regel-Management", path: "/rules" },
   { icon: FolderOpen, label: "Projekte", path: "/projects" },
 ];
