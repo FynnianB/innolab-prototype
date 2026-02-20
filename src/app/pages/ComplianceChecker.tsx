@@ -23,9 +23,7 @@ import {
   ChevronRight,
   Clock,
   ClipboardList,
-  ChevronDown,
   ChevronUp,
-  RotateCcw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -865,7 +863,6 @@ export function ComplianceChecker() {
             <div className="space-y-1.5">
               {fixLog.map((entry) => {
                 const catConf = categoryConfig[entry.category];
-                const sevConf = severityConfig[entry.severity];
                 return (
                   <div key={entry.id} className="flex items-start gap-3 p-2.5 rounded-lg bg-white border border-border">
                     <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: catConf.bg }}>

@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   ShieldCheck,
   TrendingUp,
-  ArrowUpRight,
   ArrowRight,
   Clock,
   FileText,

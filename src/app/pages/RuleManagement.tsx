@@ -3,21 +3,17 @@ import {
   Plus,
   Search,
   Upload,
-  BookOpen,
   Shield,
   Scale,
   MessageSquare,
   Layers,
-  ChevronRight,
   Edit3,
   Trash2,
   Copy,
   MoreHorizontal,
-  CheckCircle2,
-  Info,
   X,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Switch } from "../components/ui/switch";
@@ -36,7 +32,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "../components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip";
+import { TooltipProvider } from "../components/ui/tooltip";
 
 interface Rule {
   id: string;

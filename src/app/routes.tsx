@@ -9,7 +9,10 @@ import { JiraComparison } from "./pages/JiraComparison";
 import { CustomerJourney } from "./pages/CustomerJourney";
 import { StoryDetail } from "./pages/StoryDetail";
 
-export const router = createBrowserRouter([
+const basename = (import.meta.env.BASE_URL ?? "/").replace(/\/$/, "") || undefined;
+
+export const router = createBrowserRouter(
+  [
   {
     path: "/",
     Component: Layout,
@@ -27,4 +30,6 @@ export const router = createBrowserRouter([
       { path: "*", Component: Dashboard },
     ],
   },
-]);
+],
+  { basename }
+);

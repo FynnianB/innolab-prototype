@@ -37,7 +37,6 @@ import {
   Mic,
   ExternalLink,
   Send,
-  RotateCcw,
   Clock,
   Users,
 } from "lucide-react";
@@ -53,7 +52,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "../components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip";
+import { TooltipProvider } from "../components/ui/tooltip";
 import { WorkflowStepper } from "../components/WorkflowStepper";
 import { StoryLink } from "../components/StoryLink";
 import { useAppContext } from "../context/AppContext";
@@ -600,7 +599,6 @@ export function StoryGenerator() {
       s.id.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const keptStories = stories.filter((s) => storyActions[s.id] === "kept" || !storyActions[s.id]);
   const rejectedCount = Object.values(storyActions).filter((a) => a === "rejected").length;
 
   const filteredJiraMatches = jiraMatches.filter((m) => {
