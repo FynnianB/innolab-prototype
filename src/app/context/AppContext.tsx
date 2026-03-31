@@ -11,9 +11,17 @@ import {
   DEFAULT_WORKSPACE_ID,
   WORKSPACES,
   filterStoriesByWorkspace,
+  ALL_TEAM_ROSTER_INITIALS,
+  getProjectIdsForWorkspace,
   getWorkspaceById,
   isValidWorkspaceId,
+  persistProjectTeamOverrides,
   persistWorkspaceId,
+  PROJECT_TEAM_BY_ID,
+  PROJECT_WORKSPACE,
+  projectTeamsEqual,
+  PROTOTYPE_USER_INITIALS,
+  readProjectTeamOverrides,
   readStoredWorkspaceId,
   type Workspace,
 } from "../data/workspaces";
@@ -78,6 +86,13 @@ interface AppState {
   setShowExportDialog: (show: boolean) => void;
   exportScope: "stories" | "compliance" | "jira" | "all";
   setExportScope: (scope: "stories" | "compliance" | "jira" | "all") => void;
+
+  /** Projekt-IDs im aktuellen Workspace, deren Team den Prototyp-Nutzer (SM) enthält. */
+  myProjectIdsInWorkspace: string[];
+  getEffectiveProjectTeam: (projectId: string) => string[];
+  addMemberToProjectTeam: (projectId: string, memberInitials: string) => void;
+  removeMemberFromProjectTeam: (projectId: string, memberInitials: string) => void;
+  isPrototypeUserOnProjectTeam: (projectId: string) => boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -130,6 +145,24 @@ const defaultNotifications: Notification[] = [
     type: "info",
     workspaceId: null,
   },
+  {
+    id: "N-006",
+    text: "Sprint Review Cap-12: Touch&Travel Pilot freigegeben",
+    project: "Deutsche Bahn — Navigator",
+    time: "vor 20 Min.",
+    read: false,
+    type: "success",
+    workspaceId: "ws-capgemini",
+  },
+  {
+    id: "N-007",
+    text: "Offene Punkte Guidewire-Mapping (FNOL)",
+    project: "Allianz — Schaden",
+    time: "vor 1 Std.",
+    read: false,
+    type: "warning",
+    workspaceId: "ws-capgemini",
+  },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -153,6 +186,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [exportScope, setExportScope] = useState<
     "stories" | "compliance" | "jira" | "all"
   >("all");
+
+  const [projectTeamOverrides, setProjectTeamOverrides] = useState<
+    Record<string, string[]>
+  >(() => readProjectTeamOverrides());
 
   const setSelectedWorkspaceId = useCallback((id: string) => {
     const next = isValidWorkspaceId(id) ? id : DEFAULT_WORKSPACE_ID;
@@ -178,6 +215,67 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const unreadCount = notificationsInWorkspace.filter((n) => !n.read).length;
+
+  const getEffectiveProjectTeam = useCallback(
+    (projectId: string) =>
+      projectTeamOverrides[projectId] ??
+      PROJECT_TEAM_BY_ID[projectId] ??
+      [],
+    [projectTeamOverrides],
+  );
+
+  const isPrototypeUserOnProjectTeam = useCallback(
+    (projectId: string) =>
+      getEffectiveProjectTeam(projectId).includes(PROTOTYPE_USER_INITIALS),
+    [getEffectiveProjectTeam],
+  );
+
+  const myProjectIdsInWorkspace = useMemo(() => {
+    return getProjectIdsForWorkspace(selectedWorkspaceId).filter((pid) =>
+      (
+        projectTeamOverrides[pid] ??
+        PROJECT_TEAM_BY_ID[pid] ??
+        []
+      ).includes(PROTOTYPE_USER_INITIALS),
+    );
+  }, [projectTeamOverrides, selectedWorkspaceId]);
+
+  const addMemberToProjectTeam = useCallback(
+    (projectId: string, memberInitials: string) => {
+      if (PROJECT_WORKSPACE[projectId] !== selectedWorkspaceId) return;
+      const member = memberInitials.trim();
+      if (!member || !ALL_TEAM_ROSTER_INITIALS.includes(member)) return;
+      setProjectTeamOverrides((prev) => {
+        const base = PROJECT_TEAM_BY_ID[projectId] ?? [];
+        const current = [...(prev[projectId] ?? base)];
+        if (current.includes(member)) return prev;
+        const next = [...current, member];
+        const nextMap = { ...prev };
+        if (projectTeamsEqual(next, base)) delete nextMap[projectId];
+        else nextMap[projectId] = next;
+        persistProjectTeamOverrides(nextMap);
+        return nextMap;
+      });
+    },
+    [selectedWorkspaceId],
+  );
+
+  const removeMemberFromProjectTeam = useCallback(
+    (projectId: string, memberInitials: string) => {
+      if (PROJECT_WORKSPACE[projectId] !== selectedWorkspaceId) return;
+      setProjectTeamOverrides((prev) => {
+        const base = PROJECT_TEAM_BY_ID[projectId] ?? [];
+        const current = prev[projectId] ?? base;
+        const next = current.filter((x) => x !== memberInitials);
+        const nextMap = { ...prev };
+        if (projectTeamsEqual(next, base)) delete nextMap[projectId];
+        else nextMap[projectId] = next;
+        persistProjectTeamOverrides(nextMap);
+        return nextMap;
+      });
+    },
+    [selectedWorkspaceId],
+  );
 
   const updateStories = useCallback((updates: StoryUpdate[]) => {
     setStories((prev) => {
@@ -236,6 +334,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setShowExportDialog,
     exportScope,
     setExportScope,
+    myProjectIdsInWorkspace,
+    getEffectiveProjectTeam,
+    addMemberToProjectTeam,
+    removeMemberFromProjectTeam,
+    isPrototypeUserOnProjectTeam,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

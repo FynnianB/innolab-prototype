@@ -5,6 +5,7 @@ import { StoryGenerator } from "./pages/StoryGenerator";
 import { ComplianceChecker } from "./pages/ComplianceChecker";
 import { RuleManagement } from "./pages/RuleManagement";
 import { Projects } from "./pages/Projects";
+import { LegacyStoriesRouteRedirect } from "./components/LegacyStoriesRouteRedirect";
 import { StoryAnalysis } from "./pages/StoryAnalysis";
 import { CustomerJourney } from "./pages/CustomerJourney";
 import { StoryDetail } from "./pages/StoryDetail";
@@ -22,7 +23,11 @@ export const router = createBrowserRouter(
       { path: "compliance", Component: ComplianceChecker },
       { path: "rules", Component: RuleManagement },
       { path: "projects/:projectId?", Component: Projects },
-      { path: "story-analysis", Component: StoryAnalysis },
+      { path: "stories", Component: StoryAnalysis },
+      {
+        path: "story-analysis",
+        Component: LegacyStoriesRouteRedirect,
+      },
       { path: "customer-journey", Component: CustomerJourney },
       { path: "story/:id", Component: StoryDetail },
       { path: "settings", Component: Dashboard },

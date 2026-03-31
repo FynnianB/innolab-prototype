@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
   FolderOpen,
@@ -20,12 +20,12 @@ import {
   AlertTriangle,
   Sparkles,
   History,
-  Pencil,
+  UserPlus,
+  Users,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { StoryLink } from "../components/StoryLink";
 import { Progress } from "../components/ui/progress";
 import {
   DropdownMenu,
@@ -34,16 +34,15 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "../components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "../components/ui/dialog";
 import { TooltipProvider } from "../components/ui/tooltip";
 import { useAppContext } from "../context/AppContext";
+import {
+  ALL_TEAM_ROSTER_INITIALS,
+  PROJECT_LOGO_BY_ID,
+  PROJECT_TEAM_BY_ID,
+  PROTOTYPE_USER_INITIALS,
+  TEAM_MEMBER_LABELS,
+} from "../data/workspaces";
 
 interface SavedStory {
   id: string;
@@ -98,7 +97,7 @@ const projects: Project[] = [
     stories: 234,
     compliance: 91,
     issues: 12,
-    team: ["SM", "TK", "AH", "JR"],
+    team: [...(PROJECT_TEAM_BY_ID["P-001"] ?? [])],
     versions: 8,
     lastUpdated: "vor 2 Stunden",
     starred: true,
@@ -175,7 +174,7 @@ const projects: Project[] = [
     stories: 187,
     compliance: 96,
     issues: 3,
-    team: ["SM", "BW"],
+    team: [...(PROJECT_TEAM_BY_ID["P-002"] ?? [])],
     versions: 12,
     lastUpdated: "vor 5 Stunden",
     starred: true,
@@ -223,7 +222,7 @@ const projects: Project[] = [
     stories: 342,
     compliance: 99,
     issues: 0,
-    team: ["SM", "ML", "KD"],
+    team: [...(PROJECT_TEAM_BY_ID["P-003"] ?? [])],
     versions: 15,
     lastUpdated: "Gestern",
     starred: false,
@@ -242,7 +241,7 @@ const projects: Project[] = [
     stories: 89,
     compliance: 78,
     issues: 8,
-    team: ["TK", "AH"],
+    team: [...(PROJECT_TEAM_BY_ID["P-004"] ?? [])],
     versions: 4,
     lastUpdated: "vor 1 Tag",
     starred: false,
@@ -259,7 +258,7 @@ const projects: Project[] = [
     stories: 56,
     compliance: 65,
     issues: 15,
-    team: ["JR"],
+    team: [...(PROJECT_TEAM_BY_ID["P-005"] ?? [])],
     versions: 2,
     lastUpdated: "vor 3 Tagen",
     starred: false,
@@ -276,9 +275,131 @@ const projects: Project[] = [
     stories: 145,
     compliance: 85,
     issues: 6,
-    team: ["SM", "BW", "ML"],
+    team: [...(PROJECT_TEAM_BY_ID["P-006"] ?? [])],
     versions: 6,
     lastUpdated: "vor 2 Tagen",
+    starred: false,
+    savedStories: [],
+    versionHistory: [],
+  },
+  {
+    id: "P-007",
+    workspaceId: "ws-capgemini",
+    name: "Deutsche Bahn — Reisenden-Navigator 2.0",
+    description:
+      "Ausbau DB Navigator: Echtzeit-Störungsampel, Touch&Travel-Readiness, WCAG 2.2 für Reiseketten",
+    status: "Aktiv",
+    statusColor: "#dc2626",
+    stories: 412,
+    compliance: 88,
+    issues: 18,
+    team: [...(PROJECT_TEAM_BY_ID["P-007"] ?? [])],
+    versions: 14,
+    lastUpdated: "vor 45 Min.",
+    starred: true,
+    savedStories: [
+      {
+        id: "US-012",
+        title: "Echtzeit-Störungsampel im Navigator",
+        role: "Reisender",
+        goal: "Verbindungs- und Störungsinfos ohne manuelles Aktualisieren zu sehen",
+        conformityScore: 86,
+        effort: "Hoch",
+        priority: "Hoch",
+        issuesCount: 2,
+        resolvedIssues: 1,
+        savedAt: "vor 2 Stunden",
+        version: 4,
+      },
+    ],
+    versionHistory: [
+      {
+        version: "v14.2.0",
+        date: "28.02.2026, 08:00",
+        author: "Marie König",
+        changes: "Touch&Travel Pilot-Strecke dokumentiert, API-SLA ergänzt",
+        storiesAdded: 6,
+        issuesResolved: 4,
+      },
+    ],
+  },
+  {
+    id: "P-008",
+    workspaceId: "ws-capgemini",
+    name: "Allianz — Schaden-FNOL Portal",
+    description:
+      "Self-Service Schadenmeldung (KFZ/Hausrat), Medien-Upload, KI-Vorschaden, Anbindung Kernsysteme",
+    status: "Aktiv",
+    statusColor: "#003781",
+    stories: 268,
+    compliance: 94,
+    issues: 9,
+    team: [...(PROJECT_TEAM_BY_ID["P-008"] ?? [])],
+    versions: 9,
+    lastUpdated: "vor 3 Stunden",
+    starred: true,
+    savedStories: [],
+    versionHistory: [
+      {
+        version: "v3.1.0",
+        date: "25.02.2026, 16:30",
+        author: "Lukas Brenner",
+        changes: "DSGVO-Einwilligungen Medien-Upload, Retention-Policy",
+        storiesAdded: 4,
+        issuesResolved: 2,
+      },
+    ],
+  },
+  {
+    id: "P-009",
+    workspaceId: "ws-capgemini",
+    name: "EnBW — MeinEnBW Transformation",
+    description:
+      "B2C-Portal: dynamische Tarife, Verbrauchsanalyse, E-Mobilität-Ladepass, Marktlage-Wechsel",
+    status: "Review",
+    statusColor: "#f59e0b",
+    stories: 331,
+    compliance: 90,
+    issues: 11,
+    team: [...(PROJECT_TEAM_BY_ID["P-009"] ?? [])],
+    versions: 11,
+    lastUpdated: "Gestern",
+    starred: false,
+    savedStories: [],
+    versionHistory: [],
+  },
+  {
+    id: "P-010",
+    workspaceId: "ws-capgemini",
+    name: "Freistaat Bayern — Bürgerportal Suite",
+    description:
+      "Digitale Anträge, BAYERN-ID, Once-Only, Föderalismus-Schnittstellen zu Gemeinden",
+    status: "Aktiv",
+    statusColor: "#0f766e",
+    stories: 189,
+    compliance: 96,
+    issues: 7,
+    team: [...(PROJECT_TEAM_BY_ID["P-010"] ?? [])],
+    versions: 6,
+    lastUpdated: "vor 6 Stunden",
+    starred: false,
+    savedStories: [],
+    versionHistory: [],
+  },
+  {
+    id: "P-011",
+    workspaceId: "ws-capgemini",
+    name: "REWE digital — Filialbestand Echtzeit",
+    description:
+      "Omnichannel-Bestand: Filiale vs. Lager, Click&Collect, Nachbestellfenster für Filialpersonal",
+    status: "Entwurf",
+    statusColor: "#94a3b8",
+    stories: 94,
+    compliance: 72,
+    issues: 22,
+    team: [...(PROJECT_TEAM_BY_ID["P-011"] ?? [])],
+    versions: 3,
+    lastUpdated: "vor 4 Tagen",
     starred: false,
     savedStories: [],
     versionHistory: [],
@@ -291,23 +412,40 @@ const getScoreColor = (score: number) => {
   return "#ef4444";
 };
 
-const effortConfig: Record<string, { color: string; bg: string }> = {
-  Niedrig: { color: "#10b981", bg: "#d1fae5" },
-  Mittel: { color: "#f59e0b", bg: "#fef3c7" },
-  Hoch: { color: "#ef4444", bg: "#fef2f2" },
-};
-
 export function Projects() {
   const navigate = useNavigate();
   const { projectId } = useParams<{ projectId?: string }>();
-  const { selectedWorkspaceId, selectedWorkspace } = useAppContext();
+  const {
+    selectedWorkspaceId,
+    selectedWorkspace,
+    getEffectiveProjectTeam,
+    isPrototypeUserOnProjectTeam,
+    addMemberToProjectTeam,
+    removeMemberFromProjectTeam,
+  } = useAppContext();
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<"overview" | "stories" | "history">("overview");
-  const [editingStory, setEditingStory] = useState<SavedStory | null>(null);
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "history" | "team"
+  >("overview");
 
   const selectedProject = projectId
     ? (projects.find((p) => p.id === projectId) || null)
     : null;
+
+  const detailEffectiveTeam = useMemo(() => {
+    if (!selectedProject) return [];
+    return getEffectiveProjectTeam(selectedProject.id);
+  }, [selectedProject, getEffectiveProjectTeam]);
+
+  const rosterAvailableToAdd = useMemo(
+    () =>
+      ALL_TEAM_ROSTER_INITIALS.filter((i) => !detailEffectiveTeam.includes(i)),
+    [detailEffectiveTeam],
+  );
+
+  useEffect(() => {
+    setActiveTab("overview");
+  }, [projectId]);
 
   useEffect(() => {
     if (
@@ -343,8 +481,19 @@ export function Projects() {
                 <ArrowLeft className="w-4 h-4" />
                 Projekte
               </Button>
-              <div>
-                <div className="flex items-center gap-3">
+              <div className="flex items-start gap-4 min-w-0">
+                {PROJECT_LOGO_BY_ID[selectedProject.id] ? (
+                  <div className="w-14 h-14 rounded-xl border border-border bg-white flex items-center justify-center shrink-0 shadow-sm">
+                    <img
+                      src={PROJECT_LOGO_BY_ID[selectedProject.id]}
+                      alt=""
+                      className="max-w-[44px] max-h-[44px] object-contain"
+                      loading="lazy"
+                    />
+                  </div>
+                ) : null}
+                <div className="min-w-0">
+                <div className="flex items-center gap-3 flex-wrap">
                   <h1 className="text-[#1e1e2e]">{selectedProject.name}</h1>
                   <Badge
                     variant="secondary"
@@ -359,9 +508,10 @@ export function Projects() {
                   </Badge>
                 </div>
                 <p className="text-[14px] text-muted-foreground mt-1">{selectedProject.description}</p>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
               <Button variant="outline" size="sm" className="text-[13px] gap-2" onClick={() => navigate("/story-generator")}>
                 <Sparkles className="w-4 h-4" />
                 Stories generieren
@@ -375,7 +525,18 @@ export function Projects() {
 
           {/* Stats Bar */}
           <div className="grid grid-cols-4 gap-4 mb-6">
-            <Card className="border border-border bg-white">
+            <Card
+              role="button"
+              tabIndex={0}
+              className="border border-border bg-white cursor-pointer hover:border-[#4f46e5]/30 hover:shadow-sm transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5]/25"
+              onClick={() =>
+                navigate(`/stories?projectId=${selectedProject.id}`)
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ")
+                  navigate(`/stories?projectId=${selectedProject.id}`);
+              }}
+            >
               <CardContent className="p-4 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[#f1f0ff] flex items-center justify-center">
                   <FileText className="w-5 h-5 text-[#4f46e5]" />
@@ -383,6 +544,7 @@ export function Projects() {
                 <div>
                   <p className="text-[22px] text-[#1e1e2e]" style={{ fontWeight: 600 }}>{selectedProject.stories}</p>
                   <p className="text-[12px] text-muted-foreground">User Stories</p>
+                  <p className="text-[11px] text-[#4f46e5] mt-0.5" style={{ fontWeight: 500 }}>Zu allen Stories</p>
                 </div>
               </CardContent>
             </Card>
@@ -427,8 +589,11 @@ export function Projects() {
           <div className="flex items-center gap-1 border-b border-border mb-6">
             {[
               { key: "overview" as const, label: "Übersicht" },
-              { key: "stories" as const, label: `Gespeicherte Stories (${selectedProject.savedStories.length})` },
               { key: "history" as const, label: "Versionshistorie" },
+              {
+                key: "team" as const,
+                label: `Team (${detailEffectiveTeam.length})`,
+              },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -461,14 +626,32 @@ export function Projects() {
                     <span className="text-muted-foreground">Letzte Änderung</span>
                     <span className="text-[#1e1e2e]" style={{ fontWeight: 500 }}>{selectedProject.lastUpdated}</span>
                   </div>
-                  <div className="flex justify-between text-[13px]">
-                    <span className="text-muted-foreground">Team</span>
-                    <div className="flex items-center -space-x-2">
-                      {selectedProject.team.map((m, i) => (
-                        <div key={i} className="w-6 h-6 rounded-full bg-[#4f46e5] flex items-center justify-center border-2 border-white">
-                          <span className="text-[9px] text-white" style={{ fontWeight: 600 }}>{m}</span>
-                        </div>
-                      ))}
+                  <div className="flex justify-between items-center text-[13px] gap-3">
+                    <span className="text-muted-foreground shrink-0">Team</span>
+                    <div className="flex items-center gap-2 min-w-0 justify-end">
+                      <div className="flex items-center -space-x-2">
+                        {getEffectiveProjectTeam(selectedProject.id).map((m, i) => (
+                          <div
+                            key={`${m}-${i}`}
+                            className={`w-6 h-6 rounded-full flex items-center justify-center border-2 border-white ${
+                              m === PROTOTYPE_USER_INITIALS
+                                ? "bg-[#059669]"
+                                : "bg-[#4f46e5]"
+                            }`}
+                          >
+                            <span className="text-[9px] text-white" style={{ fontWeight: 600 }}>{m}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-[12px] h-8 px-2 text-[#4f46e5] shrink-0"
+                        onClick={() => setActiveTab("team")}
+                      >
+                        Verwalten
+                      </Button>
                     </div>
                   </div>
                   <div className="flex justify-between text-[13px]">
@@ -501,169 +684,6 @@ export function Projects() {
                   ))}
                 </CardContent>
               </Card>
-            </div>
-          )}
-
-          {/* Tab Content: Saved Stories */}
-          {activeTab === "stories" && (
-            <div>
-              {selectedProject.savedStories.length === 0 ? (
-                <div className="text-center py-16">
-                  <div className="w-16 h-16 rounded-2xl bg-[#f1f5f9] flex items-center justify-center mx-auto mb-4">
-                    <FileText className="w-7 h-7 text-[#94a3b8]" />
-                  </div>
-                  <p className="text-[16px] text-[#1e1e2e] mb-1" style={{ fontWeight: 500 }}>Keine gespeicherten Stories</p>
-                  <p className="text-[13px] text-muted-foreground mb-4">
-                    Generieren Sie User Stories und speichern Sie sie in diesem Projekt.
-                  </p>
-                  <Button
-                    className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2"
-                    onClick={() => navigate("/story-generator")}
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Stories generieren
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {selectedProject.savedStories.map((story) => (
-                    <Card key={story.id} className="border border-border bg-white hover:shadow-sm transition-all">
-                      <CardContent className="p-5">
-                        <div className="flex items-start gap-4">
-                          {/* Score */}
-                          <div className="flex-shrink-0 w-[56px]">
-                            <div
-                              className="w-[56px] h-[56px] rounded-xl flex items-center justify-center relative"
-                              style={{ backgroundColor: `${getScoreColor(story.conformityScore)}10` }}
-                            >
-                              <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 56 56">
-                                <circle cx="28" cy="28" r="22" fill="none" stroke="#e2e8f0" strokeWidth="3" />
-                                <circle
-                                  cx="28"
-                                  cy="28"
-                                  r="22"
-                                  fill="none"
-                                  stroke={getScoreColor(story.conformityScore)}
-                                  strokeWidth="3"
-                                  strokeDasharray={`${(story.conformityScore / 100) * 138.2} 138.2`}
-                                  strokeLinecap="round"
-                                />
-                              </svg>
-                              <span
-                                className="text-[16px] relative z-10"
-                                style={{ fontWeight: 700, color: getScoreColor(story.conformityScore) }}
-                              >
-                                {story.conformityScore}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                              <StoryLink id={story.id} className="text-[11px]">
-                                <Badge variant="outline" className="text-[11px] text-[#4f46e5] border-[#4f46e5]/30 px-1.5 hover:bg-[#f1f0ff] cursor-pointer">
-                                  {story.id}
-                                </Badge>
-                              </StoryLink>
-                              <Badge
-                                variant="secondary"
-                                className="text-[11px] px-1.5"
-                                style={{
-                                  backgroundColor: story.priority === "Hoch" ? "#fef2f2" : story.priority === "Mittel" ? "#fef3c7" : "#f1f5f9",
-                                  color: story.priority === "Hoch" ? "#ef4444" : story.priority === "Mittel" ? "#f59e0b" : "#64748b",
-                                }}
-                              >
-                                Prio: {story.priority}
-                              </Badge>
-                              <Badge
-                                variant="secondary"
-                                className="text-[11px] px-1.5"
-                                style={{
-                                  backgroundColor: effortConfig[story.effort].bg,
-                                  color: effortConfig[story.effort].color,
-                                }}
-                              >
-                                Aufwand: {story.effort}
-                              </Badge>
-                              <Badge variant="secondary" className="text-[11px] px-1.5 bg-[#f1f5f9] text-[#64748b]">
-                                v{story.version}
-                              </Badge>
-                              {story.resolvedIssues < story.issuesCount ? (
-                                <Badge variant="secondary" className="text-[11px] px-1.5 bg-[#fef2f2] text-[#ef4444]">
-                                  <AlertTriangle className="w-3 h-3 mr-1" />
-                                  {story.issuesCount - story.resolvedIssues} offen
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary" className="text-[11px] px-1.5 bg-[#d1fae5] text-[#10b981]">
-                                  <CheckCircle2 className="w-3 h-3 mr-1" />
-                                  Konform
-                                </Badge>
-                              )}
-                            </div>
-
-                            <p className="text-[15px] text-[#1e1e2e] mb-1" style={{ fontWeight: 500 }}>
-                              {story.title}
-                            </p>
-                            <p className="text-[13px] text-[#475569]">
-                              Als <span style={{ fontWeight: 500 }}>{story.role}</span> möchte ich{" "}
-                              <span style={{ fontWeight: 500 }}>{story.goal}</span>.
-                            </p>
-
-                            <div className="flex items-center gap-4 mt-3 text-[12px] text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                Gespeichert: {story.savedAt}
-                              </span>
-                              {story.lastEdited && (
-                                <span className="flex items-center gap-1">
-                                  <Pencil className="w-3 h-3" />
-                                  Bearbeitet: {story.lastEdited}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Actions */}
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-[12px] h-8 gap-1"
-                              onClick={() => setEditingStory(story)}
-                            >
-                              <Edit3 className="w-3 h-3" />
-                              Bearbeiten
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button className="p-1.5 rounded hover:bg-[#f1f5f9] transition-colors">
-                                  <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem className="text-[13px] gap-2">
-                                  <History className="w-3.5 h-3.5" /> Versionshistorie
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-[13px] gap-2">
-                                  <Copy className="w-3.5 h-3.5" /> Duplizieren
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-[13px] gap-2">
-                                  <Download className="w-3.5 h-3.5" /> Exportieren
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-[13px] gap-2 text-[#ef4444]">
-                                  <Trash2 className="w-3.5 h-3.5" /> Entfernen
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 
@@ -749,73 +769,145 @@ export function Projects() {
             </div>
           )}
 
-          {/* Edit Story Dialog */}
-          <Dialog open={!!editingStory} onOpenChange={() => setEditingStory(null)}>
-            <DialogContent className="sm:max-w-[560px]">
-              <DialogHeader>
-                <DialogTitle>Story bearbeiten</DialogTitle>
-                <DialogDescription>
-                  Bearbeiten Sie die User Story {editingStory?.id}. Änderungen werden als neue Version gespeichert.
-                </DialogDescription>
-              </DialogHeader>
-              {editingStory && (
-                <div className="space-y-4 my-4">
-                  <div>
-                    <label className="text-[13px] text-[#475569] mb-1.5 block">Titel</label>
-                    <input
-                      defaultValue={editingStory.title}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-white text-[13px] outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10 transition-all"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[13px] text-[#475569] mb-1.5 block">Rolle</label>
-                      <input
-                        defaultValue={editingStory.role}
-                        className="w-full px-3 py-2 rounded-lg border border-border bg-white text-[13px] outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10 transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[13px] text-[#475569] mb-1.5 block">Priorität</label>
-                      <select
-                        defaultValue={editingStory.priority}
-                        className="w-full px-3 py-2 rounded-lg border border-border bg-white text-[13px] outline-none focus:border-[#4f46e5]"
-                      >
-                        <option>Hoch</option>
-                        <option>Mittel</option>
-                        <option>Niedrig</option>
-                      </select>
-                    </div>
+          {/* Tab Content: Team */}
+          {activeTab === "team" && (
+            <Card className="border border-border bg-white max-w-[720px]">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-lg bg-[#f1f0ff] flex items-center justify-center">
+                    <Users className="w-4 h-4 text-[#4f46e5]" />
                   </div>
                   <div>
-                    <label className="text-[13px] text-[#475569] mb-1.5 block">Ziel</label>
-                    <textarea
-                      defaultValue={editingStory.goal}
-                      rows={3}
-                      className="w-full px-3 py-2 rounded-lg border border-border bg-white text-[13px] outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10 transition-all resize-none"
-                    />
-                  </div>
-                  <div className="px-3 py-2 rounded-lg bg-[#f1f0ff] border border-[#4f46e5]/20">
-                    <p className="text-[12px] text-[#4f46e5]" style={{ fontWeight: 500 }}>
-                      Aktuelle Version: v{editingStory.version} → Wird gespeichert als v{editingStory.version + 1}
+                    <CardTitle className="text-[15px]" style={{ fontWeight: 600 }}>
+                      Projektteam
+                    </CardTitle>
+                    <p className="text-[12px] text-muted-foreground font-normal mt-0.5 leading-snug">
+                      Wer hier gelistet ist, zählt zum Projekt. Mit Ihrer Kennung (
+                      {PROTOTYPE_USER_INITIALS}) erscheint das Projekt unter „Ihre Projekte“ auf
+                      dem Dashboard.
                     </p>
                   </div>
                 </div>
-              )}
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setEditingStory(null)}>
-                  Abbrechen
-                </Button>
-                <Button
-                  className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2"
-                  onClick={() => setEditingStory(null)}
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Speichern (v{editingStory ? editingStory.version + 1 : 1})
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </CardHeader>
+              <CardContent className="px-5 pb-6 space-y-6">
+                <ul className="divide-y divide-border rounded-lg border border-border overflow-hidden">
+                  {detailEffectiveTeam.length === 0 ? (
+                    <li className="px-4 py-8 text-center text-[13px] text-muted-foreground">
+                      Noch keine Teammitglieder. Fügen Sie sich oder Kolleg:innen unten hinzu.
+                    </li>
+                  ) : (
+                    detailEffectiveTeam.map((initials) => (
+                      <li
+                        key={initials}
+                        className="flex items-center justify-between gap-3 px-4 py-3 bg-white"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div
+                            className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                              initials === PROTOTYPE_USER_INITIALS
+                                ? "bg-[#059669]"
+                                : "bg-[#4f46e5]"
+                            }`}
+                          >
+                            <span
+                              className="text-[11px] text-white"
+                              style={{ fontWeight: 600 }}
+                            >
+                              {initials}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p
+                              className="text-[13px] text-[#1e1e2e] truncate"
+                              style={{ fontWeight: 500 }}
+                            >
+                              {TEAM_MEMBER_LABELS[initials] ?? initials}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {initials === PROTOTYPE_USER_INITIALS
+                                ? "Prototyp-Nutzerin"
+                                : "Teammitglied"}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="text-[12px] shrink-0 text-[#b45309] border-[#fde68a] hover:bg-[#fffbeb]"
+                          onClick={() =>
+                            removeMemberFromProjectTeam(
+                              selectedProject.id,
+                              initials,
+                            )
+                          }
+                        >
+                          Entfernen
+                        </Button>
+                      </li>
+                    ))
+                  )}
+                </ul>
+
+                {!isPrototypeUserOnProjectTeam(selectedProject.id) ? (
+                  <div className="rounded-lg border border-dashed border-[#c7d2fe] bg-[#f8fafc] p-4">
+                    <p className="text-[13px] text-[#1e1e2e] mb-2" style={{ fontWeight: 500 }}>
+                      Sie sind noch nicht im Team
+                    </p>
+                    <p className="text-[12px] text-muted-foreground mb-3">
+                      Als Sarah Müller ({PROTOTYPE_USER_INITIALS}) beitreten, um dieses Projekt auf
+                      dem Dashboard zu sehen.
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="bg-[#059669] hover:bg-[#047857] text-white gap-2 text-[13px]"
+                      onClick={() =>
+                        addMemberToProjectTeam(
+                          selectedProject.id,
+                          PROTOTYPE_USER_INITIALS,
+                        )
+                      }
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Mich zum Team hinzufügen
+                    </Button>
+                  </div>
+                ) : null}
+
+                {rosterAvailableToAdd.length > 0 ? (
+                  <div>
+                    <p className="text-[13px] text-[#1e1e2e] mb-2" style={{ fontWeight: 600 }}>
+                      Kolleg:innen hinzufügen
+                    </p>
+                    <p className="text-[12px] text-muted-foreground mb-3">
+                      Wählen Sie Personen aus dem Demo-Roster, die dem Projekt zugeordnet werden.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {rosterAvailableToAdd.map((init) => (
+                        <Button
+                          key={init}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="text-[12px] h-9 gap-1.5"
+                          onClick={() =>
+                            addMemberToProjectTeam(selectedProject.id, init)
+                          }
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                          <span className="max-w-[200px] truncate">
+                            {TEAM_MEMBER_LABELS[init] ?? init}
+                          </span>
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          )}
+
         </div>
       </TooltipProvider>
     );
@@ -888,8 +980,17 @@ export function Projects() {
                 {/* Header Row */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 rounded-xl bg-[#f1f5f9] flex items-center justify-center flex-shrink-0 group-hover:bg-[#f1f0ff] transition-colors">
-                      <FolderOpen className="w-5 h-5 text-[#64748b] group-hover:text-[#4f46e5] transition-colors" />
+                    <div className="w-10 h-10 rounded-xl bg-[#f1f5f9] flex items-center justify-center flex-shrink-0 group-hover:bg-[#f1f0ff] transition-colors border border-transparent group-hover:border-[#e0e7ff] overflow-hidden">
+                      {PROJECT_LOGO_BY_ID[project.id] ? (
+                        <img
+                          src={PROJECT_LOGO_BY_ID[project.id]}
+                          alt=""
+                          className="w-7 h-7 object-contain"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <FolderOpen className="w-5 h-5 text-[#64748b] group-hover:text-[#4f46e5] transition-colors" />
+                      )}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
@@ -965,12 +1066,21 @@ export function Projects() {
                   </div>
                 </div>
 
-                {/* Saved Stories indicator */}
+                {/* Link zu „Alle Stories“ mit Projektfilter */}
                 {project.savedStories.length > 0 && (
-                  <div className="flex items-center gap-1.5 mb-3 text-[12px] text-[#4f46e5]">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span style={{ fontWeight: 500 }}>{project.savedStories.length} gespeicherte Stories</span>
-                  </div>
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 mb-3 text-[12px] text-[#4f46e5] hover:underline text-left"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/stories?projectId=${project.id}`);
+                    }}
+                  >
+                    <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                    <span style={{ fontWeight: 500 }}>
+                      Stories anzeigen ({project.savedStories.length})
+                    </span>
+                  </button>
                 )}
 
                 {/* Compliance Bar */}
@@ -991,10 +1101,14 @@ export function Projects() {
                 {/* Footer */}
                 <div className="flex items-center justify-between pt-3 border-t border-border">
                   <div className="flex items-center -space-x-2">
-                    {project.team.map((member, i) => (
+                    {getEffectiveProjectTeam(project.id).map((member, i) => (
                       <div
-                        key={i}
-                        className="w-6 h-6 rounded-full bg-[#4f46e5] flex items-center justify-center border-2 border-white"
+                        key={`${member}-${i}`}
+                        className={`w-6 h-6 rounded-full flex items-center justify-center border-2 border-white ${
+                          member === PROTOTYPE_USER_INITIALS
+                            ? "bg-[#059669]"
+                            : "bg-[#4f46e5]"
+                        }`}
                       >
                         <span className="text-[9px] text-white" style={{ fontWeight: 600 }}>{member}</span>
                       </div>

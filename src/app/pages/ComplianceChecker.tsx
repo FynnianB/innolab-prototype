@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import {
   ShieldCheck,
   AlertTriangle,
@@ -508,6 +509,7 @@ interface FixLogEntry {
 }
 
 export function ComplianceChecker() {
+  const navigate = useNavigate();
   const { setShowExportDialog, setExportScope } = useAppContext();
   const [phase, setPhase] = useState<CompliancePhase>("project-select");
   const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
@@ -602,11 +604,22 @@ export function ComplianceChecker() {
     return (
       <TooltipProvider>
         <div className="p-8 max-w-[900px] mx-auto">
-          <div className="mb-8">
-            <h1 className="text-[#1e1e2e]">Compliance Checker</h1>
-            <p className="text-[14px] text-muted-foreground mt-1">
-              Wählen Sie ein Projekt, um die Anforderungen gegen Compliance-Regeln zu prüfen.
-            </p>
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-[#1e1e2e]">Compliance Checker</h1>
+              <p className="text-[14px] text-muted-foreground mt-1">
+                Wählen Sie ein Projekt, um die Anforderungen gegen Compliance-Regeln zu prüfen.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-2 text-[13px] shrink-0 self-start"
+              onClick={() => navigate("/rules")}
+            >
+              <BookOpen className="w-4 h-4" />
+              Regeln verwalten
+            </Button>
           </div>
 
           <div className="space-y-4">
@@ -830,6 +843,14 @@ export function ComplianceChecker() {
                   Änderungslog ({fixLog.length})
                 </Button>
               )}
+              <Button
+                variant="outline"
+                className="text-[13px] gap-2"
+                onClick={() => navigate("/rules")}
+              >
+                <BookOpen className="w-4 h-4" />
+                Regeln
+              </Button>
               <Button
                 variant="outline"
                 className="text-[13px] gap-2"

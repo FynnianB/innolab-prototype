@@ -1,4 +1,5 @@
 import {
+  AlignLeft,
   AlertCircle,
   AlertTriangle,
   ArrowDown,
@@ -58,6 +59,7 @@ import {
   DialogTitle,
 } from "../components/ui/dialog";
 import { Progress } from "../components/ui/progress";
+import { Textarea } from "../components/ui/textarea";
 import { TooltipProvider } from "../components/ui/tooltip";
 import { WorkflowStepper } from "../components/WorkflowStepper";
 import { useAppContext } from "../context/AppContext";
@@ -597,6 +599,7 @@ export function StoryGenerator() {
   const [phase, setPhase] = useState<Phase>("upload");
   const [dragOver, setDragOver] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+  const [freeTextSource, setFreeTextSource] = useState("");
   const [analyzeStep, setAnalyzeStep] = useState(0);
   const [analyzeProgress, setAnalyzeProgress] = useState(0);
   const [docIssues, setDocIssues] = useState<DocIssue[]>(initialDocIssues);
@@ -632,6 +635,9 @@ export function StoryGenerator() {
     createEpic: true,
     syncConfluence: true,
   });
+
+  const storyGenSourceCount =
+    uploadedFiles.length + (freeTextSource.trim() ? 1 : 0);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -873,7 +879,7 @@ export function StoryGenerator() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-4">
           <Card className="border border-border bg-white hover:shadow-sm transition-all cursor-pointer group">
             <CardContent className="p-5 flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-[#2684ff]/10 flex items-center justify-center flex-shrink-0">
@@ -952,11 +958,50 @@ export function StoryGenerator() {
           </Card>
         </div>
 
-        {uploadedFiles.length > 0 && (
+        <Card className="border border-border bg-white mb-6 shadow-sm">
+          <CardHeader className="pb-3 pt-5 px-5 border-b border-border/80 bg-[#fafbfc]">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+                <AlignLeft className="w-5 h-5 text-slate-600" />
+              </div>
+              <div className="min-w-0">
+                <CardTitle
+                  className="text-[15px] text-[#1e1e2e]"
+                  style={{ fontWeight: 600 }}
+                >
+                  Oder: Anforderungen als Freitext
+                </CardTitle>
+                <p className="text-[13px] text-muted-foreground font-normal mt-1 leading-snug">
+                  Statt Dateien können Sie Roh-Notizen, Workshop-Stichpunkte oder
+                  Zitate hier einfügen – wird wie eine weitere Quelle behandelt.
+                </p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-5 pt-4">
+            <Textarea
+              placeholder="Feature-Ideen, Akzeptanzkriterien, Zitate aus Meetings …"
+              value={freeTextSource}
+              onChange={(e) => setFreeTextSource(e.target.value)}
+              rows={5}
+              className={[
+                "min-h-[130px] max-h-[220px] resize-none overflow-y-auto",
+                "rounded-lg border border-slate-200/90 bg-white",
+                "px-3.5 py-3 text-[13px] leading-[1.6] text-[#334155]",
+                "shadow-none transition-[border-color,box-shadow]",
+                "placeholder:text-slate-400 placeholder:font-normal",
+                "focus-visible:outline-none focus-visible:border-[#a5b4fc]",
+                "focus-visible:ring-2 focus-visible:ring-[#4f46e5]/10",
+              ].join(" ")}
+            />
+          </CardContent>
+        </Card>
+
+        {storyGenSourceCount > 0 && (
           <Card className="border border-border bg-white mb-6">
             <CardHeader className="pb-3">
               <CardTitle className="text-[14px]" style={{ fontWeight: 600 }}>
-                Hochgeladene Dateien ({uploadedFiles.length})
+                Quellen ({storyGenSourceCount})
               </CardTitle>
             </CardHeader>
             <CardContent className="px-5 pb-5 space-y-2">
@@ -990,13 +1035,30 @@ export function StoryGenerator() {
                   </div>
                 );
               })}
+              {freeTextSource.trim() ? (
+                <div className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-[#f8fafc] border border-border">
+                  <AlignLeft className="w-4 h-4 text-[#0d9488] flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <span
+                      className="text-[13px] block"
+                      style={{ fontWeight: 500 }}
+                    >
+                      Freitext
+                    </span>
+                    <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">
+                      {freeTextSource.trim()}
+                    </p>
+                  </div>
+                  <CheckCircle2 className="w-4 h-4 text-[#10b981] flex-shrink-0" />
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         )}
 
         <Button
           className="w-full h-12 bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 shadow-sm"
-          disabled={uploadedFiles.length === 0}
+          disabled={storyGenSourceCount === 0}
           onClick={startDocAnalysis}
         >
           <FileSearch className="w-5 h-5" />
@@ -1089,8 +1151,9 @@ export function StoryGenerator() {
                 <div className="min-w-0">
                   <h2 className="text-[#1e1e2e]">Dokumentenprüfung</h2>
                   <p className="text-[13px] text-muted-foreground mt-0.5">
-                    {docIssues.length} Probleme in 3 Dokumenten gefunden - Bitte
-                    prüfen und bereinigen
+                    {docIssues.length} Probleme in {storyGenSourceCount} Quelle
+                    {storyGenSourceCount === 1 ? "" : "n"} gefunden – bitte prüfen
+                    und bereinigen
                   </p>
                 </div>
               </div>
@@ -1168,6 +1231,29 @@ export function StoryGenerator() {
                       </Badge>
                     </div>
                   ))}
+                  {freeTextSource.trim() ? (
+                    <div className="flex items-start gap-3 px-3 py-3 rounded-lg border border-border mb-3 border-[#0d9488]/25 bg-[#0d9488]/5">
+                      <AlignLeft className="w-5 h-5 text-[#0d9488] flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className="text-[13px] text-[#1e1e2e]"
+                          style={{ fontWeight: 500 }}
+                        >
+                          Freitext
+                        </p>
+                        <p className="text-[11px] text-muted-foreground line-clamp-3 whitespace-pre-wrap">
+                          {freeTextSource.trim()}
+                        </p>
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        className="text-[11px] shrink-0"
+                        style={{ backgroundColor: "#d1fae5", color: "#10b981" }}
+                      >
+                        Analysiert
+                      </Badge>
+                    </div>
+                  ) : null}
 
                   <div className="mt-6 pt-5 border-t border-border">
                     <p

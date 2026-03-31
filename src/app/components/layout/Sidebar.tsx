@@ -4,14 +4,13 @@ import {
   LayoutDashboard,
   Sparkles,
   ShieldCheck,
-  BookOpen,
   FolderOpen,
   Settings,
   HelpCircle,
   ChevronLeft,
   ChevronRight,
   BrainCircuit,
-  GitCompare,
+  ClipboardList,
   TrendingUp,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
@@ -28,8 +27,7 @@ const baseNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Sparkles, label: "Story Generator", path: "/story-generator" },
   { icon: ShieldCheck, label: "Compliance Checker", path: "/compliance" },
-  { icon: GitCompare, label: "Story-Analyse", path: "/story-analysis" },
-  { icon: BookOpen, label: "Regel-Management", path: "/rules" },
+  { icon: ClipboardList, label: "Alle Stories", path: "/stories" },
   { icon: FolderOpen, label: "Projekte", path: "/projects" },
 ];
 

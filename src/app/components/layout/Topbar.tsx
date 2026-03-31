@@ -17,7 +17,9 @@ import { useAppContext } from "../../context/AppContext";
 import { useMobileNav } from "../../context/MobileNavContext";
 import {
   listProjectsForSearchInWorkspace,
+  PROJECT_LOGO_BY_ID,
 } from "../../data/workspaces";
+import type { Workspace } from "../../data/workspaces";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -56,6 +58,43 @@ function normalizeProjectIdCandidates(raw: string): string[] {
     out.add(`P-${n}`);
   }
   return [...out];
+}
+
+function WorkspaceGlyph({
+  workspace,
+  sizeClass = "w-6 h-6",
+  textClass = "text-[11px]",
+}: {
+  workspace: Pick<Workspace, "name" | "logoSrc">;
+  sizeClass?: string;
+  textClass?: string;
+}) {
+  if (workspace.logoSrc) {
+    return (
+      <span
+        className={`inline-flex items-center justify-center rounded-md border border-border bg-white overflow-hidden shrink-0 ${sizeClass}`}
+      >
+        <img
+          src={workspace.logoSrc}
+          alt=""
+          className="max-w-[85%] max-h-[85%] w-auto h-auto object-contain"
+          loading="lazy"
+        />
+      </span>
+    );
+  }
+  return (
+    <div
+      className={`rounded-md bg-[#4f46e5]/10 flex items-center justify-center shrink-0 ${sizeClass}`}
+    >
+      <span
+        className={`text-[#4f46e5] ${textClass}`}
+        style={{ fontWeight: 600 }}
+      >
+        {workspace.name.charAt(0)}
+      </span>
+    </div>
+  );
 }
 
 export function Topbar() {
@@ -551,21 +590,33 @@ export function Topbar() {
                       type="button"
                       role="option"
                       aria-selected={active}
-                      className={`w-full text-left px-3 py-2 flex flex-col gap-0.5 ${
+                      className={`w-full text-left px-3 py-2 flex items-start gap-2.5 ${
                         active ? "bg-[#f1f5f9]" : "hover:bg-[#f8fafc]"
                       }`}
                       onMouseEnter={() => setSearchHighlightIndex(globalIdx)}
                       onClick={() => openProject(p.id)}
                     >
-                      <span
-                        className="text-[12px] text-[#0d9488]"
-                        style={{ fontWeight: 600 }}
-                      >
-                        {p.id}
-                      </span>
-                      <span className="text-[11px] text-[#1e1e2e] truncate">
-                        {p.name}
-                      </span>
+                      {PROJECT_LOGO_BY_ID[p.id] ? (
+                        <span className="w-9 h-9 shrink-0 rounded-md border border-border bg-white flex items-center justify-center">
+                          <img
+                            src={PROJECT_LOGO_BY_ID[p.id]}
+                            alt=""
+                            className="max-w-[26px] max-h-[26px] object-contain"
+                            loading="lazy"
+                          />
+                        </span>
+                      ) : null}
+                      <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+                        <span
+                          className="text-[12px] text-[#0d9488]"
+                          style={{ fontWeight: 600 }}
+                        >
+                          {p.id}
+                        </span>
+                        <span className="text-[11px] text-[#1e1e2e] truncate">
+                          {p.name}
+                        </span>
+                      </div>
                     </button>
                     );
                   })}
@@ -600,14 +651,7 @@ export function Topbar() {
               title={selectedWorkspace.name}
               className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg hover:bg-[#f1f5f9] transition-colors text-[14px] min-w-0 max-w-full"
             >
-              <div className="w-6 h-6 rounded bg-[#4f46e5]/10 flex items-center justify-center flex-shrink-0">
-                <span
-                  className="text-[11px] text-[#4f46e5]"
-                  style={{ fontWeight: 600 }}
-                >
-                  {selectedWorkspace.name.charAt(0)}
-                </span>
-              </div>
+              <WorkspaceGlyph workspace={selectedWorkspace} />
               <span
                 className="hidden sm:inline truncate min-w-0 max-w-[100px] md:max-w-[160px] xl:max-w-[200px]"
                 style={{ fontWeight: 500 }}
@@ -624,14 +668,7 @@ export function Topbar() {
                 onClick={() => setSelectedWorkspaceId(ws.id)}
                 className={ws.id === selectedWorkspaceId ? "bg-[#f1f0ff]" : ""}
               >
-                <div className="w-6 h-6 rounded bg-[#4f46e5]/10 flex items-center justify-center mr-2">
-                  <span
-                    className="text-[11px] text-[#4f46e5]"
-                    style={{ fontWeight: 600 }}
-                  >
-                    {ws.name.charAt(0)}
-                  </span>
-                </div>
+                <WorkspaceGlyph workspace={ws} sizeClass="w-6 h-6 mr-2" />
                 {ws.name}
               </DropdownMenuItem>
             ))}

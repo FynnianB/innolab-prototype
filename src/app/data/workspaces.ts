@@ -7,14 +7,32 @@ import type { Story } from "./stories";
 export interface Workspace {
   id: string;
   name: string;
+  /** Relativer Pfad unter `public/`, z. B. `/logos/capgemini.svg` */
+  logoSrc?: string;
 }
 
 export const WORKSPACE_STORAGE_KEY = "reqwise.selectedWorkspaceId";
 
-export const DEFAULT_WORKSPACE_ID = "ws-automobil";
+export const DEFAULT_WORKSPACE_ID = "ws-capgemini";
+
+/**
+ * Kunden-/Marken-Logos (Wikimedia Commons / Marken-SVGs lokal unter `public/logos/`).
+ */
+export const PROJECT_LOGO_BY_ID: Record<string, string> = {
+  "P-007": "/logos/db.svg",
+  "P-008": "/logos/allianz.svg",
+  "P-009": "/logos/enbw.svg",
+  "P-010": "/logos/bayern.svg",
+  "P-011": "/logos/rewe.svg",
+};
 
 /** Workspaces wie in der Topbar (Anzeigenamen). */
 export const WORKSPACES: Workspace[] = [
+  {
+    id: "ws-capgemini",
+    name: "Capgemini",
+    logoSrc: "/logos/capgemini.svg",
+  },
   { id: "ws-automobil", name: "Automobil-Projekt Alpha" },
   { id: "ws-banking", name: "Banking Platform v3" },
   { id: "ws-healthcare", name: "Healthcare Portal" },
@@ -32,7 +50,54 @@ export const PROJECT_WORKSPACE: Record<string, string> = {
   "P-004": "ws-digital",
   "P-005": "ws-digital",
   "P-006": "ws-digital",
+  "P-007": "ws-capgemini",
+  "P-008": "ws-capgemini",
+  "P-009": "ws-capgemini",
+  "P-010": "ws-capgemini",
+  "P-011": "ws-capgemini",
 };
+
+/**
+ * Standard-Projektteams (Initialen). Prototyp-Nutzerin Sarah entspricht **SM**
+ * (vgl. Dashboard / Versionshistorie „Dr. Sarah Müller“).
+ * Dashboard „Letzte Projekte“ = nur Projekte, deren Team SM enthält.
+ */
+export const PROTOTYPE_USER_INITIALS = "SM";
+
+/** Default-Teams pro Projekt (Quelle für Anzeige + Vergleich bei localStorage-Overrides). */
+export const PROJECT_TEAM_BY_ID: Record<string, string[]> = {
+  "P-001": ["SM", "TK", "AH", "JR"],
+  "P-002": ["SM", "BW"],
+  "P-003": ["SM", "ML", "KD"],
+  "P-004": ["TK", "AH"],
+  "P-005": ["JR"],
+  "P-006": ["SM", "BW", "ML"],
+  "P-007": ["SM", "MK", "SR", "LB", "TH"],
+  "P-008": ["SM", "LB", "MK", "AH"],
+  "P-009": ["SM", "SR", "TH", "BW"],
+  "P-010": ["SM", "MK", "JR"],
+  "P-011": ["TH", "LB"],
+};
+
+/** Anzeigenamen für den Team-Tab (Initialen → Person, Prototyp). */
+export const TEAM_MEMBER_LABELS: Record<string, string> = {
+  SM: "Sarah Müller (Sie)",
+  TK: "Thomas König",
+  AH: "Anna Hoffmann",
+  JR: "Jonas Richter",
+  BW: "Benjamin Weber",
+  ML: "Maike Lorenz",
+  KD: "Kim Drescher",
+  MK: "Marie König",
+  SR: "Stefan Richter",
+  LB: "Lukas Brenner",
+  TH: "Tim Hoffmann",
+};
+
+/** Alle zuweisbaren Kolleg:innen (für „Hinzufügen“ im Team-Tab). */
+export const ALL_TEAM_ROSTER_INITIALS: string[] = Object.keys(
+  TEAM_MEMBER_LABELS,
+).sort();
 
 /**
  * Story-Feld `project` (Name) → Workspace.
@@ -42,6 +107,11 @@ export const STORY_PROJECT_TO_WORKSPACE: Record<string, string> = {
   "Automobil-Plattform Redesign": "ws-automobil",
   "Banking App v3.2 Migration": "ws-banking",
   "Healthcare Portal DSGVO": "ws-healthcare",
+  "Deutsche Bahn — Reisenden-Navigator 2.0": "ws-capgemini",
+  "Allianz — Schaden-FNOL Portal": "ws-capgemini",
+  "EnBW — MeinEnBW Transformation": "ws-capgemini",
+  "Freistaat Bayern — Bürgerportal Suite": "ws-capgemini",
+  "REWE digital — Filialbestand Echtzeit": "ws-capgemini",
 };
 
 export function getWorkspaceById(id: string): Workspace | undefined {
@@ -95,6 +165,31 @@ export const PROJECT_SEARCH_META: Record<
     description:
       "Salesforce und HubSpot Integration für die Vertriebsabteilung",
   },
+  "P-007": {
+    name: "Deutsche Bahn — Reisenden-Navigator 2.0",
+    description:
+      "Ausbau DB Navigator: Störungskommunikation, Touch&Travel, barrierefreie Reisekette",
+  },
+  "P-008": {
+    name: "Allianz — Schaden-FNOL Portal",
+    description:
+      "First Notice of Loss: Self-Service Schadenmeldung mit Medien-Upload und Status-Tracking",
+  },
+  "P-009": {
+    name: "EnBW — MeinEnBW Transformation",
+    description:
+      "B2C-Energieportal: Vertragswechsel, dynamische Tarife, Verbrauchstransparenz und E-Mobilität",
+  },
+  "P-010": {
+    name: "Freistaat Bayern — Bürgerportal Suite",
+    description:
+      "Landesweite digitale Antragswege, BAYERN-ID-Anbindung und Once-Only-Prinzip",
+  },
+  "P-011": {
+    name: "REWE digital — Filialbestand Echtzeit",
+    description:
+      "Omnichannel: Lagerbestand Filiale vs. Online, Reservierung und Abholfenster",
+  },
 };
 
 export function listProjectsForSearchInWorkspace(workspaceId: string) {
@@ -138,6 +233,62 @@ export function persistWorkspaceId(id: string): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(WORKSPACE_STORAGE_KEY, id);
+  } catch {
+    /* ignore */
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Projektteams: Overrides (localStorage)                            */
+/* ------------------------------------------------------------------ */
+
+export const PROJECT_TEAM_OVERRIDES_KEY = "reqwise.projectTeamOverrides";
+
+export function projectTeamsEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const sa = [...a].sort();
+  const sb = [...b].sort();
+  return sa.every((v, i) => v === sb[i]);
+}
+
+/** Nur Projekte mit bekannter ID; Arrays aus nicht-leeren Strings. */
+export function readProjectTeamOverrides(): Record<string, string[]> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(PROJECT_TEAM_OVERRIDES_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return {};
+    const out: Record<string, string[]> = {};
+    for (const [pid, val] of Object.entries(parsed as Record<string, unknown>)) {
+      if (!(pid in PROJECT_WORKSPACE)) continue;
+      if (!Array.isArray(val)) continue;
+      const members = val.filter(
+        (x): x is string => typeof x === "string" && x.trim().length > 0,
+      );
+      out[pid] = members;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+export function persistProjectTeamOverrides(
+  map: Record<string, string[]>,
+): void {
+  if (typeof window === "undefined") return;
+  try {
+    const toStore: Record<string, string[]> = {};
+    for (const [pid, team] of Object.entries(map)) {
+      if (!(pid in PROJECT_WORKSPACE)) continue;
+      const base = PROJECT_TEAM_BY_ID[pid] ?? [];
+      if (!projectTeamsEqual(team, base)) toStore[pid] = [...team];
+    }
+    window.localStorage.setItem(
+      PROJECT_TEAM_OVERRIDES_KEY,
+      JSON.stringify(toStore),
+    );
   } catch {
     /* ignore */
   }
