@@ -15,6 +15,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAppContext } from "../../context/AppContext";
 import { useMobileNav } from "../../context/MobileNavContext";
+import {
+  listProjectsForSearchInWorkspace,
+} from "../../data/workspaces";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -39,6 +42,22 @@ function normalizeIdCandidates(raw: string): string[] {
   return [...out];
 }
 
+/** z. B. "p1", "P-01" → "P-001" */
+function normalizeProjectIdCandidates(raw: string): string[] {
+  const t = raw.trim();
+  if (!t) return [];
+  const out = new Set<string>();
+  out.add(t);
+  const u = t.toUpperCase().replace(/\s+/g, "");
+  out.add(u);
+  const m = u.match(/^P-?(\d{1,3})$/);
+  if (m) {
+    const n = m[1].padStart(3, "0");
+    out.add(`P-${n}`);
+  }
+  return [...out];
+}
+
 export function Topbar() {
   const navigate = useNavigate();
   const mobileNav = useMobileNav();
@@ -47,7 +66,7 @@ export function Topbar() {
     selectedWorkspace,
     selectedWorkspaceId,
     setSelectedWorkspaceId,
-    stories,
+    storiesInWorkspace,
     notificationsInWorkspace,
     markNotificationRead,
     unreadCount,
@@ -65,24 +84,84 @@ export function Topbar() {
     const ql = q.toLowerCase();
     const candidates = normalizeIdCandidates(q).map((c) => c.toLowerCase());
     const seen = new Set<string>();
-    const list: { id: string; title: string }[] = [];
-    for (const s of stories) {
+    const list: { id: string; title: string; project: string }[] = [];
+    for (const s of storiesInWorkspace) {
+      if (seen.has(s.id)) continue;
       const idl = s.id.toLowerCase();
+      const titlel = s.title.toLowerCase();
       const idHit =
         idl.includes(ql) ||
         candidates.some(
           (c) => idl === c || idl.replace(/-/g, "") === c.replace(/-/g, ""),
         );
-      if (!idHit) continue;
-      if (seen.has(s.id)) continue;
+      const titleHit = titlel.includes(ql);
+      if (!idHit && !titleHit) continue;
       seen.add(s.id);
-      list.push({ id: s.id, title: s.title });
-      if (list.length >= 12) break;
+      list.push({ id: s.id, title: s.title, project: s.project });
+      if (list.length >= 10) break;
     }
     return list.sort((a, b) =>
       a.id.localeCompare(b.id, undefined, { numeric: true }),
     );
-  }, [stories, searchQuery]);
+  }, [storiesInWorkspace, searchQuery]);
+
+  const projectSearchMatches = useMemo(() => {
+    const q = searchQuery.trim();
+    if (q.length < 1) return [];
+    const ql = q.toLowerCase();
+    const pc = normalizeProjectIdCandidates(q).map((c) => c.toUpperCase());
+    const projects = listProjectsForSearchInWorkspace(selectedWorkspaceId);
+    const out: { id: string; name: string }[] = [];
+    for (const p of projects) {
+      const idl = p.id.toLowerCase();
+      const idHit =
+        idl.includes(ql) ||
+        pc.some(
+          (c) =>
+            p.id.toUpperCase() === c ||
+            p.id.toUpperCase().replace(/-/g, "") === c.replace(/-/g, ""),
+        );
+      const textHit =
+        p.name.toLowerCase().includes(ql) ||
+        p.description.toLowerCase().includes(ql);
+      if (!idHit && !textHit) continue;
+      out.push({ id: p.id, name: p.name });
+      if (out.length >= 8) break;
+    }
+    return out.sort((a, b) =>
+      a.id.localeCompare(b.id, undefined, { numeric: true }),
+    );
+  }, [selectedWorkspaceId, searchQuery]);
+
+  const flatSearchItems = useMemo(() => {
+    const items: { kind: "story" | "project"; id: string }[] = [];
+    for (const s of storySearchMatches)
+      items.push({ kind: "story", id: s.id });
+    for (const p of projectSearchMatches)
+      items.push({ kind: "project", id: p.id });
+    return items;
+  }, [storySearchMatches, projectSearchMatches]);
+
+  const [searchHighlightIndex, setSearchHighlightIndex] = useState(-1);
+
+  useEffect(() => {
+    setSearchHighlightIndex(-1);
+  }, [searchQuery, selectedWorkspaceId]);
+
+  useEffect(() => {
+    setSearchHighlightIndex((prev) => {
+      if (prev < 0) return prev;
+      if (flatSearchItems.length === 0) return -1;
+      return Math.min(prev, flatSearchItems.length - 1);
+    });
+  }, [flatSearchItems]);
+
+  useEffect(() => {
+    if (searchHighlightIndex < 0) return;
+    document
+      .getElementById(`topbar-search-option-${searchHighlightIndex}`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [searchHighlightIndex]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -96,31 +175,72 @@ export function Topbar() {
   }, []);
 
   const openStory = (id: string) => {
+    setSearchHighlightIndex(-1);
     navigate(`/story/${encodeURIComponent(id)}`);
     setSearchQuery("");
     setSearchFocused(false);
     searchInputRef.current?.blur();
   };
 
-  const resolveAndOpenStory = () => {
+  const openProject = (id: string) => {
+    setSearchHighlightIndex(-1);
+    navigate(`/projects/${encodeURIComponent(id)}`);
+    setSearchQuery("");
+    setSearchFocused(false);
+    searchInputRef.current?.blur();
+  };
+
+  const resolveSearch = () => {
     const q = searchQuery.trim();
     if (!q) return;
-    const candidates = normalizeIdCandidates(q);
-    const byExact = stories.find((s) =>
-      candidates.some((c) => s.id.toUpperCase() === c.toUpperCase()),
+    const storyCand = normalizeIdCandidates(q);
+    const byExactStory = storiesInWorkspace.find((s) =>
+      storyCand.some((c) => s.id.toUpperCase() === c.toUpperCase()),
     );
-    if (byExact) {
-      openStory(byExact.id);
+    if (byExactStory) {
+      openStory(byExactStory.id);
+      return;
+    }
+    const projCand = normalizeProjectIdCandidates(q);
+    const workspaceProjects = listProjectsForSearchInWorkspace(
+      selectedWorkspaceId,
+    );
+    const byExactProj = workspaceProjects.find((p) =>
+      projCand.some((c) => p.id.toUpperCase() === c.toUpperCase()),
+    );
+    if (byExactProj) {
+      openProject(byExactProj.id);
       return;
     }
     const ql = q.toLowerCase();
-    const byIdContains = stories.filter((s) => s.id.toLowerCase().includes(ql));
-    if (byIdContains.length === 1) {
-      openStory(byIdContains[0].id);
+    const byIdStories = storiesInWorkspace.filter((s) =>
+      s.id.toLowerCase().includes(ql),
+    );
+    if (byIdStories.length === 1) {
+      openStory(byIdStories[0].id);
+      return;
+    }
+    const byIdProjs = workspaceProjects.filter((p) =>
+      p.id.toLowerCase().includes(ql),
+    );
+    if (byIdProjs.length === 1) {
+      openProject(byIdProjs[0].id);
+      return;
+    }
+    if (storySearchMatches.length === 1) {
+      openStory(storySearchMatches[0].id);
+      return;
+    }
+    if (projectSearchMatches.length === 1) {
+      openProject(projectSearchMatches[0].id);
       return;
     }
     if (storySearchMatches.length >= 1) {
       openStory(storySearchMatches[0].id);
+      return;
+    }
+    if (projectSearchMatches.length >= 1) {
+      openProject(projectSearchMatches[0].id);
     }
   };
 
@@ -294,8 +414,20 @@ export function Topbar() {
           type="search"
           autoComplete="off"
           aria-autocomplete="list"
-          aria-label="Story oder Ticket-ID suchen"
-          placeholder="Suchen... (Ctrl+K)"
+          aria-controls="topbar-search-suggestions"
+          aria-expanded={
+            searchFocused &&
+            searchQuery.trim().length > 0 &&
+            flatSearchItems.length > 0
+          }
+          aria-activedescendant={
+            searchHighlightIndex >= 0
+              ? `topbar-search-option-${searchHighlightIndex}`
+              : undefined
+          }
+          role="combobox"
+          aria-label="Stories, Projekte und IDs im Workspace suchen"
+          placeholder="Stories, Projekte… (Ctrl+K)"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onFocus={() => setSearchFocused(true)}
@@ -303,11 +435,41 @@ export function Topbar() {
             window.setTimeout(() => setSearchFocused(false), 180);
           }}
           onKeyDown={(e) => {
+            const suggestOpen =
+              searchFocused &&
+              searchQuery.trim().length > 0 &&
+              flatSearchItems.length > 0;
+            const len = flatSearchItems.length;
+
+            if (e.key === "ArrowDown" && suggestOpen) {
+              e.preventDefault();
+              setSearchHighlightIndex((i) => (i < 0 ? 0 : (i + 1) % len));
+              return;
+            }
+            if (e.key === "ArrowUp" && suggestOpen) {
+              e.preventDefault();
+              setSearchHighlightIndex((i) =>
+                i < 0 ? len - 1 : (i - 1 + len) % len,
+              );
+              return;
+            }
             if (e.key === "Enter") {
               e.preventDefault();
-              resolveAndOpenStory();
+              if (
+                searchHighlightIndex >= 0 &&
+                searchHighlightIndex < flatSearchItems.length
+              ) {
+                const it = flatSearchItems[searchHighlightIndex];
+                if (it.kind === "story") openStory(it.id);
+                else openProject(it.id);
+                return;
+              }
+              resolveSearch();
+              return;
             }
             if (e.key === "Escape") {
+              e.preventDefault();
+              setSearchHighlightIndex(-1);
               setSearchQuery("");
               searchInputRef.current?.blur();
             }
@@ -317,32 +479,99 @@ export function Topbar() {
       </div>
       {searchFocused && searchQuery.trim().length > 0 && (
         <div
-          className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg border border-border bg-white shadow-lg max-h-[280px] overflow-y-auto py-1"
+          id="topbar-search-suggestions"
+          role="listbox"
+          aria-label="Suchvorschläge"
+          className="absolute left-0 right-0 top-full mt-1 z-50 rounded-lg border border-border bg-white shadow-lg max-h-[min(70vh,360px)] overflow-y-auto py-1"
           onMouseDown={(e) => e.preventDefault()}
         >
-          {storySearchMatches.length === 0 ? (
+          {storySearchMatches.length === 0 &&
+          projectSearchMatches.length === 0 ? (
             <div className="px-3 py-2.5 text-[12px] text-muted-foreground">
-              Keine Story/Ticket-Nummer gefunden.
+              Keine Stories oder Projekte im aktuellen Workspace.
             </div>
           ) : (
-            storySearchMatches.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                className="w-full text-left px-3 py-2 hover:bg-[#f8fafc] flex flex-col gap-0.5"
-                onClick={() => openStory(m.id)}
-              >
-                <span
-                  className="text-[12px] text-[#4f46e5]"
-                  style={{ fontWeight: 600 }}
-                >
-                  {m.id}
-                </span>
-                <span className="text-[11px] text-muted-foreground truncate">
-                  {m.title}
-                </span>
-              </button>
-            ))
+            <>
+              {storySearchMatches.length > 0 && (
+                <>
+                  <div
+                    className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground"
+                    style={{ fontWeight: 600 }}
+                  >
+                    Stories
+                  </div>
+                  {storySearchMatches.map((m, si) => {
+                    const globalIdx = si;
+                    const active = searchHighlightIndex === globalIdx;
+                    return (
+                    <button
+                      key={m.id}
+                      id={`topbar-search-option-${globalIdx}`}
+                      type="button"
+                      role="option"
+                      aria-selected={active}
+                      className={`w-full text-left px-3 py-2 flex flex-col gap-0.5 border-b border-transparent last:border-0 ${
+                        active ? "bg-[#f1f5f9]" : "hover:bg-[#f8fafc]"
+                      }`}
+                      onMouseEnter={() => setSearchHighlightIndex(globalIdx)}
+                      onClick={() => openStory(m.id)}
+                    >
+                      <span
+                        className="text-[12px] text-[#4f46e5]"
+                        style={{ fontWeight: 600 }}
+                      >
+                        {m.id}
+                      </span>
+                      <span className="text-[11px] text-[#1e1e2e] truncate">
+                        {m.title}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground truncate">
+                        {m.project}
+                      </span>
+                    </button>
+                    );
+                  })}
+                </>
+              )}
+              {projectSearchMatches.length > 0 && (
+                <>
+                  <div
+                    className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground"
+                    style={{ fontWeight: 600 }}
+                  >
+                    Projekte
+                  </div>
+                  {projectSearchMatches.map((p, pi) => {
+                    const globalIdx = storySearchMatches.length + pi;
+                    const active = searchHighlightIndex === globalIdx;
+                    return (
+                    <button
+                      key={p.id}
+                      id={`topbar-search-option-${globalIdx}`}
+                      type="button"
+                      role="option"
+                      aria-selected={active}
+                      className={`w-full text-left px-3 py-2 flex flex-col gap-0.5 ${
+                        active ? "bg-[#f1f5f9]" : "hover:bg-[#f8fafc]"
+                      }`}
+                      onMouseEnter={() => setSearchHighlightIndex(globalIdx)}
+                      onClick={() => openProject(p.id)}
+                    >
+                      <span
+                        className="text-[12px] text-[#0d9488]"
+                        style={{ fontWeight: 600 }}
+                      >
+                        {p.id}
+                      </span>
+                      <span className="text-[11px] text-[#1e1e2e] truncate">
+                        {p.name}
+                      </span>
+                    </button>
+                    );
+                  })}
+                </>
+              )}
+            </>
           )}
         </div>
       )}

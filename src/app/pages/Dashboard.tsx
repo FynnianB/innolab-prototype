@@ -143,24 +143,15 @@ export function Dashboard() {
     <TooltipProvider>
       <div className="p-4 sm:p-6 lg:p-8 max-w-[1440px] mx-auto min-w-0">
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 sm:mb-8">
-          <div className="min-w-0">
-            <h1 className="text-[#1e1e2e] text-xl sm:text-2xl">
-              Willkommen zurück, Sarah
-            </h1>
-            <p className="text-[14px] text-muted-foreground mt-1">
-              Übersicht für <span className="text-[#475569]" style={{ fontWeight: 500 }}>{selectedWorkspace.name}</span>
-              {" · "}
-              {workspaceProjectCount} Projekt{workspaceProjectCount === 1 ? "" : "e"} in diesem Workspace
-            </p>
-          </div>
-          <Button
-            onClick={() => navigate("/story-generator")}
-            className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 h-11 px-4 sm:px-6 shadow-sm w-full sm:w-auto flex-shrink-0"
-          >
-            <Zap className="w-4 h-4" />
-            Neue Analyse starten
-          </Button>
+        <div className="mb-6 sm:mb-8 min-w-0">
+          <h1 className="text-[#1e1e2e] text-xl sm:text-2xl">
+            Willkommen zurück, Sarah
+          </h1>
+          <p className="text-[14px] text-muted-foreground mt-1">
+            Übersicht für <span className="text-[#475569]" style={{ fontWeight: 500 }}>{selectedWorkspace.name}</span>
+            {" · "}
+            {workspaceProjectCount} Projekt{workspaceProjectCount === 1 ? "" : "e"} in diesem Workspace
+          </p>
         </div>
 
         {/* KPI Cards */}

@@ -58,6 +58,55 @@ export function getProjectIdsForWorkspace(workspaceId: string): string[] {
     .map(([pid]) => pid);
 }
 
+/**
+ * Namen/Beschreibungen für globale Suche (IDs wie in Projects.tsx / PROJECT_WORKSPACE).
+ */
+export const PROJECT_SEARCH_META: Record<
+  string,
+  { name: string; description: string }
+> = {
+  "P-001": {
+    name: "Automobil-Plattform Redesign",
+    description:
+      "Komplettes Redesign der Infotainment-Plattform inkl. OTA-Update-Funktionalität",
+  },
+  "P-002": {
+    name: "Banking App v3.2 Migration",
+    description:
+      "Migration der Legacy-Banking-App auf neue Microservice-Architektur",
+  },
+  "P-003": {
+    name: "Healthcare Portal DSGVO",
+    description:
+      "DSGVO-konforme Patientenportal-Spezifikation für Kliniken",
+  },
+  "P-004": {
+    name: "E-Commerce Checkout Flow",
+    description:
+      "Optimierung des Checkout-Prozesses für höhere Conversion Rate",
+  },
+  "P-005": {
+    name: "IoT Dashboard Spezifikation",
+    description:
+      "Real-time Dashboard für IoT-Sensordaten in Produktionsumgebungen",
+  },
+  "P-006": {
+    name: "CRM Integration Suite",
+    description:
+      "Salesforce und HubSpot Integration für die Vertriebsabteilung",
+  },
+};
+
+export function listProjectsForSearchInWorkspace(workspaceId: string) {
+  return getProjectIdsForWorkspace(workspaceId)
+    .map((id) => {
+      const meta = PROJECT_SEARCH_META[id];
+      if (!meta) return null;
+      return { id, name: meta.name, description: meta.description };
+    })
+    .filter((p): p is { id: string; name: string; description: string } => p != null);
+}
+
 export function getWorkspaceIdForProjectId(projectId: string): string | undefined {
   return PROJECT_WORKSPACE[projectId];
 }
