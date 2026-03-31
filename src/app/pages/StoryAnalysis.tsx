@@ -30,6 +30,7 @@ import { StoryLink } from "../components/StoryLink";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Checkbox } from "../components/ui/checkbox";
+import { Label } from "../components/ui/label";
 import {
   Popover,
   PopoverContent,
@@ -521,6 +522,7 @@ export function StoryAnalysis() {
     stories: allStoriesForRelations,
     selectedWorkspace,
     selectedWorkspaceId,
+    myProjectIdsInWorkspace,
     setShowExportDialog,
     setExportScope,
   } = useAppContext();
@@ -543,6 +545,8 @@ export function StoryAnalysis() {
 
   /** Verhindert, dass die URL bei jedem Render die Projekt-Mehrfachauswahl überschreibt. */
   const lastSyncedProjectIdFromUrl = useRef<string | null>(null);
+  /** Default „Meine Projekte“ nur einmal pro Workspace (ohne projectId in der URL). */
+  const defaultsAppliedForWorkspace = useRef<string | null>(null);
 
   const projectIdFromUrl = searchParams.get("projectId");
   const projectSelectionKey = useMemo(
@@ -572,8 +576,12 @@ export function StoryAnalysis() {
         lastSyncedProjectIdFromUrl.current = pid;
         setSelectedProjectIds(new Set([pid]));
       } else {
-        setSelectedProjectIds(new Set());
         lastSyncedProjectIdFromUrl.current = null;
+        const mine =
+          myProjectIdsInWorkspace.length > 0
+            ? new Set(myProjectIdsInWorkspace)
+            : new Set<string>();
+        setSelectedProjectIds(mine);
         if (pid) {
           setSearchParams(
             (prev) => {
@@ -618,7 +626,33 @@ export function StoryAnalysis() {
         { replace: true },
       );
     }
-  }, [projectIdFromUrl, selectedWorkspaceId, setSearchParams]);
+  }, [
+    projectIdFromUrl,
+    selectedWorkspaceId,
+    setSearchParams,
+    myProjectIdsInWorkspace,
+  ]);
+
+  useEffect(() => {
+    const ws = selectedWorkspaceId;
+    const pid = searchParams.get("projectId");
+    if (pid) {
+      defaultsAppliedForWorkspace.current = ws;
+      return;
+    }
+    if (defaultsAppliedForWorkspace.current !== ws) {
+      defaultsAppliedForWorkspace.current = ws;
+      if (myProjectIdsInWorkspace.length > 0) {
+        setSelectedProjectIds(new Set(myProjectIdsInWorkspace));
+      } else {
+        setSelectedProjectIds(new Set());
+      }
+    }
+  }, [
+    selectedWorkspaceId,
+    searchParams,
+    myProjectIdsInWorkspace,
+  ]);
 
   useEffect(() => {
     if (selectedProjectIds.size === 1) {
@@ -646,15 +680,6 @@ export function StoryAnalysis() {
       );
     }
   }, [projectSelectionKey, selectedProjectIds, projectIdFromUrl, setSearchParams]);
-
-  const toggleProjectId = useCallback((id: string) => {
-    setSelectedProjectIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
 
   const clearProjectSelection = useCallback(() => {
     lastSyncedProjectIdFromUrl.current = null;
@@ -835,7 +860,7 @@ export function StoryAnalysis() {
               className="text-[20px] text-slate-900"
               style={{ fontWeight: 700 }}
             >
-              Alle Stories
+              Story-Abhängigkeiten
             </h1>
             <p className="text-[13px] text-slate-500 truncate">
               Workspace:{" "}
@@ -863,18 +888,7 @@ export function StoryAnalysis() {
 
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm flex flex-col min-h-[min(72vh,760px)]">
         <div className="shrink-0 border-b border-slate-200 px-3 sm:px-4 py-3 space-y-3 bg-white">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[200px] max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Vorgänge durchsuchen (ID, Titel, Projekt …)"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-[13px] bg-white border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/20 focus:border-[#4f46e5]/40"
-              />
-            </div>
-
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -882,20 +896,27 @@ export function StoryAnalysis() {
                   variant="outline"
                   size="sm"
                   className={cn(
-                    "h-9 gap-1.5 text-[12px] border-slate-200 bg-white text-slate-700 font-normal shrink-0",
-                    selectedProjectIds.size > 0 && "border-[#4f46e5]/40 bg-[#f1f5ff]/50",
+                    "h-10 w-full sm:w-auto sm:min-w-[280px] justify-between gap-2 text-[13px] border-slate-200 bg-white text-slate-800 shadow-sm",
+                    selectedProjectIds.size > 0 && "border-[#4f46e5]/50 bg-[#f1f5ff]/60",
                   )}
+                  style={{ fontWeight: 600 }}
                 >
-                  Projekt
-                  {selectedProjectIds.size > 0 && (
-                    <span className="text-[10px] bg-[#4f46e5] text-white px-1.5 py-0.5 rounded-full font-semibold">
-                      {selectedProjectIds.size}
-                    </span>
-                  )}
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="flex items-center gap-2 min-w-0">
+                    <Layers className="w-4 h-4 text-[#4f46e5] shrink-0" />
+                    <span className="truncate">Projektfilter</span>
+                    {selectedProjectIds.size > 0 && (
+                      <span className="text-[10px] bg-[#4f46e5] text-white px-1.5 py-0.5 rounded-full font-semibold shrink-0">
+                        {selectedProjectIds.size}
+                      </span>
+                    )}
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[min(100vw-2rem,320px)] p-0" align="start">
+              <PopoverContent
+                className="w-[min(100vw-2rem,320px)] p-0 z-[200]"
+                align="start"
+              >
                 <div className="px-3 py-2 border-b border-slate-100 text-[11px] text-slate-500" style={{ fontWeight: 600 }}>
                   Projekte im Workspace
                 </div>
@@ -910,26 +931,55 @@ export function StoryAnalysis() {
                   </button>
                 </div>
                 <div className="max-h-[240px] overflow-y-auto p-2 space-y-0.5">
-                  {projectOptions.map(({ id, name }) => (
-                    <label
-                      key={id}
-                      className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer text-[12px] text-slate-800"
-                    >
-                      <Checkbox
-                        checked={selectedProjectIds.has(id)}
-                        onCheckedChange={(checked) => {
-                          if (checked === "indeterminate") return;
-                          toggleProjectId(id);
-                        }}
-                      />
-                      <span className="truncate" title={name}>
-                        {name}
-                      </span>
-                    </label>
-                  ))}
+                  {projectOptions.map(({ id, name }) => {
+                    const boxId = `story-analysis-proj-${id}`;
+                    return (
+                      <div
+                        key={id}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 text-[12px] text-slate-800"
+                      >
+                        <Checkbox
+                          id={boxId}
+                          checked={selectedProjectIds.has(id)}
+                          onCheckedChange={(checked) => {
+                            if (checked === "indeterminate") return;
+                            setSelectedProjectIds((prev) => {
+                              const next = new Set(prev);
+                              if (checked) next.add(id);
+                              else next.delete(id);
+                              return next;
+                            });
+                          }}
+                        />
+                        <Label
+                          htmlFor={boxId}
+                          className="flex-1 truncate cursor-pointer font-normal text-[12px] text-slate-800"
+                          title={name}
+                        >
+                          {name}
+                        </Label>
+                      </div>
+                    );
+                  })}
                 </div>
               </PopoverContent>
             </Popover>
+            <p className="text-[11px] text-slate-500 sm:pl-1 sm:flex-1 leading-snug">
+              Standard sind Ihre Projekte im Workspace. „Alle Projekte anzeigen“ hebt die Einschränkung auf.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[200px] max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Vorgänge durchsuchen (ID, Titel, Projekt …)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-[13px] bg-white border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/20 focus:border-[#4f46e5]/40"
+              />
+            </div>
 
             <select
               value={typeFilter}
@@ -974,7 +1024,10 @@ export function StoryAnalysis() {
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[min(100vw-2rem,280px)] p-0" align="end">
+              <PopoverContent
+                className="w-[min(100vw-2rem,280px)] p-0 z-[200]"
+                align="end"
+              >
                 <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between gap-2">
                   <span className="text-[11px] text-slate-500" style={{ fontWeight: 600 }}>
                     Nach Beziehungstyp

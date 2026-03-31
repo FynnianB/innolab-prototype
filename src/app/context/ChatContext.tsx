@@ -4,6 +4,7 @@ import {
   useState,
   useCallback,
   useRef,
+  useEffect,
   type ReactNode,
 } from "react";
 import type {
@@ -18,15 +19,24 @@ import { useAppContext } from "./AppContext";
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
+export interface ChatSessionSnapshot {
+  id: string;
+  title: string;
+  updatedAt: number;
+  messages: ChatMessage[];
+}
+
 interface ChatState {
   messages: ChatMessage[];
   isOpen: boolean;
   isTyping: boolean;
   pendingOperation: BulkOperationPreview | null;
+  pastSessions: ChatSessionSnapshot[];
   toggleOpen: () => void;
   setOpen: (open: boolean) => void;
   sendMessage: (text: string) => void;
   startNewChat: () => void;
+  loadPastSession: (sessionId: string) => void;
   applyBulkOperation: () => void;
   dismissBulkOperation: () => void;
 }
@@ -89,10 +99,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const serviceRef = useRef<ChatService>(new SimulatedChatService());
 
   const [messages, setMessages] = useState<ChatMessage[]>(WELCOME_MESSAGES);
+  const [pastSessions, setPastSessions] = useState<ChatSessionSnapshot[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [pendingOperation, setPendingOperation] =
     useState<BulkOperationPreview | null>(null);
+
+  const messagesRef = useRef<ChatMessage[]>(messages);
+  const pastSessionsRef = useRef<ChatSessionSnapshot[]>(pastSessions);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+  useEffect(() => {
+    pastSessionsRef.current = pastSessions;
+  }, [pastSessions]);
 
   const toggleOpen = useCallback(() => setIsOpen((v) => !v), []);
   const setOpen = useCallback((open: boolean) => setIsOpen(open), []);
@@ -170,7 +190,52 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [pendingOperation, updateStories]);
 
   const startNewChat = useCallback(() => {
+    const prev = messagesRef.current;
+    if (prev.some((m) => m.role === "user")) {
+      const firstUser = prev.find((m) => m.role === "user");
+      const raw =
+        typeof firstUser?.content === "string" ? firstUser.content : "";
+      const title = raw.trim().slice(0, 50) || "Gespeicherter Chat";
+      setPastSessions((sessions) =>
+        [
+          {
+            id: `sess-${Date.now()}`,
+            title,
+            updatedAt: Date.now(),
+            messages: prev.map((m) => ({ ...m })),
+          },
+          ...sessions,
+        ].slice(0, 25),
+      );
+    }
     setMessages([...WELCOME_MESSAGES]);
+    setPendingOperation(null);
+    setIsTyping(false);
+  }, []);
+
+  const loadPastSession = useCallback((sessionId: string) => {
+    const sessions = pastSessionsRef.current;
+    const target = sessions.find((s) => s.id === sessionId);
+    if (!target) return;
+    const prev = messagesRef.current;
+    let next = sessions.filter((s) => s.id !== sessionId);
+    if (prev.some((m) => m.role === "user")) {
+      const firstUser = prev.find((m) => m.role === "user");
+      const raw =
+        typeof firstUser?.content === "string" ? firstUser.content : "";
+      const title = raw.trim().slice(0, 50) || "Gespeicherter Chat";
+      next = [
+        {
+          id: `sess-${Date.now()}`,
+          title,
+          updatedAt: Date.now(),
+          messages: prev.map((m) => ({ ...m })),
+        },
+        ...next,
+      ];
+    }
+    setPastSessions(next.slice(0, 25));
+    setMessages(target.messages.map((m) => ({ ...m })));
     setPendingOperation(null);
     setIsTyping(false);
   }, []);
@@ -210,10 +275,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     isOpen,
     isTyping,
     pendingOperation,
+    pastSessions,
     toggleOpen,
     setOpen,
     sendMessage,
     startNewChat,
+    loadPastSession,
     applyBulkOperation,
     dismissBulkOperation,
   };

@@ -27,7 +27,7 @@ const baseNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Sparkles, label: "Story Generator", path: "/story-generator" },
   { icon: ShieldCheck, label: "Compliance Checker", path: "/compliance" },
-  { icon: ClipboardList, label: "Alle Stories", path: "/stories" },
+  { icon: ClipboardList, label: "Story-Abhängigkeiten", path: "/stories" },
   { icon: FolderOpen, label: "Projekte", path: "/projects" },
 ];
 
@@ -93,7 +93,10 @@ export function Sidebar({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
+        <nav
+          className="flex-1 py-4 px-3 space-y-1 overflow-y-auto"
+          data-tour="nav-main"
+        >
           {!effectiveCollapsed && (
             <p className="text-[11px] text-muted-foreground px-3 pb-2 uppercase tracking-wider" style={{ fontWeight: 500 }}>
               Hauptmenü

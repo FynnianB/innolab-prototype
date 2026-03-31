@@ -8,13 +8,13 @@ import {
   Menu,
   Plus,
   Search,
-  Upload,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAppContext } from "../../context/AppContext";
 import { useMobileNav } from "../../context/MobileNavContext";
+import { useOnboardingReset } from "../../onboarding/OnboardingResetContext";
 import {
   listProjectsForSearchInWorkspace,
   PROJECT_LOGO_BY_ID,
@@ -100,6 +100,7 @@ function WorkspaceGlyph({
 export function Topbar() {
   const navigate = useNavigate();
   const mobileNav = useMobileNav();
+  const { resetAllTours } = useOnboardingReset();
   const {
     workspaces,
     selectedWorkspace,
@@ -298,6 +299,7 @@ export function Topbar() {
         variant="outline"
         size="sm"
         className="text-[13px] gap-1.5 sm:gap-2 h-9 px-2 sm:px-3 border-border"
+        data-tour="topbar-export"
         onClick={() => {
           setExportScope("all");
           setShowExportDialog(true);
@@ -305,16 +307,6 @@ export function Topbar() {
       >
         <Download className="w-4 h-4" />
         <span className="hidden sm:inline">Export</span>
-      </Button>
-
-      <Button
-        variant="default"
-        size="sm"
-        className="bg-[#4f46e5] hover:bg-[#4338ca] text-white text-[13px] gap-1.5 sm:gap-2 h-9 px-2 sm:px-4"
-        onClick={() => navigate("/story-generator")}
-      >
-        <Upload className="w-4 h-4" />
-        <span className="hidden sm:inline">Hochladen</span>
       </Button>
 
       <DropdownMenu
@@ -430,6 +422,14 @@ export function Topbar() {
             </div>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() => {
+              resetAllTours();
+            }}
+          >
+            Einführung erneut starten
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem className="text-[#ef4444]">
             Abmelden
           </DropdownMenuItem>
@@ -439,7 +439,7 @@ export function Topbar() {
   );
 
   const searchField = (
-    <div className="relative w-full min-w-0 max-w-full">
+    <div className="relative w-full min-w-0 max-w-full" data-tour="topbar-search">
       <div
         className={`flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg border transition-all duration-200 ${
           searchFocused
@@ -639,6 +639,7 @@ export function Topbar() {
         <button
           type="button"
           className="lg:hidden p-2 rounded-lg hover:bg-[#f1f5f9] transition-colors -ml-1 shrink-0"
+          data-tour="topbar-mobile-menu"
           onClick={() => mobileNav?.openSidebar()}
           aria-label="Menü öffnen"
         >
@@ -649,6 +650,7 @@ export function Topbar() {
             <button
               type="button"
               title={selectedWorkspace.name}
+              data-tour="topbar-workspace"
               className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg hover:bg-[#f1f5f9] transition-colors text-[14px] min-w-0 max-w-full"
             >
               <WorkspaceGlyph workspace={selectedWorkspace} />

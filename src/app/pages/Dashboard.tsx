@@ -196,7 +196,7 @@ export function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
           {/* Recent Projects - 2 columns */}
           <div className="lg:col-span-2 min-w-0">
-            <Card className="border border-border bg-white">
+            <Card className="border border-border bg-white" data-tour="dashboard-projects-card">
               <CardHeader className="pb-3 flex flex-row items-center justify-between gap-3">
                 <div className="min-w-0">
                   <CardTitle className="text-[16px]" style={{ fontWeight: 600 }}>
@@ -303,7 +303,7 @@ export function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card className="border border-border bg-white mt-4 sm:mt-5">
+            <Card className="border border-border bg-white mt-4 sm:mt-5" data-tour="dashboard-activity-card">
               <CardHeader className="pb-3">
                 <CardTitle className="text-[16px]" style={{ fontWeight: 600 }}>
                   Letzte Aktivitäten

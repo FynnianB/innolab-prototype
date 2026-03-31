@@ -586,7 +586,10 @@ export function Projects() {
           </div>
 
           {/* Tabs */}
-          <div className="flex items-center gap-1 border-b border-border mb-6">
+          <div
+            className="flex items-center gap-1 border-b border-border mb-6"
+            data-tour="projects-detail-tabs"
+          >
             {[
               { key: "overview" as const, label: "Übersicht" },
               { key: "history" as const, label: "Versionshistorie" },
@@ -597,6 +600,8 @@ export function Projects() {
             ].map((tab) => (
               <button
                 key={tab.key}
+                type="button"
+                data-tour={tab.key === "team" ? "projects-detail-tab-team" : undefined}
                 onClick={() => setActiveTab(tab.key)}
                 className={`px-4 py-2.5 text-[13px] border-b-2 transition-colors ${
                   activeTab === tab.key
@@ -938,7 +943,7 @@ export function Projects() {
         </div>
 
         {/* Search + Filters */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 mb-6" data-tour="projects-list-search">
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-white flex-1 max-w-md">
             <Search className="w-4 h-4 text-muted-foreground" />
             <input
@@ -961,6 +966,7 @@ export function Projects() {
         </div>
 
         {/* Projects Grid */}
+        <div data-tour="projects-list-grid">
         {filteredProjects.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border bg-[#fafbfc] py-16 text-center">
             <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-60" />
@@ -1066,7 +1072,7 @@ export function Projects() {
                   </div>
                 </div>
 
-                {/* Link zu „Alle Stories“ mit Projektfilter */}
+                {/* Link zu Story-Abhängigkeiten mit Projektfilter */}
                 {project.savedStories.length > 0 && (
                   <button
                     type="button"
@@ -1124,6 +1130,7 @@ export function Projects() {
           ))}
         </div>
         )}
+        </div>
       </div>
     </TooltipProvider>
   );

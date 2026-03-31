@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   ShieldCheck,
@@ -39,6 +39,10 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import { useAppContext } from "../context/AppContext";
+import {
+  PROJECT_SEARCH_META,
+  PROJECT_WORKSPACE,
+} from "../data/workspaces";
 
 type CompliancePhase = "project-select" | "review";
 
@@ -493,6 +497,33 @@ const projects: ProjectData[] = [
     pages: projectB_Pages,
     issues: projectB_Issues,
   },
+  ...(
+    [
+      "P-003",
+      "P-004",
+      "P-005",
+      "P-006",
+      "P-007",
+      "P-008",
+      "P-009",
+      "P-010",
+      "P-011",
+    ] as const
+  ).map((id) => {
+    const meta = PROJECT_SEARCH_META[id];
+    return {
+      id,
+      name: meta.name,
+      description: meta.description,
+      document: "Lastenheft (Auszug) – Prototyp-Compliance",
+      lastReview: "—",
+      stories: 120,
+      status: "Aktiv" as const,
+      statusColor: "#4f46e5",
+      pages: projectA_Pages,
+      issues: projectA_Issues,
+    };
+  }),
 ];
 
 interface FixLogEntry {
@@ -510,7 +541,20 @@ interface FixLogEntry {
 
 export function ComplianceChecker() {
   const navigate = useNavigate();
-  const { setShowExportDialog, setExportScope } = useAppContext();
+  const {
+    setShowExportDialog,
+    setExportScope,
+    selectedWorkspaceId,
+    selectedWorkspace,
+  } = useAppContext();
+
+  const workspaceProjects = useMemo(
+    () =>
+      projects.filter(
+        (p) => PROJECT_WORKSPACE[p.id] === selectedWorkspaceId,
+      ),
+    [selectedWorkspaceId],
+  );
   const [phase, setPhase] = useState<CompliancePhase>("project-select");
   const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -608,6 +652,11 @@ export function ComplianceChecker() {
             <div className="min-w-0">
               <h1 className="text-[#1e1e2e]">Compliance Checker</h1>
               <p className="text-[14px] text-muted-foreground mt-1">
+                Workspace:{" "}
+                <span className="text-foreground font-medium">
+                  {selectedWorkspace.name}
+                </span>
+                {" · "}
                 Wählen Sie ein Projekt, um die Anforderungen gegen Compliance-Regeln zu prüfen.
               </p>
             </div>
@@ -623,7 +672,12 @@ export function ComplianceChecker() {
           </div>
 
           <div className="space-y-4">
-            {projects.map((project) => (
+            {workspaceProjects.length === 0 && (
+              <p className="text-[14px] text-muted-foreground rounded-lg border border-dashed border-border bg-muted/30 px-4 py-8 text-center">
+                Für diesen Workspace sind keine Compliance-Projekte hinterlegt.
+              </p>
+            )}
+            {workspaceProjects.map((project) => (
               <Card
                 key={project.id}
                 className="border border-border bg-white hover:shadow-md hover:border-[#4f46e5]/20 transition-all duration-200 cursor-pointer group"

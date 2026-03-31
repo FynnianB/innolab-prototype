@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { ExportDialog } from "../ExportDialog";
 import { ChatBubble } from "../chat/ChatBubble";
 import { MobileNavContext } from "../../context/MobileNavContext";
+import { OnboardingHost } from "../../onboarding/OnboardingHost";
+import { OnboardingResetProvider } from "../../onboarding/OnboardingResetContext";
 
 export function Layout() {
   const location = useLocation();
@@ -22,6 +24,7 @@ export function Layout() {
   );
 
   return (
+    <OnboardingResetProvider>
     <MobileNavContext.Provider value={mobileNavValue}>
       <div className="h-screen w-screen flex overflow-hidden">
         <button
@@ -58,7 +61,9 @@ export function Layout() {
         </div>
         <ExportDialog />
         <ChatBubble />
+        <OnboardingHost />
       </div>
     </MobileNavContext.Provider>
+    </OnboardingResetProvider>
   );
 }
