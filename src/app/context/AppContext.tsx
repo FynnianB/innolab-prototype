@@ -1,4 +1,10 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useState,
+  type ReactNode,
+} from "react";
 import { allStories, type Story } from "../data/stories";
 
 /* ------------------------------------------------------------------ */
@@ -59,11 +65,46 @@ interface AppState {
 /* ------------------------------------------------------------------ */
 
 const defaultNotifications: Notification[] = [
-  { id: "N-001", text: "23 neue Stories generiert", project: "Automobil-Plattform", time: "vor 15 Min.", read: false, type: "success" },
-  { id: "N-002", text: "3 Widerspr\u00fcche erkannt", project: "Banking App v3.2", time: "vor 1 Std.", read: false, type: "warning" },
-  { id: "N-003", text: "Compliance-Check bestanden", project: "Healthcare Portal", time: "vor 2 Std.", read: true, type: "success" },
-  { id: "N-004", text: "Export abgeschlossen (7 Stories)", project: "Automobil-Plattform", time: "vor 3 Std.", read: true, type: "info" },
-  { id: "N-005", text: "Neue Compliance-Regeln importiert", project: "Global", time: "vor 5 Std.", read: true, type: "info" },
+  {
+    id: "N-001",
+    text: "23 neue Stories generiert",
+    project: "Automobil-Plattform",
+    time: "vor 15 Min.",
+    read: false,
+    type: "success",
+  },
+  {
+    id: "N-002",
+    text: "3 Widersprüche erkannt",
+    project: "Banking App v3.2",
+    time: "vor 1 Std.",
+    read: false,
+    type: "warning",
+  },
+  {
+    id: "N-003",
+    text: "Compliance-Check bestanden",
+    project: "Healthcare Portal",
+    time: "vor 2 Std.",
+    read: true,
+    type: "success",
+  },
+  {
+    id: "N-004",
+    text: "Export abgeschlossen (7 Stories)",
+    project: "Automobil-Plattform",
+    time: "vor 3 Std.",
+    read: true,
+    type: "info",
+  },
+  {
+    id: "N-005",
+    text: "Neue Compliance-Regeln importiert",
+    project: "Global",
+    time: "vor 5 Std.",
+    read: true,
+    type: "info",
+  },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -73,13 +114,20 @@ const defaultNotifications: Notification[] = [
 const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [selectedWorkspace, setSelectedWorkspace] = useState("Automobil-Projekt Alpha");
+  const [selectedWorkspace, setSelectedWorkspace] = useState(
+    "Automobil-Projekt Alpha",
+  );
   const [stories, setStories] = useState<Story[]>(allStories);
-  const [storyActions, setStoryActions] = useState<Record<string, StoryAction>>({});
-  const [notifications, setNotifications] = useState<Notification[]>(defaultNotifications);
+  const [storyActions, setStoryActions] = useState<Record<string, StoryAction>>(
+    {},
+  );
+  const [notifications, setNotifications] =
+    useState<Notification[]>(defaultNotifications);
   const [exportHistory, setExportHistory] = useState<ExportRecord[]>([]);
   const [showExportDialog, setShowExportDialog] = useState(false);
-  const [exportScope, setExportScope] = useState<"stories" | "compliance" | "jira" | "all">("all");
+  const [exportScope, setExportScope] = useState<
+    "stories" | "compliance" | "jira" | "all"
+  >("all");
 
   const updateStories = useCallback((updates: StoryUpdate[]) => {
     setStories((prev) => {
@@ -107,7 +155,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const markNotificationRead = useCallback((id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
   }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;

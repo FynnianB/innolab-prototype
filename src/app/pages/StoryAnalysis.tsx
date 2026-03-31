@@ -1,28 +1,28 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router";
-import { motion, AnimatePresence } from "motion/react";
 import {
-  Search,
-  ArrowLeft,
-  ChevronRight,
-  GitCompare,
-  Copy,
   AlertTriangle,
-  Link2,
-  Layers,
-  Filter,
+  ArrowLeft,
+  Bug,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  Copy,
   Download,
   FileText,
-  Bug,
-  ClipboardList,
-  Sparkles,
+  Filter,
+  GitCompare,
   Globe,
-  CheckCircle2,
+  Layers,
+  Link2,
+  Search,
+  Sparkles,
   XCircle,
 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router";
+import { StoryLink } from "../components/StoryLink";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { StoryLink } from "../components/StoryLink";
 import { useAppContext } from "../context/AppContext";
 import {
   allRelations,
@@ -39,10 +39,30 @@ const relationTypeConfig: Record<
   string,
   { label: string; color: string; bg: string; icon: typeof Copy }
 > = {
-  duplicates: { label: "Duplikat", color: "#9333ea", bg: "#faf5ff", icon: Copy },
-  depends_on: { label: "Abh\u00e4ngigkeit", color: "#2563eb", bg: "#eff6ff", icon: Link2 },
-  blocks: { label: "Blockiert", color: "#dc2626", bg: "#fef2f2", icon: AlertTriangle },
-  related_to: { label: "Verwandt", color: "#4f46e5", bg: "#f1f0ff", icon: Layers },
+  duplicates: {
+    label: "Duplikat",
+    color: "#9333ea",
+    bg: "#faf5ff",
+    icon: Copy,
+  },
+  depends_on: {
+    label: "Abhängigkeit",
+    color: "#2563eb",
+    bg: "#eff6ff",
+    icon: Link2,
+  },
+  blocks: {
+    label: "Blockiert",
+    color: "#dc2626",
+    bg: "#fef2f2",
+    icon: AlertTriangle,
+  },
+  related_to: {
+    label: "Verwandt",
+    color: "#4f46e5",
+    bg: "#f1f0ff",
+    icon: Layers,
+  },
 };
 
 const statusConfig: Record<string, { color: string; bg: string }> = {
@@ -54,7 +74,10 @@ const statusConfig: Record<string, { color: string; bg: string }> = {
   Done: { color: "#065f46", bg: "#d1fae5" },
 };
 
-const sourceConfig: Record<string, { label: string; icon: typeof Sparkles; color: string }> = {
+const sourceConfig: Record<
+  string,
+  { label: string; icon: typeof Sparkles; color: string }
+> = {
   "ai-generated": { label: "AI-generiert", icon: Sparkles, color: "#4f46e5" },
   "jira-import": { label: "Jira-Import", icon: Globe, color: "#2684ff" },
   manual: { label: "Manuell", icon: FileText, color: "#64748b" },
@@ -81,10 +104,22 @@ function SummaryCards({ relations }: { relations: TicketRelation[] }) {
   }, [relations]);
 
   const cards = [
-    { type: "duplicates" as const, label: "Duplikate", count: counts.duplicates },
-    { type: "depends_on" as const, label: "Abh\u00e4ngigkeiten", count: counts.depends_on },
+    {
+      type: "duplicates" as const,
+      label: "Duplikate",
+      count: counts.duplicates,
+    },
+    {
+      type: "depends_on" as const,
+      label: "Abhängigkeiten",
+      count: counts.depends_on,
+    },
     { type: "blocks" as const, label: "Blockaden", count: counts.blocks },
-    { type: "related_to" as const, label: "Verwandt", count: counts.related_to },
+    {
+      type: "related_to" as const,
+      label: "Verwandt",
+      count: counts.related_to,
+    },
   ];
 
   return (
@@ -103,7 +138,10 @@ function SummaryCards({ relations }: { relations: TicketRelation[] }) {
               <cfg.icon className="w-5 h-5" style={{ color: cfg.color }} />
             </div>
             <div>
-              <div className="text-[22px] text-slate-900" style={{ fontWeight: 700 }}>
+              <div
+                className="text-[22px] text-slate-900"
+                style={{ fontWeight: 700 }}
+              >
                 {card.count}
               </div>
               <div className="text-[12px] text-slate-500">{card.label}</div>
@@ -142,7 +180,10 @@ function StoryListItem({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-          <span className="text-[12px] text-[#4f46e5]" style={{ fontWeight: 600 }}>
+          <span
+            className="text-[12px] text-[#4f46e5]"
+            style={{ fontWeight: 600 }}
+          >
             {story.id}
           </span>
           <Badge
@@ -157,14 +198,20 @@ function StoryListItem({
             {src.label}
           </span>
         </div>
-        <p className="text-[13px] text-slate-800 truncate" style={{ fontWeight: 500 }}>
+        <p
+          className="text-[13px] text-slate-800 truncate"
+          style={{ fontWeight: 500 }}
+        >
           {story.title}
         </p>
         <span className="text-[11px] text-slate-400">{story.project}</span>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         {relationCount > 0 && (
-          <span className="text-[11px] text-[#4f46e5] bg-[#f1f0ff] px-2 py-0.5 rounded-full" style={{ fontWeight: 500 }}>
+          <span
+            className="text-[11px] text-[#4f46e5] bg-[#f1f0ff] px-2 py-0.5 rounded-full"
+            style={{ fontWeight: 500 }}
+          >
             {relationCount} Bez.
           </span>
         )}
@@ -193,7 +240,8 @@ function RelationCard({
   onConfirm: (id: string) => void;
   onDismiss: (id: string) => void;
 }) {
-  const cfg = relationTypeConfig[relation.type] || relationTypeConfig.related_to;
+  const cfg =
+    relationTypeConfig[relation.type] || relationTypeConfig.related_to;
   const isConfirmed = confirmedIds.has(relation.id);
   const isDismissed = dismissedIds.has(relation.id);
 
@@ -216,13 +264,17 @@ function RelationCard({
             />
             <span
               className="text-[10px] px-2 py-0.5 rounded-full"
-              style={{ color: cfg.color, backgroundColor: cfg.bg, fontWeight: 500 }}
+              style={{
+                color: cfg.color,
+                backgroundColor: cfg.bg,
+                fontWeight: 500,
+              }}
             >
               {cfg.label}
             </span>
             {isConfirmed && (
               <span className="text-[10px] text-green-600 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> Best\u00e4tigt
+                <CheckCircle2 className="w-3 h-3" /> Bestätigt
               </span>
             )}
             {isDismissed && (
@@ -232,7 +284,10 @@ function RelationCard({
             )}
           </div>
           {otherStory && (
-            <p className="text-[13px] text-slate-800 mb-1" style={{ fontWeight: 500 }}>
+            <p
+              className="text-[13px] text-slate-800 mb-1"
+              style={{ fontWeight: 500 }}
+            >
               {otherStory.title}
             </p>
           )}
@@ -260,7 +315,9 @@ function RelationCard({
               </span>
             </div>
             {otherStory && (
-              <span className="text-[10px] text-slate-400">{otherStory.project}</span>
+              <span className="text-[10px] text-slate-400">
+                {otherStory.project}
+              </span>
             )}
           </div>
         </div>
@@ -273,7 +330,7 @@ function RelationCard({
             className="text-[11px] h-7 gap-1 text-green-600 border-green-200 hover:bg-green-50"
             onClick={() => onConfirm(relation.id)}
           >
-            <CheckCircle2 className="w-3 h-3" /> Best\u00e4tigen
+            <CheckCircle2 className="w-3 h-3" /> Bestätigen
           </Button>
           <Button
             size="sm"
@@ -314,7 +371,10 @@ function FocusView({
   const relations = useMemo(() => getRelationsForId(story.id), [story.id]);
 
   const grouped = useMemo(() => {
-    const groups: Record<string, { relation: TicketRelation; other: Story | undefined }[]> = {
+    const groups: Record<
+      string,
+      { relation: TicketRelation; other: Story | undefined }[]
+    > = {
       duplicates: [],
       depends_on: [],
       blocks: [],
@@ -333,8 +393,8 @@ function FocusView({
   const src = sourceConfig[story.source] || sourceConfig.manual;
 
   const groupLabels: Record<string, string> = {
-    duplicates: "Duplikate / \u00dcberschneidungen",
-    depends_on: "Abh\u00e4ngigkeiten",
+    duplicates: "Duplikate / Überschneidungen",
+    depends_on: "Abhängigkeiten",
     blocks: "Blockaden",
     related_to: "Verwandte Stories",
   };
@@ -351,7 +411,7 @@ function FocusView({
         className="flex items-center gap-2 text-[13px] text-slate-500 hover:text-[#4f46e5] transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        Zur\u00fcck zur \u00dcbersicht
+        Zurück zur übersicht
       </button>
 
       {/* Selected story header */}
@@ -365,7 +425,11 @@ function FocusView({
               >
                 {story.id}
               </Badge>
-              <Badge variant="secondary" className="text-[11px]" style={{ backgroundColor: sc.bg, color: sc.color }}>
+              <Badge
+                variant="secondary"
+                className="text-[11px]"
+                style={{ backgroundColor: sc.bg, color: sc.color }}
+              >
                 {story.status}
               </Badge>
               <span className="text-[11px] text-slate-400 flex items-center gap-1">
@@ -377,18 +441,33 @@ function FocusView({
                   variant="secondary"
                   className="text-[11px]"
                   style={{
-                    backgroundColor: story.priority === "Hoch" ? "#fef2f2" : story.priority === "Mittel" ? "#fef3c7" : "#f1f5f9",
-                    color: story.priority === "Hoch" ? "#dc2626" : story.priority === "Mittel" ? "#f59e0b" : "#64748b",
+                    backgroundColor:
+                      story.priority === "Hoch"
+                        ? "#fef2f2"
+                        : story.priority === "Mittel"
+                          ? "#fef3c7"
+                          : "#f1f5f9",
+                    color:
+                      story.priority === "Hoch"
+                        ? "#dc2626"
+                        : story.priority === "Mittel"
+                          ? "#f59e0b"
+                          : "#64748b",
                   }}
                 >
                   {story.priority}
                 </Badge>
               )}
             </div>
-            <h2 className="text-[18px] text-slate-900 mb-1" style={{ fontWeight: 600 }}>
+            <h2
+              className="text-[18px] text-slate-900 mb-1"
+              style={{ fontWeight: 600 }}
+            >
               {story.title}
             </h2>
-            <p className="text-[13px] text-slate-500 line-clamp-2">{story.description}</p>
+            <p className="text-[13px] text-slate-500 line-clamp-2">
+              {story.description}
+            </p>
           </div>
           <Button
             variant="outline"
@@ -403,7 +482,8 @@ function FocusView({
           <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-100">
             {story.assignee && (
               <span className="text-[12px] text-slate-500">
-                <span className="text-slate-400">Assignee:</span> {story.assignee}
+                <span className="text-slate-400">Assignee:</span>{" "}
+                {story.assignee}
               </span>
             )}
             {story.sprint && (
@@ -423,7 +503,7 @@ function FocusView({
       {/* Grouped relations */}
       {relations.length === 0 ? (
         <div className="text-center py-12 text-slate-400 text-[13px]">
-          Keine Beziehungen f\u00fcr diese Story gefunden.
+          Keine Beziehungen für diese Story gefunden.
         </div>
       ) : (
         Object.entries(grouped).map(([type, items]) => {
@@ -433,7 +513,10 @@ function FocusView({
             <div key={type}>
               <div className="flex items-center gap-2 mb-3">
                 <cfg.icon className="w-4 h-4" style={{ color: cfg.color }} />
-                <h3 className="text-[14px] text-slate-800" style={{ fontWeight: 600 }}>
+                <h3
+                  className="text-[14px] text-slate-800"
+                  style={{ fontWeight: 600 }}
+                >
                   {groupLabels[type] || type}
                 </h3>
                 <span className="text-[11px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
@@ -485,8 +568,10 @@ export function StoryAnalysis() {
 
   const filteredStories = useMemo(() => {
     let result = stories;
-    if (sourceFilter !== "all") result = result.filter((s) => s.source === sourceFilter);
-    if (typeFilter !== "all") result = result.filter((s) => s.type === typeFilter);
+    if (sourceFilter !== "all")
+      result = result.filter((s) => s.source === sourceFilter);
+    if (typeFilter !== "all")
+      result = result.filter((s) => s.type === typeFilter);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -531,11 +616,15 @@ export function StoryAnalysis() {
             <GitCompare className="w-5 h-5 text-[#4f46e5]" />
           </div>
           <div>
-            <h1 className="text-[20px] text-slate-900" style={{ fontWeight: 700 }}>
+            <h1
+              className="text-[20px] text-slate-900"
+              style={{ fontWeight: 700 }}
+            >
               Story-Analyse
             </h1>
             <p className="text-[13px] text-slate-500">
-              Beziehungen, Duplikate und Abh\u00e4ngigkeiten zwischen Stories analysieren
+              Beziehungen, Duplikate und Abhängigkeiten zwischen Stories
+              analysieren
             </p>
           </div>
         </div>
@@ -632,7 +721,7 @@ export function StoryAnalysis() {
               ))}
               {filteredStories.length === 0 && (
                 <div className="text-center py-12 text-slate-400 text-[13px]">
-                  Keine Stories f\u00fcr die ausgew\u00e4hlten Filter gefunden.
+                  Keine Stories für die ausgewählten Filter gefunden.
                 </div>
               )}
             </div>

@@ -1,11 +1,11 @@
+import type { Story } from "../../data/stories";
 import type {
+  BulkChange,
+  ChatDataContext,
   ChatService,
   ChatServiceResponse,
-  ChatDataContext,
-  BulkChange,
   QueryResultItem,
 } from "./types";
-import type { Story } from "../../data/stories";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -13,7 +13,12 @@ import type { Story } from "../../data/stories";
 
 function normalize(text: string): string {
   return text.toLowerCase().replace(/[äöüß]/g, (c) => {
-    const map: Record<string, string> = { "\u00e4": "ae", "\u00f6": "oe", "\u00fc": "ue", "\u00df": "ss" };
+    const map: Record<string, string> = {
+      ä: "ae",
+      ö: "oe",
+      ü: "ue",
+      ß: "ss",
+    };
     return map[c] ?? c;
   });
 }
@@ -117,23 +122,37 @@ function detectIntent(text: string): IntentResult {
     const topicMatch = n.match(
       /(?:zu[mr]?\s+thema|ueber|zu|fuer|mit|bereich)\s+["\u201E\u201C]?([^"\u201E\u201C?]+)/,
     );
-    const topic = topicMatch ? topicMatch[1].replace(/[?."'\u201E\u201C]/g, "").trim() : "";
+    const topic = topicMatch
+      ? topicMatch[1].replace(/[?."'\u201E\u201C]/g, "").trim()
+      : "";
     return { intent: "search_topic", params: { topic } };
   }
 
-  if (n.match(/(?:aktueller?\s+stand|status|uebersicht|zusammenfassung).*(?:projekt|project)/)) {
+  if (
+    n.match(
+      /(?:aktueller?\s+stand|status|uebersicht|zusammenfassung).*(?:projekt|project)/,
+    )
+  ) {
     const projMatch = n.match(
       /(?:projekt[es]?\s+|project\s+|vom\s+|von\s+|des\s+)["\u201E\u201C]?([^"\u201E\u201C?]+)/,
     );
-    const project = projMatch ? projMatch[1].replace(/[?."'\u201E\u201C]/g, "").trim() : "";
+    const project = projMatch
+      ? projMatch[1].replace(/[?."'\u201E\u201C]/g, "").trim()
+      : "";
     return { intent: "project_status", params: { project } };
   }
 
-  if (n.match(/(?:zeig|list|gib|welche).*(?:alle|saemtliche)?.*(?:stories?|tickets?|user\s*stories?)/)) {
+  if (
+    n.match(
+      /(?:zeig|list|gib|welche).*(?:alle|saemtliche)?.*(?:stories?|tickets?|user\s*stories?)/,
+    )
+  ) {
     const filterMatch = n.match(
       /(?:mit|vom?n?\s+|status|prio(?:ritaet)?)\s+["\u201E\u201C]?([^"\u201E\u201C?]+)/,
     );
-    const filter = filterMatch ? filterMatch[1].replace(/[?."'\u201E\u201C]/g, "").trim() : "";
+    const filter = filterMatch
+      ? filterMatch[1].replace(/[?."'\u201E\u201C]/g, "").trim()
+      : "";
     return { intent: "list_entities", params: { filter } };
   }
 
@@ -190,7 +209,7 @@ function buildBulkPriorityResponse(
         {
           role: "assistant",
           type: "text",
-          content: `Ich konnte keine Stories finden, deren Priorit\u00e4t auf \u201E${value}\u201C ge\u00e4ndert werden muss. Entweder haben bereits alle den Wert oder der Filter \u201E${filter}\u201C trifft auf keine Stories zu.`,
+          content: `Ich konnte keine Stories finden, deren Priorität auf \u201E${value}\u201C geändert werden muss. Entweder haben bereits alle den Wert oder der Filter \u201E${filter}\u201C trifft auf keine Stories zu.`,
         },
       ],
     };
@@ -209,7 +228,7 @@ function buildBulkPriorityResponse(
       {
         role: "assistant",
         type: "text",
-        content: `Ich habe **${targets.length} Stories** gefunden, deren Priorit\u00e4t ge\u00e4ndert werden kann. Hier ist die Vorschau:`,
+        content: `Ich habe **${targets.length} Stories** gefunden, deren Priorität geändert werden kann. Hier ist die Vorschau:`,
       },
       {
         role: "assistant",
@@ -248,7 +267,7 @@ function buildBulkStatusResponse(
           {
             role: "assistant",
             type: "text",
-            content: `Ich habe **${targets.length} Stories** gefunden, deren Status ge\u00e4ndert werden kann:`,
+            content: `Ich habe **${targets.length} Stories** gefunden, deren Status geändert werden kann:`,
           },
           {
             role: "assistant",
@@ -267,7 +286,8 @@ function buildBulkStatusResponse(
       {
         role: "assistant",
         type: "text",
-        content: "Ich konnte keine passenden Eintr\u00e4ge finden, deren Status ge\u00e4ndert werden muss. Versuche es mit einem anderen Filter.",
+        content:
+          "Ich konnte keine passenden Einträge finden, deren Status geändert werden muss. Versuche es mit einem anderen Filter.",
       },
     ],
   };
@@ -288,7 +308,8 @@ function buildBulkEffortResponse(
         {
           role: "assistant",
           type: "text",
-          content: "Keine Stories gefunden, deren Aufwand ge\u00e4ndert werden muss.",
+          content:
+            "Keine Stories gefunden, deren Aufwand geändert werden muss.",
         },
       ],
     };
@@ -320,22 +341,30 @@ function buildBulkEffortResponse(
   };
 }
 
-function buildSearchResponse(ctx: ChatDataContext, topic: string): ChatServiceResponse {
+function buildSearchResponse(
+  ctx: ChatDataContext,
+  topic: string,
+): ChatServiceResponse {
   if (!topic) {
     return {
       messages: [
         {
           role: "assistant",
           type: "text",
-          content: 'Zu welchem Thema soll ich suchen? Gib mir ein Stichwort, z.B. \u201EGibt es Stories zum Thema Authentifizierung?\u201C',
+          content:
+            "Zu welchem Thema soll ich suchen? Gib mir ein Stichwort, z.B. \u201EGibt es Stories zum Thema Authentifizierung?\u201C",
         },
       ],
     };
   }
 
-  const keywords = normalize(topic).split(/\s+/).filter((w) => w.length > 2);
+  const keywords = normalize(topic)
+    .split(/\s+/)
+    .filter((w) => w.length > 2);
   const matchFn = (s: Story) => {
-    const blob = normalize(`${s.title} ${s.description} ${(s.tags || []).join(" ")} ${s.role || ""} ${s.goal || ""}`);
+    const blob = normalize(
+      `${s.title} ${s.description} ${(s.tags || []).join(" ")} ${s.role || ""} ${s.goal || ""}`,
+    );
     return keywords.some((kw) => blob.includes(kw));
   };
 
@@ -347,7 +376,7 @@ function buildSearchResponse(ctx: ChatDataContext, topic: string): ChatServiceRe
         {
           role: "assistant",
           type: "text",
-          content: `Ich konnte keine Stories zum Thema \u201E${topic}\u201C finden. Versuche es mit anderen Stichw\u00f6rtern.`,
+          content: `Ich konnte keine Stories zum Thema \u201E${topic}\u201C finden. Versuche es mit anderen Stichwörtern.`,
         },
       ],
     };
@@ -376,14 +405,18 @@ function buildSearchResponse(ctx: ChatDataContext, topic: string): ChatServiceRe
   };
 }
 
-function buildProjectStatusResponse(ctx: ChatDataContext, project: string): ChatServiceResponse {
+function buildProjectStatusResponse(
+  ctx: ChatDataContext,
+  project: string,
+): ChatServiceResponse {
   if (!project) {
     return {
       messages: [
         {
           role: "assistant",
           type: "text",
-          content: 'Welches Projekt meinst du? Gib mir den Projektnamen, z.B. \u201EAktueller Stand vom Automobil-Projekt\u201C.',
+          content:
+            "Welches Projekt meinst du? Gib mir den Projektnamen, z.B. \u201EAktueller Stand vom Automobil-Projekt\u201C.",
         },
       ],
     };
@@ -399,7 +432,7 @@ function buildProjectStatusResponse(ctx: ChatDataContext, project: string): Chat
         {
           role: "assistant",
           type: "text",
-          content: `Kein Projekt mit dem Namen \u201E${project}\u201C gefunden. Verf\u00fcgbare Projekte: ${projects.join(", ")}.`,
+          content: `Kein Projekt mit dem Namen \u201E${project}\u201C gefunden. Verfügbare Projekte: ${projects.join(", ")}.`,
         },
       ],
     };
@@ -413,16 +446,23 @@ function buildProjectStatusResponse(ctx: ChatDataContext, project: string): Chat
     },
     {} as Record<string, number>,
   );
-  const statusLine = Object.entries(statusCounts).map(([k, v]) => `${k}: ${v}`).join(", ");
+  const statusLine = Object.entries(statusCounts)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join(", ");
 
   const withCompliance = matched.filter((s) => s.complianceScore != null);
-  const avgCompliance = withCompliance.length > 0
-    ? Math.round(withCompliance.reduce((sum, s) => sum + (s.complianceScore || 0), 0) / withCompliance.length)
-    : 0;
+  const avgCompliance =
+    withCompliance.length > 0
+      ? Math.round(
+          withCompliance.reduce((sum, s) => sum + (s.complianceScore || 0), 0) /
+            withCompliance.length,
+        )
+      : 0;
 
   let summary = `**Projekt: ${projName}**\n\n`;
   summary += `**${matched.length} Stories:** ${statusLine}\n`;
-  if (withCompliance.length > 0) summary += `**Durchschn. Compliance-Score:** ${avgCompliance}%`;
+  if (withCompliance.length > 0)
+    summary += `**Durchschn. Compliance-Score:** ${avgCompliance}%`;
 
   return {
     messages: [
@@ -440,7 +480,10 @@ function buildProjectStatusResponse(ctx: ChatDataContext, project: string): Chat
   };
 }
 
-function buildListResponse(ctx: ChatDataContext, filter: string): ChatServiceResponse {
+function buildListResponse(
+  ctx: ChatDataContext,
+  filter: string,
+): ChatServiceResponse {
   const items = filterStoriesByText(ctx.stories, filter).map(storyToQueryItem);
 
   if (items.length === 0) {
@@ -449,7 +492,7 @@ function buildListResponse(ctx: ChatDataContext, filter: string): ChatServiceRes
         {
           role: "assistant",
           type: "text",
-          content: `Keine Eintr\u00e4ge gefunden f\u00fcr den Filter \u201E${filter}\u201C.`,
+          content: `Keine Einträge gefunden für den Filter \u201E${filter}\u201C.`,
         },
       ],
     };
@@ -460,7 +503,7 @@ function buildListResponse(ctx: ChatDataContext, filter: string): ChatServiceRes
       {
         role: "assistant",
         type: "text",
-        content: `Hier sind **${items.length} Stories** ${filter ? `f\u00fcr \u201E${filter}\u201C` : "insgesamt"}:`,
+        content: `Hier sind **${items.length} Stories** ${filter ? `für \u201E${filter}\u201C` : "insgesamt"}:`,
       },
       {
         role: "assistant",
@@ -481,7 +524,8 @@ function buildFallbackResponse(): ChatServiceResponse {
       {
         role: "assistant",
         type: "text",
-        content: "Das habe ich leider nicht verstanden. Ich kann dir bei folgenden Dingen helfen:",
+        content:
+          "Das habe ich leider nicht verstanden. Ich kann dir bei folgenden Dingen helfen:",
       },
       {
         role: "assistant",
@@ -489,10 +533,22 @@ function buildFallbackResponse(): ChatServiceResponse {
         content: "",
         metadata: {
           chips: [
-            { label: "Priorit\u00e4t \u00e4ndern", message: "Setze die Priorit\u00e4t aller Draft-Stories auf Hoch" },
-            { label: "Stories suchen", message: "Gibt es Stories zum Thema Authentifizierung?" },
-            { label: "Projektstatus", message: "Was ist der aktuelle Stand vom Automobil-Projekt?" },
-            { label: "Stories auflisten", message: "Zeige alle Stories mit Status In Progress" },
+            {
+              label: "Priorität ändern",
+              message: "Setze die Priorität aller Draft-Stories auf Hoch",
+            },
+            {
+              label: "Stories suchen",
+              message: "Gibt es Stories zum Thema Authentifizierung?",
+            },
+            {
+              label: "Projektstatus",
+              message: "Was ist der aktuelle Stand vom Automobil-Projekt?",
+            },
+            {
+              label: "Stories auflisten",
+              message: "Zeige alle Stories mit Status In Progress",
+            },
           ],
         },
       },
