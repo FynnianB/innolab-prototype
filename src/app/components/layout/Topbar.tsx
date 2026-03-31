@@ -17,6 +17,7 @@ import { useMobileNav } from "../../context/MobileNavContext";
 import {
   listProjectsForSearchInWorkspace,
   PROJECT_LOGO_BY_ID,
+  PROTOTYPE_USER_ROLE,
 } from "../../data/workspaces";
 import type { Workspace } from "../../data/workspaces";
 import { Avatar, AvatarFallback } from "../ui/avatar";
@@ -395,10 +396,10 @@ export function Topbar() {
           >
             <div className="text-right mr-0 sm:mr-1 min-w-0 hidden md:block">
               <p className="text-[13px] truncate" style={{ fontWeight: 500 }}>
-                Dr. Sarah Mueller
+                Dr. Sarah Müller
               </p>
               <p className="text-[11px] text-muted-foreground -mt-0.5 truncate">
-                Requirements Lead
+                {PROTOTYPE_USER_ROLE}
               </p>
             </div>
             <Avatar className="h-8 w-8 flex-shrink-0">

@@ -24,8 +24,8 @@ const joyrideStyles = {
     backgroundColor: "#ffffff",
     primaryColor: "#4f46e5",
     textColor: "#1e1e2e",
-    /** Weicher als früher (~0,72) – weiterhin Fokus, weniger „Abdunklung“. */
-    overlayColor: "rgba(15, 23, 42, 0.38)",
+    /** Etwas dunkler als 0,38, weiterhin deutlich unter früher ~0,72. */
+    overlayColor: "rgba(15, 23, 42, 0.46)",
     spotlightShadow:
       "0 0 0 2px rgba(99, 102, 241, 0.55), 0 12px 40px rgba(15, 23, 42, 0.12)",
   },

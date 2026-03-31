@@ -11,7 +11,6 @@ import {
   Zap,
   BarChart3,
   CheckCircle2,
-  XCircle,
   FileWarning,
   Activity,
 } from "lucide-react";
@@ -25,6 +24,7 @@ import {
   getProjectIdsForWorkspace,
   PROJECT_LOGO_BY_ID,
   PROJECT_WORKSPACE,
+  PROTOTYPE_USER_ROLE,
 } from "../data/workspaces";
 
 const kpiCards = [
@@ -118,7 +118,7 @@ export function Dashboard() {
     [selectedWorkspaceId],
   );
 
-  /** Nur Projekte, in deren Team der Prototyp-Nutzer (Sarah / SM) ist. */
+  /** Projekte, in deren Team Ihre Kennung (SM / Dr. Sarah Müller) geführt wird. */
   const displayedRecentProjects = useMemo(
     () =>
       dashboardRecentProjects.filter((p) =>
@@ -148,7 +148,7 @@ export function Dashboard() {
         ? {
             ...kpi,
             value: String(myProjectCount),
-            change: "Projekte mit Ihrer Teamzuweisung (SM)",
+            change: "Projekte, in denen Sie im Team stehen",
           }
         : i === 0
           ? {
@@ -170,9 +170,12 @@ export function Dashboard() {
         {/* Header */}
         <div className="mb-6 sm:mb-8 min-w-0">
           <h1 className="text-[#1e1e2e] text-xl sm:text-2xl">
-            Willkommen zurück, Sarah
+            Willkommen zurück, Dr. Sarah Müller
           </h1>
-          <p className="text-[14px] text-muted-foreground mt-1 flex flex-wrap items-center gap-2">
+          <p className="text-[13px] text-slate-500 mt-0.5">
+            {PROTOTYPE_USER_ROLE} · Demo-Persona für diese Oberfläche
+          </p>
+          <p className="text-[14px] text-muted-foreground mt-2 flex flex-wrap items-center gap-2">
             {selectedWorkspace.logoSrc ? (
               <span className="inline-flex w-8 h-8 rounded-lg border border-border bg-white items-center justify-center shrink-0 shadow-sm">
                 <img

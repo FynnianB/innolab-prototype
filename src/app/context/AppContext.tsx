@@ -87,7 +87,7 @@ interface AppState {
   exportScope: "stories" | "compliance" | "jira" | "all";
   setExportScope: (scope: "stories" | "compliance" | "jira" | "all") => void;
 
-  /** Projekt-IDs im aktuellen Workspace, deren Team den Prototyp-Nutzer (SM) enthält. */
+  /** Projekt-IDs im aktuellen Workspace, in deren Team Ihre Kennung (SM) geführt wird. */
   myProjectIdsInWorkspace: string[];
   getEffectiveProjectTeam: (projectId: string) => string[];
   addMemberToProjectTeam: (projectId: string, memberInitials: string) => void;

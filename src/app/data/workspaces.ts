@@ -86,6 +86,27 @@ export const PROJECT_WORKSPACE: Record<string, string> = {
 
 export const PROTOTYPE_USER_INITIALS = "SM";
 
+/**
+ * Funktionale Rolle pro Kennung im Demo-Roster (Projektteam, Tooltips).
+ * SM = eingeloggte Prototyp-Persona — muss mit Topbar & Dashboard übereinstimmen.
+ */
+export const TEAM_MEMBER_ROLE_BY_INITIALS: Record<string, string> = {
+  SM: "Requirements Lead",
+  TK: "Solution Architect",
+  AH: "Software Engineer",
+  JR: "Product Owner",
+  BW: "Quality Assurance",
+  ML: "UX Design",
+  KD: "Legal & Compliance",
+  MK: "Scrum Master",
+  SR: "Lead Engineer",
+  LB: "Platform / DevOps",
+  TH: "IT Security",
+};
+
+export const PROTOTYPE_USER_ROLE =
+  TEAM_MEMBER_ROLE_BY_INITIALS[PROTOTYPE_USER_INITIALS] ?? "Requirements Lead";
+
 export const PROJECT_TEAM_BY_ID: Record<string, string[]> = {
   "P-101": ["SM", "MK", "SR", "LB", "TH"],
   "P-102": ["SM", "MK", "SR"],
@@ -105,7 +126,7 @@ export const PROJECT_TEAM_BY_ID: Record<string, string[]> = {
 };
 
 export const TEAM_MEMBER_LABELS: Record<string, string> = {
-  SM: "Sarah Müller (Sie)",
+  SM: "Dr. Sarah Müller (Sie)",
   TK: "Thomas König",
   AH: "Anna Hoffmann",
   JR: "Jonas Richter",

@@ -43,6 +43,7 @@ import {
   PROJECT_TEAM_BY_ID,
   PROTOTYPE_USER_INITIALS,
   TEAM_MEMBER_LABELS,
+  TEAM_MEMBER_ROLE_BY_INITIALS,
 } from "../data/workspaces";
 
 interface SavedStory {
@@ -723,9 +724,11 @@ export function Projects() {
                       Projektteam
                     </CardTitle>
                     <p className="text-[12px] text-muted-foreground font-normal mt-0.5 leading-snug">
-                      Wer hier gelistet ist, zählt zum Projekt. Mit Ihrer Kennung (
-                      {PROTOTYPE_USER_INITIALS}) erscheint das Projekt unter „Ihre Projekte“ auf
-                      dem Dashboard.
+                      Alle hier genannten Personen sind dem Vorhaben zugeordnet. Ist Ihre Kennung{" "}
+                      <span className="text-[#475569]" style={{ fontWeight: 500 }}>
+                        {PROTOTYPE_USER_INITIALS}
+                      </span>{" "}
+                      dabei, erscheint das Projekt unter „Letzte Projekte“ auf dem Dashboard.
                     </p>
                   </div>
                 </div>
@@ -765,9 +768,7 @@ export function Projects() {
                               {TEAM_MEMBER_LABELS[initials] ?? initials}
                             </p>
                             <p className="text-[11px] text-muted-foreground">
-                              {initials === PROTOTYPE_USER_INITIALS
-                                ? "Prototyp-Nutzerin"
-                                : "Teammitglied"}
+                              {TEAM_MEMBER_ROLE_BY_INITIALS[initials] ?? "Mitwirkende:r"}
                             </p>
                           </div>
                         </div>
@@ -796,8 +797,9 @@ export function Projects() {
                       Sie sind noch nicht im Team
                     </p>
                     <p className="text-[12px] text-muted-foreground mb-3">
-                      Als Sarah Müller ({PROTOTYPE_USER_INITIALS}) beitreten, um dieses Projekt auf
-                      dem Dashboard zu sehen.
+                      Treten Sie als {TEAM_MEMBER_LABELS[PROTOTYPE_USER_INITIALS] ?? "Prototyp-Nutzer:in"} (
+                      {PROTOTYPE_USER_INITIALS}) bei — dann zählt dieses Projekt zu Ihren zuletzt
+                      genutzten Vorhaben.
                     </p>
                     <Button
                       type="button"
@@ -822,7 +824,8 @@ export function Projects() {
                       Kolleg:innen hinzufügen
                     </p>
                     <p className="text-[12px] text-muted-foreground mb-3">
-                      Wählen Sie Personen aus dem Demo-Roster, die dem Projekt zugeordnet werden.
+                      Ergänzen Sie Kolleg:innen aus dem Demo-Roster — mit Rolle und Kurzkennung, wie
+                      in echten Teams.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {rosterAvailableToAdd.map((init) => (

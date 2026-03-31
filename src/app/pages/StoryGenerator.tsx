@@ -813,31 +813,7 @@ export function StoryGenerator() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-4">
-          <Card className="border border-border bg-white hover:shadow-sm transition-all cursor-pointer group">
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-[#2684ff]/10 flex items-center justify-center flex-shrink-0">
-                <span
-                  className="text-[14px]"
-                  style={{ fontWeight: 700, color: "#2684ff" }}
-                >
-                  J
-                </span>
-              </div>
-              <div className="flex-1">
-                <p
-                  className="text-[14px] text-[#1e1e2e]"
-                  style={{ fontWeight: 500 }}
-                >
-                  Jira importieren
-                </p>
-                <p className="text-[12px] text-muted-foreground">
-                  Epics und Issues einlesen
-                </p>
-              </div>
-              <Link2 className="w-4 h-4 text-muted-foreground group-hover:text-[#4f46e5] transition-colors" />
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <Card className="border border-border bg-white hover:shadow-sm transition-all cursor-pointer group">
             <CardContent className="p-5 flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-[#0052cc]/10 flex items-center justify-center flex-shrink-0">
