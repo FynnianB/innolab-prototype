@@ -1,24 +1,29 @@
-import { useState } from "react";
-import { useLocation, useNavigate } from "react-router";
+import type { LucideIcon } from "lucide-react";
 import {
-  LayoutDashboard,
-  Sparkles,
-  ShieldCheck,
-  FolderOpen,
-  Settings,
-  HelpCircle,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  FolderOpen,
+  HelpCircle,
+  LayoutDashboard,
+  Settings,
+  ShieldCheck,
+  Sparkles,
   TrendingUp,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
-import { useIsLgUp } from "../ui/use-mobile";
-import { cn } from "../ui/utils";
-import { useOnboardingReset } from "../../onboarding/OnboardingResetContext";
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router";
 import { ENTERPRISE } from "../../data/enterprise";
 import { hasCustomerJourneyNavCookie } from "../../onboarding/navTourConfig";
+import { useOnboardingReset } from "../../onboarding/OnboardingResetContext";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
+import { useIsLgUp } from "../ui/use-mobile";
+import { cn } from "../ui/utils";
 
 const baseNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -28,7 +33,11 @@ const baseNavItems = [
   { icon: FolderOpen, label: "Projekte", path: "/projects" },
 ];
 
-const customerJourneyItem = { icon: TrendingUp, label: "Customer Journey", path: "/customer-journey" };
+const customerJourneyItem = {
+  icon: TrendingUp,
+  label: "Customer Journey",
+  path: "/customer-journey",
+};
 
 const bottomItems: Array<{
   icon: LucideIcon;
@@ -119,11 +128,14 @@ export function Sidebar({
                 />
               </span>
               <div className="flex flex-col overflow-hidden min-w-0">
-                <span className="text-[15px] tracking-tight truncate" style={{ fontWeight: 600 }}>
+                <span
+                  className="text-[15px] tracking-tight truncate"
+                  style={{ fontWeight: 600 }}
+                >
                   {ENTERPRISE.productName}
                 </span>
                 <span className="text-[11px] text-muted-foreground -mt-0.5 truncate">
-                  {ENTERPRISE.clientName} · {ENTERPRISE.productTagline}
+                  {ENTERPRISE.clientName}
                 </span>
               </div>
             </>
@@ -136,7 +148,10 @@ export function Sidebar({
           data-tour="nav-main"
         >
           {!effectiveCollapsed && (
-            <p className="text-[11px] text-muted-foreground px-3 pb-2 uppercase tracking-wider" style={{ fontWeight: 500 }}>
+            <p
+              className="text-[11px] text-muted-foreground px-3 pb-2 uppercase tracking-wider"
+              style={{ fontWeight: 500 }}
+            >
               Hauptmenü
             </p>
           )}
@@ -154,7 +169,9 @@ export function Sidebar({
                 } ${effectiveCollapsed ? "justify-center" : ""}`}
                 style={{ fontWeight: active ? 500 : 400 }}
               >
-                <item.icon className={`w-[18px] h-[18px] flex-shrink-0 ${active ? "text-white" : "text-[#94a3b8] group-hover:text-[#4f46e5]"}`} />
+                <item.icon
+                  className={`w-[18px] h-[18px] flex-shrink-0 ${active ? "text-white" : "text-[#94a3b8] group-hover:text-[#4f46e5]"}`}
+                />
                 {!effectiveCollapsed && <span>{item.label}</span>}
               </button>
             );

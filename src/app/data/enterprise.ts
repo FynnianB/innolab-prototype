@@ -5,7 +5,6 @@
 export const ENTERPRISE = {
   /** Produktname oben links (Hauptzeile) */
   productName: "ReqWise AI",
-  productTagline: "Requirements Intelligence",
   /** Mandant / bereitstellende Organisation (Unterzeile, früher „Enterprise“) */
   clientName: "Capgemini",
   /** Kurz für Export-Dateinamen etc. */
