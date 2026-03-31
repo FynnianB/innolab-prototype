@@ -2,10 +2,21 @@ import {
   createContext,
   useCallback,
   useContext,
+  useMemo,
   useState,
   type ReactNode,
 } from "react";
 import { allStories, type Story } from "../data/stories";
+import {
+  DEFAULT_WORKSPACE_ID,
+  WORKSPACES,
+  filterStoriesByWorkspace,
+  getWorkspaceById,
+  isValidWorkspaceId,
+  persistWorkspaceId,
+  readStoredWorkspaceId,
+  type Workspace,
+} from "../data/workspaces";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -20,6 +31,8 @@ export interface Notification {
   time: string;
   read: boolean;
   type: "success" | "warning" | "info" | "error";
+  /** Wenn gesetzt: nur im passenden Workspace sichtbar. Fehlt = global. */
+  workspaceId?: string | null;
 }
 
 export interface ExportRecord {
@@ -37,10 +50,16 @@ interface StoryUpdate {
 }
 
 interface AppState {
-  selectedWorkspace: string;
-  setSelectedWorkspace: (ws: string) => void;
+  workspaces: Workspace[];
+  selectedWorkspaceId: string;
+  setSelectedWorkspaceId: (id: string) => void;
+  selectedWorkspace: Workspace;
 
+  /** Alle Stories (für Updates / Detail ohne Kontextwechsel). */
   stories: Story[];
+  /** Stories des aktuellen Workspaces (Listen, Chat, Analyse). */
+  storiesInWorkspace: Story[];
+
   updateStories: (updates: StoryUpdate[]) => void;
 
   storyActions: Record<string, StoryAction>;
@@ -48,6 +67,7 @@ interface AppState {
   resetStoryActions: () => void;
 
   notifications: Notification[];
+  notificationsInWorkspace: Notification[];
   markNotificationRead: (id: string) => void;
   unreadCount: number;
 
@@ -72,6 +92,7 @@ const defaultNotifications: Notification[] = [
     time: "vor 15 Min.",
     read: false,
     type: "success",
+    workspaceId: "ws-automobil",
   },
   {
     id: "N-002",
@@ -80,6 +101,7 @@ const defaultNotifications: Notification[] = [
     time: "vor 1 Std.",
     read: false,
     type: "warning",
+    workspaceId: "ws-banking",
   },
   {
     id: "N-003",
@@ -88,6 +110,7 @@ const defaultNotifications: Notification[] = [
     time: "vor 2 Std.",
     read: true,
     type: "success",
+    workspaceId: "ws-healthcare",
   },
   {
     id: "N-004",
@@ -96,6 +119,7 @@ const defaultNotifications: Notification[] = [
     time: "vor 3 Std.",
     read: true,
     type: "info",
+    workspaceId: "ws-automobil",
   },
   {
     id: "N-005",
@@ -104,6 +128,7 @@ const defaultNotifications: Notification[] = [
     time: "vor 5 Std.",
     read: true,
     type: "info",
+    workspaceId: null,
   },
 ];
 
@@ -114,8 +139,8 @@ const defaultNotifications: Notification[] = [
 const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [selectedWorkspace, setSelectedWorkspace] = useState(
-    "Automobil-Projekt Alpha",
+  const [selectedWorkspaceId, setSelectedWorkspaceIdState] = useState(
+    readStoredWorkspaceId,
   );
   const [stories, setStories] = useState<Story[]>(allStories);
   const [storyActions, setStoryActions] = useState<Record<string, StoryAction>>(
@@ -128,6 +153,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [exportScope, setExportScope] = useState<
     "stories" | "compliance" | "jira" | "all"
   >("all");
+
+  const setSelectedWorkspaceId = useCallback((id: string) => {
+    const next = isValidWorkspaceId(id) ? id : DEFAULT_WORKSPACE_ID;
+    setSelectedWorkspaceIdState(next);
+    persistWorkspaceId(next);
+  }, []);
+
+  const selectedWorkspace = useMemo(() => {
+    return getWorkspaceById(selectedWorkspaceId) ?? WORKSPACES[0];
+  }, [selectedWorkspaceId]);
+
+  const storiesInWorkspace = useMemo(
+    () => filterStoriesByWorkspace(stories, selectedWorkspaceId),
+    [stories, selectedWorkspaceId],
+  );
+
+  const notificationsInWorkspace = useMemo(
+    () =>
+      notifications.filter(
+        (n) => n.workspaceId == null || n.workspaceId === selectedWorkspaceId,
+      ),
+    [notifications, selectedWorkspaceId],
+  );
+
+  const unreadCount = notificationsInWorkspace.filter((n) => !n.read).length;
 
   const updateStories = useCallback((updates: StoryUpdate[]) => {
     setStories((prev) => {
@@ -155,12 +205,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const markNotificationRead = useCallback((id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-    );
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
   }, []);
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const addExportRecord = useCallback((record: Omit<ExportRecord, "id">) => {
     setExportHistory((prev) => [
@@ -170,14 +216,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value: AppState = {
+    workspaces: WORKSPACES,
+    selectedWorkspaceId,
+    setSelectedWorkspaceId,
     selectedWorkspace,
-    setSelectedWorkspace,
     stories,
+    storiesInWorkspace,
     updateStories,
     storyActions,
     setStoryAction,
     resetStoryActions,
     notifications,
+    notificationsInWorkspace,
     markNotificationRead,
     unreadCount,
     exportHistory,

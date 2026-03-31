@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   Sparkles,
@@ -21,6 +21,11 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
 import { TooltipProvider } from "../components/ui/tooltip";
+import { useAppContext } from "../context/AppContext";
+import {
+  getProjectIdsForWorkspace,
+  PROJECT_WORKSPACE,
+} from "../data/workspaces";
 
 const kpiCards = [
   {
@@ -67,19 +72,72 @@ const recentProjects = [
   { id: "P-003", name: "Healthcare Portal DSGVO", status: "Abgeschlossen", stories: 342, compliance: 99, updated: "Gestern", statusColor: "#10b981" },
   { id: "P-004", name: "E-Commerce Checkout Flow", status: "In Analyse", stories: 89, compliance: 78, updated: "vor 1 Tag", statusColor: "#4f46e5" },
   { id: "P-005", name: "IoT Dashboard Spezifikation", status: "Entwurf", stories: 56, compliance: 65, updated: "vor 3 Tagen", statusColor: "#94a3b8" },
+  { id: "P-006", name: "CRM Integration Suite", status: "Aktiv", stories: 145, compliance: 85, updated: "vor 2 Tagen", statusColor: "#4f46e5" },
 ];
 
-const recentActivity = [
-  { icon: CheckCircle2, text: "23 neue Stories generiert", project: "Automobil-Plattform", time: "vor 15 Min.", color: "#10b981" },
-  { icon: XCircle, text: "3 Widersprüche erkannt", project: "Banking App v3.2", time: "vor 1 Std.", color: "#ef4444" },
-  { icon: ShieldCheck, text: "Compliance-Check bestanden", project: "Healthcare Portal", time: "vor 2 Std.", color: "#10b981" },
-  { icon: FileWarning, text: "5 unklare Formulierungen", project: "E-Commerce Checkout", time: "vor 3 Std.", color: "#f59e0b" },
-  { icon: Activity, text: "Neue Regeln importiert", project: "Global", time: "vor 5 Std.", color: "#8b5cf6" },
+const recentActivity: {
+  icon: typeof CheckCircle2;
+  text: string;
+  project: string;
+  time: string;
+  color: string;
+  workspaceId?: string | null;
+}[] = [
+  { icon: CheckCircle2, text: "23 neue Stories generiert", project: "Automobil-Plattform", time: "vor 15 Min.", color: "#10b981", workspaceId: "ws-automobil" },
+  { icon: XCircle, text: "3 Widersprüche erkannt", project: "Banking App v3.2", time: "vor 1 Std.", color: "#ef4444", workspaceId: "ws-banking" },
+  { icon: ShieldCheck, text: "Compliance-Check bestanden", project: "Healthcare Portal", time: "vor 2 Std.", color: "#10b981", workspaceId: "ws-healthcare" },
+  { icon: FileWarning, text: "5 unklare Formulierungen", project: "E-Commerce Checkout", time: "vor 3 Std.", color: "#f59e0b", workspaceId: "ws-digital" },
+  { icon: Activity, text: "Neue Regeln importiert", project: "Global", time: "vor 5 Std.", color: "#8b5cf6", workspaceId: null },
 ];
 
 export function Dashboard() {
   const navigate = useNavigate();
+  const { selectedWorkspaceId, selectedWorkspace, storiesInWorkspace } =
+    useAppContext();
   const [hoveredKpi, setHoveredKpi] = useState<number | null>(null);
+
+  const dashboardRecentProjects = useMemo(
+    () =>
+      recentProjects.filter(
+        (p) => PROJECT_WORKSPACE[p.id] === selectedWorkspaceId,
+      ),
+    [selectedWorkspaceId],
+  );
+
+  const dashboardActivity = useMemo(
+    () =>
+      recentActivity.filter(
+        (a) =>
+          a.workspaceId == null || a.workspaceId === selectedWorkspaceId,
+      ),
+    [selectedWorkspaceId],
+  );
+
+  const workspaceProjectCount = getProjectIdsForWorkspace(
+    selectedWorkspaceId,
+  ).length;
+
+  const kpiCardsResolved = useMemo(() => {
+    return kpiCards.map((kpi, i) =>
+      i === 3
+        ? {
+            ...kpi,
+            value: String(workspaceProjectCount),
+            change: `im Workspace „${selectedWorkspace.name}“`,
+          }
+        : i === 0
+          ? {
+              ...kpi,
+              value: String(storiesInWorkspace.length),
+              change: "Stories in diesem Workspace",
+            }
+          : kpi,
+    );
+  }, [
+    workspaceProjectCount,
+    selectedWorkspace.name,
+    storiesInWorkspace.length,
+  ]);
 
   return (
     <TooltipProvider>
@@ -91,7 +149,9 @@ export function Dashboard() {
               Willkommen zurück, Sarah
             </h1>
             <p className="text-[14px] text-muted-foreground mt-1">
-              Hier ist Ihre Übersicht für heute. 3 Projekte benötigen Ihre Aufmerksamkeit.
+              Übersicht für <span className="text-[#475569]" style={{ fontWeight: 500 }}>{selectedWorkspace.name}</span>
+              {" · "}
+              {workspaceProjectCount} Projekt{workspaceProjectCount === 1 ? "" : "e"} in diesem Workspace
             </p>
           </div>
           <Button
@@ -105,7 +165,7 @@ export function Dashboard() {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-5 mb-6 sm:mb-8">
-          {kpiCards.map((kpi, i) => (
+          {kpiCardsResolved.map((kpi, i) => (
             <Card
               key={i}
               className="border border-border bg-white hover:shadow-md transition-all duration-200 cursor-default overflow-hidden"
@@ -165,7 +225,12 @@ export function Dashboard() {
                     <span>Compliance</span>
                     <span className="text-right">Aktualisiert</span>
                   </div>
-                  {recentProjects.map((project) => (
+                  {dashboardRecentProjects.length === 0 ? (
+                    <p className="text-[13px] text-muted-foreground px-3 py-6 text-center">
+                      Keine Projekte in diesem Workspace in der Kurzliste.
+                    </p>
+                  ) : null}
+                  {dashboardRecentProjects.map((project) => (
                     <div
                       key={project.id}
                       role="button"
@@ -257,7 +322,12 @@ export function Dashboard() {
               </CardHeader>
               <CardContent className="px-5 pb-5">
                 <div className="space-y-4">
-                  {recentActivity.map((activity, i) => (
+                  {dashboardActivity.length === 0 ? (
+                    <p className="text-[13px] text-muted-foreground text-center py-4">
+                      Keine Aktivitäten für diesen Workspace.
+                    </p>
+                  ) : null}
+                  {dashboardActivity.map((activity, i) => (
                     <div key={i} className="flex items-start gap-3 group">
                       <div
                         className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"

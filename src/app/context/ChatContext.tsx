@@ -85,7 +85,7 @@ const WELCOME_MESSAGES: ChatMessage[] = [
 const ChatContext = createContext<ChatState | null>(null);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const { stories, updateStories } = useAppContext();
+  const { storiesInWorkspace, updateStories } = useAppContext();
   const serviceRef = useRef<ChatService>(new SimulatedChatService());
 
   const [messages, setMessages] = useState<ChatMessage[]>(WELCOME_MESSAGES);
@@ -113,7 +113,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setIsTyping(true);
 
       serviceRef.current
-        .processMessage(trimmed, { stories })
+        .processMessage(trimmed, { stories: storiesInWorkspace })
         .then((response) => {
           const newMessages: ChatMessage[] = response.messages.map((m) => ({
             ...m,
@@ -127,7 +127,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         })
         .finally(() => setIsTyping(false));
     },
-    [stories],
+    [storiesInWorkspace],
   );
 
   const applyBulkOperation = useCallback(() => {

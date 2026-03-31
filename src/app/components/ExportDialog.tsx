@@ -8,7 +8,7 @@ import {
   Loader2,
   Table,
 } from "lucide-react";
-import { useState, type ChangeEvent } from "react";
+import { useMemo, useState, type ChangeEvent } from "react";
 import { useAppContext } from "../context/AppContext";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -81,6 +81,7 @@ export function ExportDialog() {
     setShowExportDialog,
     exportScope,
     addExportRecord,
+    storiesInWorkspace,
   } = useAppContext();
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("PDF");
   const [phase, setPhase] = useState<ExportPhase>("config");
@@ -88,7 +89,15 @@ export function ExportDialog() {
   const [includeMetadata, setIncludeMetadata] = useState(true);
   const [includeTimestamps, setIncludeTimestamps] = useState(true);
 
-  const scopeInfo = scopeConfig[exportScope] || scopeConfig.all;
+  const scopeInfo = useMemo(() => {
+    const base = scopeConfig[exportScope] || scopeConfig.all;
+    const total = storiesInWorkspace.length;
+    const jiraN = storiesInWorkspace.filter((s) => s.source === "jira-import").length;
+    if (exportScope === "stories") return { ...base, itemCount: total };
+    if (exportScope === "jira") return { ...base, itemCount: jiraN };
+    if (exportScope === "all") return { ...base, itemCount: total + 12 };
+    return base;
+  }, [exportScope, storiesInWorkspace]);
 
   const handleClose = () => {
     setShowExportDialog(false);

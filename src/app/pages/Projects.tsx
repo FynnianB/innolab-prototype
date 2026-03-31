@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
   FolderOpen,
@@ -43,6 +43,7 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import { TooltipProvider } from "../components/ui/tooltip";
+import { useAppContext } from "../context/AppContext";
 
 interface SavedStory {
   id: string;
@@ -70,6 +71,7 @@ interface VersionEntry {
 
 interface Project {
   id: string;
+  workspaceId: string;
   name: string;
   description: string;
   status: string;
@@ -88,6 +90,7 @@ interface Project {
 const projects: Project[] = [
   {
     id: "P-001",
+    workspaceId: "ws-automobil",
     name: "Automobil-Plattform Redesign",
     description: "Komplettes Redesign der Infotainment-Plattform inkl. OTA-Update-Funktionalität",
     status: "Aktiv",
@@ -164,6 +167,7 @@ const projects: Project[] = [
   },
   {
     id: "P-002",
+    workspaceId: "ws-banking",
     name: "Banking App v3.2 Migration",
     description: "Migration der Legacy-Banking-App auf neue Microservice-Architektur",
     status: "Review",
@@ -211,6 +215,7 @@ const projects: Project[] = [
   },
   {
     id: "P-003",
+    workspaceId: "ws-healthcare",
     name: "Healthcare Portal DSGVO",
     description: "DSGVO-konforme Patientenportal-Spezifikation für Kliniken",
     status: "Abgeschlossen",
@@ -229,6 +234,7 @@ const projects: Project[] = [
   },
   {
     id: "P-004",
+    workspaceId: "ws-digital",
     name: "E-Commerce Checkout Flow",
     description: "Optimierung des Checkout-Prozesses für höhere Conversion Rate",
     status: "Aktiv",
@@ -245,6 +251,7 @@ const projects: Project[] = [
   },
   {
     id: "P-005",
+    workspaceId: "ws-digital",
     name: "IoT Dashboard Spezifikation",
     description: "Real-time Dashboard für IoT-Sensordaten in Produktionsumgebungen",
     status: "Entwurf",
@@ -261,6 +268,7 @@ const projects: Project[] = [
   },
   {
     id: "P-006",
+    workspaceId: "ws-digital",
     name: "CRM Integration Suite",
     description: "Salesforce und HubSpot Integration für die Vertriebsabteilung",
     status: "Aktiv",
@@ -292,6 +300,7 @@ const effortConfig: Record<string, { color: string; bg: string }> = {
 export function Projects() {
   const navigate = useNavigate();
   const { projectId } = useParams<{ projectId?: string }>();
+  const { selectedWorkspaceId, selectedWorkspace } = useAppContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"overview" | "stories" | "history">("overview");
   const [editingStory, setEditingStory] = useState<SavedStory | null>(null);
@@ -300,11 +309,22 @@ export function Projects() {
     ? (projects.find((p) => p.id === projectId) || null)
     : null;
 
-  const filteredProjects = projects.filter(
-    (p) =>
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  useEffect(() => {
+    if (
+      selectedProject &&
+      selectedProject.workspaceId !== selectedWorkspaceId
+    ) {
+      navigate("/projects", { replace: true });
+    }
+  }, [selectedProject, selectedWorkspaceId, navigate]);
+
+  const filteredProjects = projects
+    .filter((p) => p.workspaceId === selectedWorkspaceId)
+    .filter(
+      (p) =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.description.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
 
   // Project Detail View
   if (selectedProject) {
@@ -810,7 +830,13 @@ export function Projects() {
           <div>
             <h1 className="text-[#1e1e2e]">Projekte</h1>
             <p className="text-[14px] text-muted-foreground mt-1">
-              {projects.length} Projekte, {projects.filter((p) => p.status === "Aktiv").length} aktiv
+              Workspace: <span className="text-[#475569]" style={{ fontWeight: 500 }}>{selectedWorkspace.name}</span>
+              {" · "}
+              {filteredProjects.length} Projekt
+              {filteredProjects.length === 1 ? "" : "e"}
+              {filteredProjects.length > 0
+                ? `, ${filteredProjects.filter((p) => p.status === "Aktiv").length} aktiv`
+                : ""}
             </p>
           </div>
           <Button className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 text-[13px]">
@@ -843,6 +869,14 @@ export function Projects() {
         </div>
 
         {/* Projects Grid */}
+        {filteredProjects.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border bg-[#fafbfc] py-16 text-center">
+            <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-60" />
+            <p className="text-[14px] text-muted-foreground">
+              Keine Projekte in diesem Workspace oder keine Treffer für die Suche.
+            </p>
+          </div>
+        ) : (
         <div className="grid grid-cols-2 gap-4">
           {filteredProjects.map((project) => (
             <Card
@@ -975,6 +1009,7 @@ export function Projects() {
             </Card>
           ))}
         </div>
+        )}
       </div>
     </TooltipProvider>
   );

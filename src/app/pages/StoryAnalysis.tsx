@@ -549,13 +549,26 @@ function FocusView({
 /* ------------------------------------------------------------------ */
 
 export function StoryAnalysis() {
-  const { stories, setShowExportDialog, setExportScope } = useAppContext();
+  const {
+    storiesInWorkspace: stories,
+    stories: allStoriesForRelations,
+    selectedWorkspace,
+    setShowExportDialog,
+    setExportScope,
+  } = useAppContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStoryId, setSelectedStoryId] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+
+  const relationsTouchingWorkspace = useMemo(() => {
+    const ids = new Set(stories.map((s) => s.id));
+    return allRelations.filter(
+      (r) => ids.has(r.sourceId) || ids.has(r.targetId),
+    );
+  }, [stories]);
 
   const relationCountMap = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -623,6 +636,11 @@ export function StoryAnalysis() {
               Story-Analyse
             </h1>
             <p className="text-[13px] text-slate-500">
+              Workspace:{" "}
+              <span className="text-slate-700" style={{ fontWeight: 500 }}>
+                {selectedWorkspace.name}
+              </span>
+              {" · "}
               Beziehungen, Duplikate und Abhängigkeiten zwischen Stories
               analysieren
             </p>
@@ -647,7 +665,7 @@ export function StoryAnalysis() {
           <FocusView
             key="focus"
             story={selectedStory}
-            stories={stories}
+            stories={allStoriesForRelations}
             onBack={() => setSelectedStoryId(null)}
             confirmedIds={confirmedIds}
             dismissedIds={dismissedIds}
@@ -663,7 +681,7 @@ export function StoryAnalysis() {
             className="space-y-5"
           >
             {/* Summary */}
-            <SummaryCards relations={allRelations} />
+            <SummaryCards relations={relationsTouchingWorkspace} />
 
             {/* Search and Filters */}
             <div className="flex flex-col sm:flex-row gap-3">

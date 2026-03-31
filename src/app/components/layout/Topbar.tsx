@@ -24,18 +24,14 @@ import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { useAppContext } from "../../context/AppContext";
 
-const workspaces = [
-  "Automobil-Projekt Alpha",
-  "Banking Platform v3",
-  "Healthcare Portal",
-];
-
 export function Topbar() {
   const navigate = useNavigate();
   const {
+    workspaces,
     selectedWorkspace,
-    setSelectedWorkspace,
-    notifications,
+    selectedWorkspaceId,
+    setSelectedWorkspaceId,
+    notificationsInWorkspace,
     markNotificationRead,
     unreadCount,
     setShowExportDialog,
@@ -61,22 +57,26 @@ export function Topbar() {
             <button className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg hover:bg-[#f1f5f9] transition-colors text-[14px] min-w-0 flex-shrink-0">
               <div className="w-6 h-6 rounded bg-[#4f46e5]/10 flex items-center justify-center flex-shrink-0">
                 <span className="text-[11px] text-[#4f46e5]" style={{ fontWeight: 600 }}>
-                  {selectedWorkspace.charAt(0)}
+                  {selectedWorkspace.name.charAt(0)}
                 </span>
               </div>
-              <span className="hidden sm:inline truncate max-w-[140px] lg:max-w-[200px]" style={{ fontWeight: 500 }}>{selectedWorkspace}</span>
+              <span className="hidden sm:inline truncate max-w-[140px] lg:max-w-[200px]" style={{ fontWeight: 500 }}>{selectedWorkspace.name}</span>
               <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-[260px]">
             {workspaces.map((ws) => (
-              <DropdownMenuItem key={ws} onClick={() => setSelectedWorkspace(ws)}>
+              <DropdownMenuItem
+                key={ws.id}
+                onClick={() => setSelectedWorkspaceId(ws.id)}
+                className={ws.id === selectedWorkspaceId ? "bg-[#f1f0ff]" : ""}
+              >
                 <div className="w-6 h-6 rounded bg-[#4f46e5]/10 flex items-center justify-center mr-2">
                   <span className="text-[11px] text-[#4f46e5]" style={{ fontWeight: 600 }}>
-                    {ws.charAt(0)}
+                    {ws.name.charAt(0)}
                   </span>
                 </div>
-                {ws}
+                {ws.name}
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
@@ -149,27 +149,33 @@ export function Topbar() {
               )}
             </div>
             <div className="max-h-[320px] overflow-y-auto">
-              {notifications.map((notif) => (
-                <div
-                  key={notif.id}
-                  className={`px-4 py-3 border-b border-border last:border-0 hover:bg-[#f8fafc] cursor-pointer transition-colors ${
-                    !notif.read ? "bg-[#f1f0ff]/30" : ""
-                  }`}
-                  onClick={() => markNotificationRead(notif.id)}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5">{notifTypeIcon(notif.type)}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12px] text-[#1e1e2e]" style={{ fontWeight: notif.read ? 400 : 500 }}>{notif.text}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-muted-foreground">{notif.project}</span>
-                        <span className="text-[10px] text-muted-foreground">{notif.time}</span>
-                      </div>
-                    </div>
-                    {!notif.read && <div className="w-2 h-2 rounded-full bg-[#4f46e5] mt-1.5 flex-shrink-0" />}
-                  </div>
+              {notificationsInWorkspace.length === 0 ? (
+                <div className="px-4 py-8 text-center text-[12px] text-muted-foreground">
+                  Keine Benachrichtigungen in diesem Workspace.
                 </div>
-              ))}
+              ) : (
+                notificationsInWorkspace.map((notif) => (
+                  <div
+                    key={notif.id}
+                    className={`px-4 py-3 border-b border-border last:border-0 hover:bg-[#f8fafc] cursor-pointer transition-colors ${
+                      !notif.read ? "bg-[#f1f0ff]/30" : ""
+                    }`}
+                    onClick={() => markNotificationRead(notif.id)}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5">{notifTypeIcon(notif.type)}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] text-[#1e1e2e]" style={{ fontWeight: notif.read ? 400 : 500 }}>{notif.text}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] text-muted-foreground">{notif.project}</span>
+                          <span className="text-[10px] text-muted-foreground">{notif.time}</span>
+                        </div>
+                      </div>
+                      {!notif.read && <div className="w-2 h-2 rounded-full bg-[#4f46e5] mt-1.5 flex-shrink-0" />}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
