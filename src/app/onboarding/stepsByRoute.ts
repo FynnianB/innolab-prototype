@@ -24,7 +24,7 @@ function navOverviewContent(): string {
 const navStep: Step = {
   target: sel("nav-main"),
   title: "Hauptmenü",
-  content: "", // wird zur Laufzeit gesetzt
+  content: "",
   placement: "right-start",
   disableBeacon: true,
 };
@@ -39,7 +39,7 @@ const PROJECTS_CARD =
   "Kurzüberblick Ihrer Projekte – volle Liste über „Alle anzeigen“ oder „Projekte“ im Menü.";
 
 /**
- * Dashboard: ein Nav-Schritt (alle Punkte in einer Kachel), dann Workspace, Export, Projekte.
+ * Dashboard: Nav-Schritt, dann Workspace, Export, Projekte.
  */
 export function getDashboardSteps(includeMobileMenuStep: boolean): Step[] {
   const nav: Step = {
