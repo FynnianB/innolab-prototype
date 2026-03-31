@@ -944,7 +944,7 @@ export function Projects() {
                 <p className="text-[12px] text-muted-foreground mb-4 line-clamp-1">{project.description}</p>
 
                 {/* Stats Row */}
-                <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                   <div className="flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5 text-[#4f46e5]" />
                     <span className="text-[12px] text-muted-foreground">

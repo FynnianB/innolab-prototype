@@ -15,6 +15,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { useIsLgUp } from "../ui/use-mobile";
+import { cn } from "../ui/utils";
 
 /** Feature-Cookie: Tab "Customer Journey" nur anzeigen, wenn Cookie "customer-journey" gesetzt ist (z. B. für Devs). */
 function hasCustomerJourneyCookie(): boolean {
@@ -38,8 +40,18 @@ const bottomItems = [
   { icon: HelpCircle, label: "Hilfe & Support", path: "/help" },
 ];
 
-export function Sidebar() {
+type SidebarProps = {
+  mobileOpen?: boolean;
+  onMobileOpenChange?: (open: boolean) => void;
+};
+
+export function Sidebar({
+  mobileOpen = false,
+  onMobileOpenChange,
+}: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const isLgUp = useIsLgUp();
+  const effectiveCollapsed = isLgUp && collapsed;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -52,19 +64,27 @@ export function Sidebar() {
     ? [...baseNavItems, customerJourneyItem]
     : baseNavItems;
 
+  const go = (path: string) => {
+    navigate(path);
+    onMobileOpenChange?.(false);
+  };
+
   return (
     <TooltipProvider delayDuration={0}>
       <aside
-        className={`h-screen bg-white border-r border-border flex flex-col transition-all duration-300 ease-in-out ${
-          collapsed ? "w-[72px]" : "w-[260px]"
-        }`}
+        className={cn(
+          "h-screen bg-white border-r border-border flex flex-col duration-300 ease-in-out",
+          "fixed inset-y-0 left-0 z-40 w-[260px] shadow-xl transition-transform lg:static lg:z-auto lg:shadow-none lg:translate-x-0",
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          effectiveCollapsed ? "lg:w-[72px]" : "lg:w-[260px]",
+        )}
       >
         {/* Logo */}
         <div className="h-16 flex items-center px-5 border-b border-border gap-3">
           <div className="w-8 h-8 rounded-lg bg-[#4f46e5] flex items-center justify-center flex-shrink-0">
             <BrainCircuit className="w-5 h-5 text-white" />
           </div>
-          {!collapsed && (
+          {!effectiveCollapsed && (
             <div className="flex flex-col overflow-hidden">
               <span className="text-[15px] tracking-tight" style={{ fontWeight: 600 }}>
                 ReqWise AI
@@ -76,7 +96,7 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-          {!collapsed && (
+          {!effectiveCollapsed && (
             <p className="text-[11px] text-muted-foreground px-3 pb-2 uppercase tracking-wider" style={{ fontWeight: 500 }}>
               Hauptmenü
             </p>
@@ -86,19 +106,19 @@ export function Sidebar() {
             const btn = (
               <button
                 key={item.path}
-                onClick={() => navigate(item.path)}
+                onClick={() => go(item.path)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] transition-all duration-150 group ${
                   active
                     ? "bg-[#4f46e5] text-white shadow-sm"
                     : "text-[#475569] hover:bg-[#f1f0ff] hover:text-[#4f46e5]"
-                } ${collapsed ? "justify-center" : ""}`}
+                } ${effectiveCollapsed ? "justify-center" : ""}`}
                 style={{ fontWeight: active ? 500 : 400 }}
               >
                 <item.icon className={`w-[18px] h-[18px] flex-shrink-0 ${active ? "text-white" : "text-[#94a3b8] group-hover:text-[#4f46e5]"}`} />
-                {!collapsed && <span>{item.label}</span>}
+                {!effectiveCollapsed && <span>{item.label}</span>}
               </button>
             );
-            if (collapsed) {
+            if (effectiveCollapsed) {
               return (
                 <Tooltip key={item.path}>
                   <TooltipTrigger asChild>{btn}</TooltipTrigger>
@@ -116,17 +136,17 @@ export function Sidebar() {
             const btn = (
               <button
                 key={item.path}
-                onClick={() => navigate(item.path)}
+                onClick={() => go(item.path)}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] text-[#475569] hover:bg-[#f1f5f9] transition-colors ${
-                  collapsed ? "justify-center" : ""
+                  effectiveCollapsed ? "justify-center" : ""
                 }`}
                 style={{ fontWeight: 400 }}
               >
                 <item.icon className="w-[18px] h-[18px] text-[#94a3b8]" />
-                {!collapsed && <span>{item.label}</span>}
+                {!effectiveCollapsed && <span>{item.label}</span>}
               </button>
             );
-            if (collapsed) {
+            if (effectiveCollapsed) {
               return (
                 <Tooltip key={item.path}>
                   <TooltipTrigger asChild>{btn}</TooltipTrigger>
@@ -139,12 +159,13 @@ export function Sidebar() {
 
           {/* Collapse button */}
           <button
+            type="button"
             onClick={() => setCollapsed(!collapsed)}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] text-[#94a3b8] hover:bg-[#f1f5f9] transition-colors ${
-              collapsed ? "justify-center" : ""
+            className={`hidden lg:flex w-full items-center gap-3 px-3 py-2 rounded-lg text-[13px] text-[#94a3b8] hover:bg-[#f1f5f9] transition-colors ${
+              effectiveCollapsed ? "justify-center" : ""
             }`}
           >
-            {collapsed ? (
+            {effectiveCollapsed ? (
               <ChevronRight className="w-[18px] h-[18px]" />
             ) : (
               <>

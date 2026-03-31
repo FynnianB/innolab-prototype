@@ -14,7 +14,7 @@ export function ChatBubble() {
 
       <motion.button
         onClick={toggleOpen}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[#4f46e5] text-white shadow-lg hover:bg-[#4338ca] transition-colors flex items-center justify-center"
+        className="fixed z-50 w-14 h-14 rounded-full bg-[#4f46e5] text-white shadow-lg hover:bg-[#4338ca] transition-colors flex items-center justify-center bottom-[max(1.5rem,env(safe-area-inset-bottom,0px))] right-[max(1.5rem,env(safe-area-inset-right,0px))]"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         aria-label={isOpen ? "Chat schließen" : "Chat öffnen"}

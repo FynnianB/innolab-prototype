@@ -10,7 +10,6 @@ import {
   CheckCircle2,
   XCircle,
   Wand2,
-  Ban,
   Copy,
   Download,
   ArrowLeft,
@@ -39,6 +38,7 @@ import {
   Send,
   Clock,
   Users,
+  SkipForward,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -78,7 +78,7 @@ interface DocIssue {
   location: string;
   before: string;
   after: string;
-  status: "pending" | "confirmed" | "dismissed" | "fixed";
+  status: "pending" | "dismissed" | "fixed";
 }
 
 interface UserStory {
@@ -518,8 +518,16 @@ export function StoryGenerator() {
     }, 900);
   };
 
-  const handleDocIssueAction = (issueId: string, action: "confirmed" | "dismissed" | "fixed") => {
+  const handleDocIssueAction = (issueId: string, action: "dismissed" | "fixed") => {
     setDocIssues((prev) => prev.map((i) => (i.id === issueId ? { ...i, status: action } : i)));
+  };
+
+  const handleDocFixAllPending = () => {
+    setDocIssues((prev) => prev.map((i) => (i.status === "pending" ? { ...i, status: "fixed" as const } : i)));
+  };
+
+  const handleDocIgnoreAllPending = () => {
+    setDocIssues((prev) => prev.map((i) => (i.status === "pending" ? { ...i, status: "dismissed" as const } : i)));
   };
 
   const toggleStory = (id: string) => {
@@ -614,7 +622,7 @@ export function StoryGenerator() {
   // ==============================
   if (phase === "upload") {
     return (
-      <div className="p-8 max-w-[1000px] mx-auto">
+      <div className="p-4 sm:p-6 xl:p-8 max-w-[1000px] mx-auto">
         <div className="mb-6">
           <h1 className="text-[#1e1e2e]">AI Story Generator</h1>
           <p className="text-[14px] text-muted-foreground mt-1">
@@ -627,7 +635,7 @@ export function StoryGenerator() {
         <Card className="border-2 border-dashed border-border bg-white mb-6 overflow-hidden">
           <CardContent className="p-0">
             <div
-              className={`p-12 text-center transition-all duration-200 ${
+              className={`p-8 sm:p-12 text-center transition-all duration-200 ${
                 dragOver ? "bg-[#f1f0ff] border-[#4f46e5]" : "bg-white"
               }`}
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -651,7 +659,7 @@ export function StoryGenerator() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
           <Card className="border border-border bg-white hover:shadow-sm transition-all cursor-pointer group">
             <CardContent className="p-5 flex items-center gap-4">
               <div className="w-10 h-10 rounded-xl bg-[#2684ff]/10 flex items-center justify-center flex-shrink-0">
@@ -735,10 +743,10 @@ export function StoryGenerator() {
   // ==============================
   if (phase === "doc-analyzing") {
     return (
-      <div className="p-8 max-w-[600px] mx-auto mt-8">
+      <div className="p-4 sm:p-6 xl:p-8 max-w-[600px] mx-auto mt-8">
         <WorkflowStepper steps={workflowSteps} currentStep={1} className="mb-8 justify-center" />
         <Card className="border border-border bg-white">
-          <CardContent className="p-8 text-center">
+          <CardContent className="p-6 sm:p-8 text-center">
             <div className="w-16 h-16 rounded-2xl bg-[#f1f0ff] flex items-center justify-center mx-auto mb-6">
               <Loader2 className="w-7 h-7 text-[#4f46e5] animate-spin" />
             </div>
@@ -779,27 +787,26 @@ export function StoryGenerator() {
   // ==============================
   if (phase === "doc-review") {
     const fixedCount = docIssues.filter((i) => i.status === "fixed").length;
-    const confirmedCount = docIssues.filter((i) => i.status === "confirmed").length;
     const dismissedCount = docIssues.filter((i) => i.status === "dismissed").length;
-    const resolvedCount = fixedCount + confirmedCount + dismissedCount;
+    const resolvedCount = fixedCount + dismissedCount;
 
     return (
       <TooltipProvider>
         <div className="h-full flex flex-col">
-          <div className="px-8 py-4 border-b border-border bg-white flex-shrink-0">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" onClick={() => setPhase("upload")} className="text-muted-foreground gap-1">
+          <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-b border-border bg-white flex-shrink-0">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between mb-3 min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-3 min-w-0">
+                <Button variant="ghost" size="sm" onClick={() => setPhase("upload")} className="text-muted-foreground gap-1 shrink-0 self-start">
                   <ArrowLeft className="w-4 h-4" /> Zurück
                 </Button>
-                <div>
+                <div className="min-w-0">
                   <h2 className="text-[#1e1e2e]">Dokumentenprüfung</h2>
                   <p className="text-[13px] text-muted-foreground mt-0.5">
                     {docIssues.length} Probleme in 3 Dokumenten gefunden - Bitte prüfen und bereinigen
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-[#f8fafc]">
                   <ClipboardCheck className="w-4 h-4 text-muted-foreground" />
                   <span className="text-[12px] text-muted-foreground">Fortschritt:</span>
@@ -820,8 +827,8 @@ export function StoryGenerator() {
             <WorkflowStepper steps={workflowSteps} currentStep={1} />
           </div>
 
-          <div className="flex-1 flex overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
               <Card className="border border-border bg-white">
                 <CardHeader className="pb-3 border-b border-border">
                   <div className="flex items-center gap-2">
@@ -847,7 +854,7 @@ export function StoryGenerator() {
 
                   <div className="mt-6 pt-5 border-t border-border">
                     <p className="text-[13px] text-[#1e1e2e] mb-3" style={{ fontWeight: 600 }}>Zusammenfassung der Analyse</p>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="p-3 rounded-lg bg-[#fef2f2] border border-[#ef4444]/10 text-center">
                         <p className="text-[20px] text-[#ef4444]" style={{ fontWeight: 700 }}>
                           {docIssues.filter((i) => i.type === "contradiction").length}
@@ -875,7 +882,7 @@ export function StoryGenerator() {
                       <div>
                         <p className="text-[13px] text-[#10b981]" style={{ fontWeight: 600 }}>Alle Probleme bearbeitet!</p>
                         <p className="text-[12px] text-[#475569]">
-                          {fixedCount} behoben, {confirmedCount} bestätigt, {dismissedCount} abgelehnt. Sie können jetzt User Stories generieren.
+                          {fixedCount} behoben, {dismissedCount} ignoriert. Sie können jetzt User Stories generieren.
                         </p>
                       </div>
                     </div>
@@ -884,14 +891,33 @@ export function StoryGenerator() {
               </Card>
             </div>
 
-            <div className="w-[480px] overflow-y-auto bg-[#fafbfc] border-l border-border p-5 flex-shrink-0">
-              <div className="flex items-center justify-between mb-4">
+            <div className="w-full lg:w-[480px] lg:shrink-0 min-h-[200px] max-h-[40vh] lg:max-h-none overflow-y-auto bg-[#fafbfc] border-t lg:border-t-0 lg:border-l border-border p-4 sm:p-5">
+              <div className="flex items-center justify-between mb-3">
                 <h4 className="text-[14px] text-[#1e1e2e]" style={{ fontWeight: 600 }}>
                   Erkannte Dokumentprobleme
                 </h4>
                 <Badge variant="secondary" className="text-[12px]" style={{ backgroundColor: allResolved ? "#d1fae5" : "#fef2f2", color: allResolved ? "#10b981" : "#ef4444" }}>
                   {pendingDocIssues} offen
                 </Badge>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <Button
+                  size="sm"
+                  className="text-[11px] h-7 bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-1.5 px-2.5"
+                  disabled={pendingDocIssues === 0}
+                  onClick={handleDocFixAllPending}
+                >
+                  <Wand2 className="w-3 h-3" /> Alle Auto-Fixen
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-[11px] h-7 gap-1.5 px-2.5 text-muted-foreground"
+                  disabled={pendingDocIssues === 0}
+                  onClick={handleDocIgnoreAllPending}
+                >
+                  <SkipForward className="w-3 h-3" /> Alle ignorieren
+                </Button>
               </div>
 
               <div className="space-y-3">
@@ -929,8 +955,13 @@ export function StoryGenerator() {
                                 {sevConf.label}
                               </Badge>
                               {isResolved && (
-                                <Badge variant="secondary" className="text-[10px] px-1.5 bg-[#d1fae5] text-[#10b981]">
-                                  {issue.status === "fixed" ? "Behoben" : issue.status === "confirmed" ? "Bestätigt" : "Abgelehnt"}
+                                <Badge
+                                  variant="secondary"
+                                  className={`text-[10px] px-1.5 ${
+                                    issue.status === "fixed" ? "bg-[#d1fae5] text-[#10b981]" : "bg-[#f1f5f9] text-[#64748b]"
+                                  }`}
+                                >
+                                  {issue.status === "fixed" ? "Behoben" : "Ignoriert"}
                                 </Badge>
                               )}
                             </div>
@@ -944,7 +975,7 @@ export function StoryGenerator() {
                             </p>
 
                             {!isResolved && (
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <Button
                                   size="sm"
                                   className="text-[11px] h-6 bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-1 px-2"
@@ -953,20 +984,12 @@ export function StoryGenerator() {
                                   <Wand2 className="w-3 h-3" /> Auto-Fix
                                 </Button>
                                 <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="text-[11px] h-6 gap-1 px-2"
-                                  onClick={() => handleDocIssueAction(issue.id, "confirmed")}
-                                >
-                                  <CheckCircle2 className="w-3 h-3" /> Bestätigen
-                                </Button>
-                                <Button
                                   variant="ghost"
                                   size="sm"
                                   className="text-[11px] h-6 text-muted-foreground gap-1 px-2"
                                   onClick={() => handleDocIssueAction(issue.id, "dismissed")}
                                 >
-                                  <Ban className="w-3 h-3" /> Ablehnen
+                                  <SkipForward className="w-3 h-3" /> Ignorieren
                                 </Button>
                               </div>
                             )}
@@ -1044,10 +1067,10 @@ export function StoryGenerator() {
   // ==============================
   if (phase === "generating") {
     return (
-      <div className="p-8 max-w-[600px] mx-auto mt-8">
+      <div className="p-4 sm:p-6 xl:p-8 max-w-[600px] mx-auto mt-8">
         <WorkflowStepper steps={workflowSteps} currentStep={2} className="mb-8 justify-center" />
         <Card className="border border-border bg-white">
-          <CardContent className="p-8 text-center">
+          <CardContent className="p-6 sm:p-8 text-center">
             <div className="w-16 h-16 rounded-2xl bg-[#f1f0ff] flex items-center justify-center mx-auto mb-6">
               <Loader2 className="w-7 h-7 text-[#4f46e5] animate-spin" />
             </div>
@@ -1101,20 +1124,20 @@ export function StoryGenerator() {
     return (
       <TooltipProvider>
         <div className="h-full flex flex-col">
-          <div className="px-8 py-4 border-b border-border bg-white flex-shrink-0">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" onClick={() => setPhase("results")} className="text-muted-foreground gap-1">
+          <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-b border-border bg-white flex-shrink-0">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between mb-3 min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-3 min-w-0">
+                <Button variant="ghost" size="sm" onClick={() => setPhase("results")} className="text-muted-foreground gap-1 shrink-0 self-start">
                   <ArrowLeft className="w-4 h-4" /> Zurück zu Stories
                 </Button>
-                <div>
+                <div className="min-w-0">
                   <h2 className="text-[#1e1e2e]">Jira-Backlog Abgleich</h2>
                   <p className="text-[13px] text-muted-foreground mt-0.5">
                     Vergleich der generierten Stories mit {mockJiraTickets.length} bestehenden Jira-Tickets
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-[#f8fafc]">
                   <GitCompare className="w-4 h-4 text-muted-foreground" />
                   <span className="text-[12px] text-muted-foreground">Bearbeitet:</span>
@@ -1134,8 +1157,8 @@ export function StoryGenerator() {
             <WorkflowStepper steps={workflowSteps} currentStep={3} />
           </div>
 
-          <div className="flex-1 flex overflow-hidden">
-            <div className="w-[360px] overflow-y-auto bg-[#fafbfc] border-r border-border p-5 flex-shrink-0">
+          <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+            <div className="w-full lg:w-[360px] lg:shrink-0 max-h-[35vh] lg:max-h-none overflow-y-auto bg-[#fafbfc] border-b lg:border-b-0 lg:border-r border-border p-4 sm:p-5">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-6 h-6 rounded bg-[#2684ff]/10 flex items-center justify-center">
                   <span className="text-[11px]" style={{ fontWeight: 700, color: "#2684ff" }}>J</span>
@@ -1172,8 +1195,8 @@ export function StoryGenerator() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5">
-              <div className="flex items-center justify-between mb-4">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4 min-w-0">
                 <h4 className="text-[14px] text-[#1e1e2e]" style={{ fontWeight: 600 }}>
                   Erkannte Zusammenhänge
                 </h4>
@@ -1265,7 +1288,7 @@ export function StoryGenerator() {
                               <Button variant="ghost" size="sm" className="text-[11px] h-6 text-muted-foreground gap-1 px-2"
                                 onClick={() => handleJiraMatchAction(match.id, "dismissed")}
                               >
-                                <Ban className="w-3 h-3" /> Ignorieren
+                                <SkipForward className="w-3 h-3" /> Ignorieren
                               </Button>
                             </div>
                           </div>
@@ -1332,7 +1355,7 @@ export function StoryGenerator() {
     const storiesToSave = stories.filter((s) => storyActions[s.id] !== "rejected");
 
     return (
-      <div className="p-8 max-w-[800px] mx-auto">
+      <div className="p-4 sm:p-6 xl:p-8 max-w-[800px] mx-auto">
         <div className="mb-4">
           <Button variant="ghost" size="sm" onClick={() => setPhase("jira-compare")} className="text-muted-foreground gap-1 mb-3">
             <ArrowLeft className="w-4 h-4" /> Zurück zum Jira-Abgleich
@@ -1392,7 +1415,7 @@ export function StoryGenerator() {
                 <CardTitle className="text-[14px]" style={{ fontWeight: 600 }}>Zusammenfassung</CardTitle>
               </CardHeader>
               <CardContent className="p-5">
-                <div className="grid grid-cols-3 gap-4 mb-5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
                   <div className="p-4 rounded-xl bg-[#f1f0ff] border border-[#4f46e5]/10 text-center">
                     <p className="text-[28px] text-[#4f46e5]" style={{ fontWeight: 700 }}>{storiesToSave.length}</p>
                     <p className="text-[12px] text-[#4f46e5]/70">Stories übernommen</p>
@@ -1486,9 +1509,9 @@ export function StoryGenerator() {
     <TooltipProvider>
       <div className="h-full flex flex-col">
         {/* Results Header */}
-        <div className="px-8 py-4 border-b border-border bg-white flex-shrink-0">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-4">
+        <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-b border-border bg-white flex-shrink-0">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between mb-3 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-3 min-w-0">
               <Button
                 variant="ghost"
                 size="sm"
@@ -1500,23 +1523,23 @@ export function StoryGenerator() {
                   setJiraMatches(initialJiraMatches);
                   setStoryActions({});
                 }}
-                className="text-muted-foreground gap-1"
+                className="text-muted-foreground gap-1 shrink-0 self-start"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Neue Analyse
               </Button>
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-[#1e1e2e]">Generierte User Stories</h2>
-                <div className="flex items-center gap-3 mt-0.5">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-0.5">
                   <span className="text-[12px] text-muted-foreground">{stories.length} Stories generiert</span>
-                  <span className="text-[12px] text-muted-foreground">|</span>
+                  <span className="text-[12px] text-muted-foreground hidden sm:inline">|</span>
                   <span className="text-[12px] text-[#10b981] flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3" /> Dokumente bereinigt
                   </span>
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
               {docFixedCount > 0 && (
                 <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#d1fae5]/50 border border-[#10b981]/20">
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#10b981]" />
@@ -1550,18 +1573,18 @@ export function StoryGenerator() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
           {/* Main: Stories */}
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 min-w-0">
               <h3 className="text-[#1e1e2e]">Prüfen & Auswählen</h3>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-white">
-                <Search className="w-4 h-4 text-muted-foreground" />
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-white min-w-0 w-full sm:w-auto">
+                <Search className="w-4 h-4 text-muted-foreground shrink-0" />
                 <input
                   placeholder="Stories durchsuchen..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-transparent outline-none text-[13px] w-[160px] placeholder:text-muted-foreground"
+                  className="bg-transparent outline-none text-[13px] min-w-0 flex-1 sm:w-[160px] sm:flex-initial placeholder:text-muted-foreground"
                 />
               </div>
             </div>
@@ -1736,10 +1759,10 @@ export function StoryGenerator() {
           </div>
 
           {/* Right: Summary Panel */}
-          <div className="w-[320px] overflow-y-auto bg-[#fafbfc] border-l border-border p-5 flex-shrink-0">
+          <div className="w-full lg:w-[320px] lg:shrink-0 max-h-[45vh] lg:max-h-none overflow-y-auto bg-[#fafbfc] border-t lg:border-t-0 lg:border-l border-border p-4 sm:p-5">
             <h3 className="text-[#1e1e2e] mb-4">Übersicht</h3>
 
-            <div className="grid grid-cols-2 gap-3 mb-5">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-5 min-w-0">
               <div className="bg-white rounded-xl border border-border p-3 text-center">
                 <p className="text-[24px] text-[#4f46e5]" style={{ fontWeight: 700 }}>{stories.length}</p>
                 <p className="text-[11px] text-muted-foreground">Generiert</p>

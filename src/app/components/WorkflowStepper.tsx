@@ -13,7 +13,10 @@ interface WorkflowStepperProps {
 
 export function WorkflowStepper({ steps, currentStep, className = "" }: WorkflowStepperProps) {
   return (
-    <div className={`flex items-center gap-1 ${className}`}>
+    <div
+      className={`w-full min-w-0 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1 ${className}`}
+    >
+      <div className="inline-flex items-center gap-0.5 sm:gap-1 flex-nowrap min-w-min pr-1">
       {steps.map((step, i) => {
         const isCompleted = i < currentStep;
         const isCurrent = i === currentStep;
@@ -57,7 +60,7 @@ export function WorkflowStepper({ steps, currentStep, className = "" }: Workflow
             </div>
             {i < steps.length - 1 && (
               <div
-                className={`w-8 h-[2px] rounded-full mx-1 transition-all duration-300 ${
+                className={`w-4 sm:w-8 h-[2px] rounded-full mx-0.5 sm:mx-1 shrink-0 transition-all duration-300 ${
                   i < currentStep ? "bg-[#10b981]" : "bg-[#e2e8f0]"
                 }`}
               />
@@ -65,6 +68,7 @@ export function WorkflowStepper({ steps, currentStep, className = "" }: Workflow
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

@@ -636,7 +636,7 @@ export function CustomerJourney() {
               </div>
 
               {/* Persona Details */}
-              <div className="grid grid-cols-3 gap-6 flex-1 min-w-0">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 flex-1 min-w-0">
                 <div className="flex items-start gap-2.5">
                   <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
                     <Briefcase className="w-4 h-4 text-blue-600" />
@@ -1085,7 +1085,7 @@ export function CustomerJourney() {
             <FileText className="w-4 h-4 text-white/80" />
             Top-3 Empfehlungen aus der Journey-Analyse
           </h3>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
               {
                 title: "Onboarding-Assistent für Phase 1",
