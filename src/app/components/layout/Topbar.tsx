@@ -350,78 +350,78 @@ export function Topbar() {
   );
 
   return (
-    <header className="flex flex-col gap-2 border-b border-border bg-white px-4 py-2 sm:px-6 shrink-0 min-w-0 xl:flex-row xl:h-16 xl:items-center xl:gap-4 xl:py-0">
-      <div className="flex items-center justify-between gap-2 min-w-0 w-full xl:w-auto xl:flex-shrink-0">
-        <div className="flex items-center gap-2 min-w-0 flex-1 xl:flex-initial">
-          <button
-            type="button"
-            className="lg:hidden p-2 rounded-lg hover:bg-[#f1f5f9] transition-colors -ml-1 shrink-0"
-            onClick={() => mobileNav?.openSidebar()}
-            aria-label="Menü öffnen"
-          >
-            <Menu className="w-5 h-5 text-[#64748b]" />
-          </button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                title={selectedWorkspace.name}
-                className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg hover:bg-[#f1f5f9] transition-colors text-[14px] min-w-0 max-w-full"
+    <header
+      className="grid shrink-0 min-w-0 border-b border-border bg-white px-4 py-2 sm:px-6 gap-x-2 gap-y-2
+      grid-cols-[minmax(0,1fr)_auto]
+      xl:grid-cols-[auto_minmax(0,1fr)_auto] xl:items-center xl:h-16 xl:gap-x-4 xl:py-0"
+    >
+      <div className="flex items-center gap-2 min-w-0 xl:col-start-1 xl:row-start-1">
+        <button
+          type="button"
+          className="lg:hidden p-2 rounded-lg hover:bg-[#f1f5f9] transition-colors -ml-1 shrink-0"
+          onClick={() => mobileNav?.openSidebar()}
+          aria-label="Menü öffnen"
+        >
+          <Menu className="w-5 h-5 text-[#64748b]" />
+        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              title={selectedWorkspace.name}
+              className="flex items-center gap-2 px-2 sm:px-3 py-1.5 rounded-lg hover:bg-[#f1f5f9] transition-colors text-[14px] min-w-0 max-w-full"
+            >
+              <div className="w-6 h-6 rounded bg-[#4f46e5]/10 flex items-center justify-center flex-shrink-0">
+                <span
+                  className="text-[11px] text-[#4f46e5]"
+                  style={{ fontWeight: 600 }}
+                >
+                  {selectedWorkspace.name.charAt(0)}
+                </span>
+              </div>
+              <span
+                className="hidden sm:inline truncate min-w-0 max-w-[100px] md:max-w-[160px] xl:max-w-[200px]"
+                style={{ fontWeight: 500 }}
               >
-                <div className="w-6 h-6 rounded bg-[#4f46e5]/10 flex items-center justify-center flex-shrink-0">
+                {selectedWorkspace.name}
+              </span>
+              <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[260px]">
+            {workspaces.map((ws) => (
+              <DropdownMenuItem
+                key={ws.id}
+                onClick={() => setSelectedWorkspaceId(ws.id)}
+                className={ws.id === selectedWorkspaceId ? "bg-[#f1f0ff]" : ""}
+              >
+                <div className="w-6 h-6 rounded bg-[#4f46e5]/10 flex items-center justify-center mr-2">
                   <span
                     className="text-[11px] text-[#4f46e5]"
                     style={{ fontWeight: 600 }}
                   >
-                    {selectedWorkspace.name.charAt(0)}
+                    {ws.name.charAt(0)}
                   </span>
                 </div>
-                <span
-                  className="hidden sm:inline truncate min-w-0 max-w-[100px] md:max-w-[160px] xl:max-w-[200px]"
-                  style={{ fontWeight: 500 }}
-                >
-                  {selectedWorkspace.name}
-                </span>
-                <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[260px]">
-              {workspaces.map((ws) => (
-                <DropdownMenuItem
-                  key={ws.id}
-                  onClick={() => setSelectedWorkspaceId(ws.id)}
-                  className={ws.id === selectedWorkspaceId ? "bg-[#f1f0ff]" : ""}
-                >
-                  <div className="w-6 h-6 rounded bg-[#4f46e5]/10 flex items-center justify-center mr-2">
-                    <span
-                      className="text-[11px] text-[#4f46e5]"
-                      style={{ fontWeight: 600 }}
-                    >
-                      {ws.name.charAt(0)}
-                    </span>
-                  </div>
-                  {ws.name}
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Plus className="w-4 h-4 mr-2" />
-                Neuer Workspace
+                {ws.name}
               </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0 xl:hidden">
-          {headerActions}
-        </div>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <Plus className="w-4 h-4 mr-2" />
+              Neuer Workspace
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      <div className="w-full min-w-0 xl:flex-1 xl:min-w-[180px] xl:max-w-2xl">
-        {searchField}
-      </div>
-
-      <div className="hidden xl:flex items-center gap-3 flex-shrink-0">
+      {/* Eine Instanz: Radix-Dropdowns dürfen nicht doppelt im DOM sein (geteilter open-State). */}
+      <div className="flex items-center gap-1 sm:gap-3 shrink-0 justify-self-end row-start-1 col-start-2 xl:col-start-3 xl:row-start-1">
         {headerActions}
+      </div>
+
+      <div className="col-span-2 min-w-0 xl:col-span-1 xl:col-start-2 xl:row-start-1 xl:min-w-[180px] xl:max-w-2xl">
+        {searchField}
       </div>
     </header>
   );

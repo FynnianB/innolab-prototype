@@ -38,7 +38,7 @@ import {
   Send,
   Clock,
   Users,
-  SkipForward,
+  Ban,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -916,7 +916,7 @@ export function StoryGenerator() {
                   disabled={pendingDocIssues === 0}
                   onClick={handleDocIgnoreAllPending}
                 >
-                  <SkipForward className="w-3 h-3" /> Alle ignorieren
+                  <Ban className="w-3 h-3" /> Alle ignorieren
                 </Button>
               </div>
 
@@ -989,7 +989,7 @@ export function StoryGenerator() {
                                   className="text-[11px] h-6 text-muted-foreground gap-1 px-2"
                                   onClick={() => handleDocIssueAction(issue.id, "dismissed")}
                                 >
-                                  <SkipForward className="w-3 h-3" /> Ignorieren
+                                  <Ban className="w-3 h-3" /> Ignorieren
                                 </Button>
                               </div>
                             )}
@@ -1288,7 +1288,7 @@ export function StoryGenerator() {
                               <Button variant="ghost" size="sm" className="text-[11px] h-6 text-muted-foreground gap-1 px-2"
                                 onClick={() => handleJiraMatchAction(match.id, "dismissed")}
                               >
-                                <SkipForward className="w-3 h-3" /> Ignorieren
+                                <Ban className="w-3 h-3" /> Ignorieren
                               </Button>
                             </div>
                           </div>
