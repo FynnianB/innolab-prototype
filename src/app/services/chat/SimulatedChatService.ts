@@ -416,7 +416,7 @@ function buildProjectStatusResponse(
           role: "assistant",
           type: "text",
           content:
-            "Welches Projekt meinst du? Gib mir den Projektnamen, z.B. \u201EAktueller Stand vom Automobil-Projekt\u201C.",
+            "Welches Projekt meinst du? Gib mir den Projektnamen, z.B. \u201EAktueller Stand Projekt Versuchsteile\u201C.",
         },
       ],
     };
@@ -543,7 +543,7 @@ function buildFallbackResponse(): ChatServiceResponse {
             },
             {
               label: "Projektstatus",
-              message: "Was ist der aktuelle Stand vom Automobil-Projekt?",
+              message: "Was ist der aktuelle Stand beim Projekt Versuchsteile?",
             },
             {
               label: "Stories auflisten",

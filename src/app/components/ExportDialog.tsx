@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState, type ChangeEvent } from "react";
 import { useAppContext } from "../context/AppContext";
+import { ENTERPRISE } from "../data/enterprise";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -110,7 +111,7 @@ export function ExportDialog() {
   const handleDownload = () => {
     const now = new Date();
     const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}_${String(now.getHours()).padStart(2, "0")}-${String(now.getMinutes()).padStart(2, "0")}`;
-    const filename = `ReqWise_${scopeInfo.label.replace(/\s+/g, "_")}_${timestamp}.${selectedFormat.toLowerCase()}`;
+    const filename = `${ENTERPRISE.shortName.replace(/\s+/g, "_")}_${scopeInfo.label.replace(/\s+/g, "_")}_${timestamp}.${selectedFormat.toLowerCase()}`;
     const content = selectedFormat === "PDF"
       ? "%PDF-1.4 (Prototyp – keine echten Daten)\n"
       : selectedFormat === "CSV"
@@ -140,7 +141,7 @@ export function ExportDialog() {
           const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
           addExportRecord({
             format: selectedFormat,
-            filename: `ReqWise_${scopeInfo.label.replace(/\s+/g, "_")}_${timestamp.replace(/[\s:]/g, "_")}.${selectedFormat.toLowerCase()}`,
+            filename: `${ENTERPRISE.shortName.replace(/\s+/g, "_")}_${scopeInfo.label.replace(/\s+/g, "_")}_${timestamp.replace(/[\s:]/g, "_")}.${selectedFormat.toLowerCase()}`,
             timestamp,
             itemCount: scopeInfo.itemCount,
             status: "completed",
@@ -356,8 +357,7 @@ export function ExportDialog() {
                     className="text-[13px] text-[#1e1e2e] truncate"
                     style={{ fontWeight: 500 }}
                   >
-                    ReqWise_{scopeInfo.label.replace(/\s+/g, "_")}.
-                    {selectedFormat.toLowerCase()}
+                    {`${ENTERPRISE.shortName.replace(/\s+/g, "_")}_${scopeInfo.label.replace(/\s+/g, "_")}.${selectedFormat.toLowerCase()}`}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
                     {scopeInfo.itemCount} Einträge · {selectedFormat} ·{" "}

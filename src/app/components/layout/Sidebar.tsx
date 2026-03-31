@@ -9,19 +9,16 @@ import {
   HelpCircle,
   ChevronLeft,
   ChevronRight,
-  BrainCircuit,
   ClipboardList,
   TrendingUp,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { useIsLgUp } from "../ui/use-mobile";
 import { cn } from "../ui/utils";
-
-/** Feature-Cookie: Tab "Customer Journey" nur anzeigen, wenn Cookie "customer-journey" gesetzt ist (z. B. für Devs). */
-function hasCustomerJourneyCookie(): boolean {
-  if (typeof document === "undefined") return false;
-  return document.cookie.split(";").some((part) => part.trim().startsWith("customer-journey="));
-}
+import { useOnboardingReset } from "../../onboarding/OnboardingResetContext";
+import { ENTERPRISE } from "../../data/enterprise";
+import { hasCustomerJourneyNavCookie } from "../../onboarding/navTourConfig";
 
 const baseNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -33,9 +30,19 @@ const baseNavItems = [
 
 const customerJourneyItem = { icon: TrendingUp, label: "Customer Journey", path: "/customer-journey" };
 
-const bottomItems = [
+const bottomItems: Array<{
+  icon: LucideIcon;
+  label: string;
+  path: string;
+  resetOnboarding?: boolean;
+}> = [
   { icon: Settings, label: "Einstellungen", path: "/settings" },
-  { icon: HelpCircle, label: "Hilfe & Support", path: "/help" },
+  {
+    icon: HelpCircle,
+    label: "Hilfe & Support",
+    path: "/",
+    resetOnboarding: true,
+  },
 ];
 
 type SidebarProps = {
@@ -52,17 +59,21 @@ export function Sidebar({
   const effectiveCollapsed = isLgUp && collapsed;
   const location = useLocation();
   const navigate = useNavigate();
+  const { resetAllTours } = useOnboardingReset();
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
     return location.pathname.startsWith(path);
   };
 
-  const navItems = hasCustomerJourneyCookie()
+  const navItems = hasCustomerJourneyNavCookie()
     ? [...baseNavItems, customerJourneyItem]
     : baseNavItems;
 
-  const go = (path: string) => {
+  const go = (path: string, options?: { resetOnboarding?: boolean }) => {
+    if (options?.resetOnboarding) {
+      resetAllTours();
+    }
     navigate(path);
     onMobileOpenChange?.(false);
   };
@@ -77,18 +88,45 @@ export function Sidebar({
           effectiveCollapsed ? "lg:w-[72px]" : "lg:w-[260px]",
         )}
       >
-        {/* Logo */}
-        <div className="h-16 flex items-center px-5 border-b border-border gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#4f46e5] flex items-center justify-center flex-shrink-0">
-            <BrainCircuit className="w-5 h-5 text-white" />
-          </div>
-          {!effectiveCollapsed && (
-            <div className="flex flex-col overflow-hidden">
-              <span className="text-[15px] tracking-tight" style={{ fontWeight: 600 }}>
-                ReqWise AI
+        {/* Produkt + Mandant (Pik-Icon = Capgemini-Marke, Text = ReqWise) */}
+        <div
+          className={`h-16 flex items-center border-b border-border gap-3 ${
+            effectiveCollapsed ? "px-3 justify-center" : "px-5"
+          }`}
+        >
+          {effectiveCollapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="w-8 h-8 rounded-lg border border-border bg-white flex items-center justify-center flex-shrink-0 overflow-hidden cursor-default">
+                  <img
+                    src={ENTERPRISE.logoSrc}
+                    alt=""
+                    className="max-w-[70%] max-h-[70%] w-auto h-auto object-contain"
+                  />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {ENTERPRISE.productName} · {ENTERPRISE.clientName}
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <>
+              <span className="w-8 h-8 rounded-lg border border-border bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <img
+                  src={ENTERPRISE.logoSrc}
+                  alt=""
+                  className="max-w-[70%] max-h-[70%] w-auto h-auto object-contain"
+                />
               </span>
-              <span className="text-[11px] text-muted-foreground -mt-0.5">Requirements Intelligence</span>
-            </div>
+              <div className="flex flex-col overflow-hidden min-w-0">
+                <span className="text-[15px] tracking-tight truncate" style={{ fontWeight: 600 }}>
+                  {ENTERPRISE.productName}
+                </span>
+                <span className="text-[11px] text-muted-foreground -mt-0.5 truncate">
+                  {ENTERPRISE.clientName} · {ENTERPRISE.productTagline}
+                </span>
+              </div>
+            </>
           )}
         </div>
 
@@ -107,6 +145,7 @@ export function Sidebar({
             const btn = (
               <button
                 key={item.path}
+                type="button"
                 onClick={() => go(item.path)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[14px] transition-all duration-150 group ${
                   active
@@ -137,7 +176,11 @@ export function Sidebar({
             const btn = (
               <button
                 key={item.path}
-                onClick={() => go(item.path)}
+                onClick={() =>
+                  go(item.path, {
+                    resetOnboarding: Boolean(item.resetOnboarding),
+                  })
+                }
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] text-[#475569] hover:bg-[#f1f5f9] transition-colors ${
                   effectiveCollapsed ? "justify-center" : ""
                 }`}

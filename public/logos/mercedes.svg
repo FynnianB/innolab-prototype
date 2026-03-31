@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-hidden="true">
+  <title>Demo OEM</title>
+  <circle cx="50" cy="50" r="48" fill="#c0c0c0"/>
+  <circle cx="50" cy="50" r="46" fill="#1a1a1a"/>
+  <path fill="#c0c0c0" d="M50 18 L58 78 L50 68 L42 78 Z"/>
+  <path fill="#c0c0c0" d="M50 18 L22 72 L38 66 Z"/>
+  <path fill="#c0c0c0" d="M50 18 L78 72 L62 66 Z"/>
+</svg>

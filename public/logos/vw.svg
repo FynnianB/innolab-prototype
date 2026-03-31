@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-hidden="true">
+  <title>Demo OEM</title>
+  <circle cx="50" cy="50" r="48" fill="#001e50"/>
+  <circle cx="50" cy="50" r="44" fill="none" stroke="#a4adb8" stroke-width="2"/>
+</svg>

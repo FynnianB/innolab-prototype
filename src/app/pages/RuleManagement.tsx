@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Plus,
   Search,
@@ -12,6 +12,8 @@ import {
   Copy,
   MoreHorizontal,
   X,
+  Globe,
+  FolderOpen,
 } from "lucide-react";
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -33,6 +35,8 @@ import {
   DropdownMenuSeparator,
 } from "../components/ui/dropdown-menu";
 import { TooltipProvider } from "../components/ui/tooltip";
+import { useAppContext } from "../context/AppContext";
+import { getProjectIdsForWorkspace, PROJECT_SEARCH_META } from "../data/workspaces";
 
 interface Rule {
   id: string;
@@ -43,6 +47,10 @@ interface Rule {
   active: boolean;
   source: "custom" | "iso" | "spice" | "internal";
   examples?: string;
+  /** workspace-weit vs. nur für ein bestimmtes Projekt */
+  scope?: "workspace" | "project";
+  projectId?: string;
+  projectName?: string;
 }
 
 const initialRules: Rule[] = [
@@ -156,6 +164,32 @@ const initialRules: Rule[] = [
     active: false,
     source: "internal",
   },
+  {
+    id: "R-013",
+    name: "BMW Versuchsteile — Engineering-Daten & VVT",
+    description:
+      "Anforderungen zu Versuchsteilen müssen VVT-/Teilestatus und Freigabenachweise referenzieren (keine produktiven Serienkennzeichen in Demo-Daten).",
+    category: "Rechtliche Anforderungen",
+    severity: "major",
+    active: true,
+    source: "custom",
+    scope: "project",
+    projectId: "P-101",
+    projectName: "BMW Group — Versuchsteile & Entwicklungs-Analytics",
+  },
+  {
+    id: "R-014",
+    name: "VW Datenraum — Einwilligung & Zweckbindung",
+    description:
+      "Use Cases im Datenraum Mobilität müssen Zweckbindung, Consent-Nachweis und Datenkategorien je Datenquelle benennen.",
+    category: "Strukturvorgaben",
+    severity: "critical",
+    active: true,
+    source: "custom",
+    scope: "project",
+    projectId: "P-201",
+    projectName: "Volkswagen Group — Datenraum Mobilität",
+  },
 ];
 
 const categories = [
@@ -178,17 +212,40 @@ const severityLabels: Record<string, { label: string; color: string; bg: string 
   minor: { label: "Gering", color: "#64748b", bg: "#f1f5f9" },
 };
 
+function ruleScope(rule: Rule): "workspace" | "project" {
+  return rule.scope ?? "workspace";
+}
+
 export function RuleManagement() {
+  const { selectedWorkspaceId, selectedWorkspace } = useAppContext();
   const [rules, setRules] = useState<Rule[]>(initialRules);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [scopeFilter, setScopeFilter] = useState<"all" | "workspace" | "project">("all");
+  const [projectScopeId, setProjectScopeId] = useState<string>("all");
   const [showNewRuleDialog, setShowNewRuleDialog] = useState(false);
   const [newRule, setNewRule] = useState({
     name: "",
     description: "",
     category: "Sprachliche Standards",
     severity: "major" as "critical" | "major" | "minor",
+    scope: "workspace" as "workspace" | "project",
+    projectId: "",
   });
+
+  const workspaceProjectOptions = useMemo(() => {
+    return getProjectIdsForWorkspace(selectedWorkspaceId)
+      .map((id) => ({
+        id,
+        name: PROJECT_SEARCH_META[id]?.name ?? id,
+      }))
+      .filter((p) => p.name);
+  }, [selectedWorkspaceId]);
+
+  const workspaceProjectIdSet = useMemo(
+    () => new Set(workspaceProjectOptions.map((p) => p.id)),
+    [workspaceProjectOptions],
+  );
 
   const toggleRule = (id: string) => {
     setRules((prev) =>
@@ -197,6 +254,15 @@ export function RuleManagement() {
   };
 
   const filteredRules = rules.filter((rule) => {
+    const sc = ruleScope(rule);
+    if (sc === "project" && rule.projectId && !workspaceProjectIdSet.has(rule.projectId)) {
+      return false;
+    }
+    if (scopeFilter === "workspace" && sc !== "workspace") return false;
+    if (scopeFilter === "project") {
+      if (sc !== "project") return false;
+      if (projectScopeId !== "all" && rule.projectId !== projectScopeId) return false;
+    }
     const matchesCategory = !selectedCategory || rule.category === selectedCategory;
     const matchesSearch =
       !searchQuery ||
@@ -221,7 +287,10 @@ export function RuleManagement() {
           <div>
             <h1 className="text-[#1e1e2e]">Regel-Management</h1>
             <p className="text-[14px] text-muted-foreground mt-1">
-              Verwalten Sie Compliance-Regeln für Ihre Requirements.{" "}
+              Verwalten Sie Compliance-Regeln für{" "}
+              <span style={{ fontWeight: 500 }}>{selectedWorkspace.name}</span>
+              {" — "}
+              workspace-weit oder projektspezifisch.{" "}
               <span style={{ fontWeight: 500 }}>{activeCount} von {totalCount}</span> Regeln aktiv.
             </p>
           </div>
@@ -232,7 +301,17 @@ export function RuleManagement() {
             </Button>
             <Button
               className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 text-[13px]"
-              onClick={() => setShowNewRuleDialog(true)}
+              onClick={() => {
+                setNewRule({
+                  name: "",
+                  description: "",
+                  category: "Sprachliche Standards",
+                  severity: "major",
+                  scope: "workspace",
+                  projectId: workspaceProjectOptions[0]?.id ?? "",
+                });
+                setShowNewRuleDialog(true);
+              }}
             >
               <Plus className="w-4 h-4" />
               Neue Regel
@@ -273,6 +352,50 @@ export function RuleManagement() {
               </Card>
             );
           })}
+        </div>
+
+        {/* Geltungsbereich */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap mb-4">
+          <span className="text-[12px] text-muted-foreground shrink-0" style={{ fontWeight: 500 }}>
+            Geltungsbereich
+          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            {(
+              [
+                { key: "all" as const, label: "Alle Regeln" },
+                { key: "workspace" as const, label: "Workspace-weit" },
+                { key: "project" as const, label: "Projektspezifisch" },
+              ] as const
+            ).map(({ key, label }) => (
+              <Button
+                key={key}
+                type="button"
+                variant={scopeFilter === key ? "default" : "outline"}
+                size="sm"
+                className={`text-[12px] h-8 ${scopeFilter === key ? "bg-[#4f46e5] hover:bg-[#4338ca] text-white" : ""}`}
+                onClick={() => {
+                  setScopeFilter(key);
+                  if (key !== "project") setProjectScopeId("all");
+                }}
+              >
+                {label}
+              </Button>
+            ))}
+            {scopeFilter === "project" && (
+              <select
+                value={projectScopeId}
+                onChange={(e) => setProjectScopeId(e.target.value)}
+                className="text-[12px] px-3 py-1.5 rounded-lg border border-border bg-white outline-none focus:border-[#4f46e5] min-w-[200px]"
+              >
+                <option value="all">Alle Projekte (im Workspace)</option>
+                {workspaceProjectOptions.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
         </div>
 
         {/* Search */}
@@ -359,6 +482,26 @@ export function RuleManagement() {
                                 >
                                   {src.label}
                                 </Badge>
+                                {ruleScope(rule) === "workspace" ? (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] px-1.5 gap-0.5"
+                                    style={{ borderColor: "#4f46e540", color: "#4f46e5" }}
+                                  >
+                                    <Globe className="w-2.5 h-2.5" />
+                                    Workspace
+                                  </Badge>
+                                ) : (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] px-1.5 gap-0.5 max-w-[220px] truncate"
+                                    style={{ borderColor: "#0f766e40", color: "#0f766e" }}
+                                    title={rule.projectName}
+                                  >
+                                    <FolderOpen className="w-2.5 h-2.5 shrink-0" />
+                                    <span className="truncate">{rule.projectName ?? rule.projectId}</span>
+                                  </Badge>
+                                )}
                               </div>
                               <p
                                 className={`text-[14px] mb-1 ${rule.active ? "text-[#1e1e2e]" : "text-muted-foreground"}`}
@@ -407,15 +550,81 @@ export function RuleManagement() {
         </div>
 
         {/* New Rule Dialog */}
-        <Dialog open={showNewRuleDialog} onOpenChange={setShowNewRuleDialog}>
+        <Dialog
+          open={showNewRuleDialog}
+          onOpenChange={(open) => {
+            setShowNewRuleDialog(open);
+            if (!open) {
+              setNewRule({
+                name: "",
+                description: "",
+                category: "Sprachliche Standards",
+                severity: "major",
+                scope: "workspace",
+                projectId: workspaceProjectOptions[0]?.id ?? "",
+              });
+            }
+          }}
+        >
           <DialogContent className="sm:max-w-[520px]">
             <DialogHeader>
               <DialogTitle>Neue Regel erstellen</DialogTitle>
               <DialogDescription>
-                Erstellen Sie eine benutzerdefinierte Compliance-Regel für Ihre Requirements.
+                Legen Sie die Regel für den gesamten Workspace oder nur für ein Projekt an — projektspezifische Regeln gelten zusätzlich zu den Workspace-Regeln.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 my-4">
+              <div>
+                <label className="text-[13px] text-[#475569] mb-1.5 block">Gültigkeit</label>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 text-[13px] cursor-pointer">
+                    <input
+                      type="radio"
+                      name="rule-scope"
+                      className="accent-[#4f46e5]"
+                      checked={newRule.scope === "workspace"}
+                      onChange={() => setNewRule((r) => ({ ...r, scope: "workspace" }))}
+                    />
+                    <Globe className="w-4 h-4 text-[#4f46e5]" />
+                    Workspace-weit ({selectedWorkspace.name})
+                  </label>
+                  <label className="flex items-center gap-2 text-[13px] cursor-pointer">
+                    <input
+                      type="radio"
+                      name="rule-scope"
+                      className="accent-[#4f46e5]"
+                      checked={newRule.scope === "project"}
+                      onChange={() =>
+                        setNewRule((r) => ({
+                          ...r,
+                          scope: "project",
+                          projectId: r.projectId || workspaceProjectOptions[0]?.id || "",
+                        }))
+                      }
+                    />
+                    <FolderOpen className="w-4 h-4 text-[#0f766e]" />
+                    Projektspezifisch
+                  </label>
+                  {newRule.scope === "project" && (
+                    <select
+                      value={newRule.projectId}
+                      onChange={(e) => setNewRule((r) => ({ ...r, projectId: e.target.value }))}
+                      className="w-full mt-1 px-3 py-2 rounded-lg border border-border bg-white text-[13px] outline-none focus:border-[#4f46e5]"
+                      disabled={workspaceProjectOptions.length === 0}
+                    >
+                      {workspaceProjectOptions.length === 0 ? (
+                        <option value="">Kein Projekt im Workspace</option>
+                      ) : (
+                        workspaceProjectOptions.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  )}
+                </div>
+              </div>
               <div>
                 <label className="text-[13px] text-[#475569] mb-1.5 block">Name</label>
                 <input
@@ -473,7 +682,11 @@ export function RuleManagement() {
               <Button
                 className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2"
                 onClick={() => {
-                  if (newRule.name && newRule.description) {
+                  const projectOk =
+                    newRule.scope === "workspace" ||
+                    (newRule.projectId && workspaceProjectIdSet.has(newRule.projectId));
+                  if (newRule.name && newRule.description && projectOk) {
+                    const meta = PROJECT_SEARCH_META[newRule.projectId];
                     setRules((prev) => [
                       ...prev,
                       {
@@ -484,9 +697,23 @@ export function RuleManagement() {
                         severity: newRule.severity,
                         active: true,
                         source: "custom",
+                        ...(newRule.scope === "project"
+                          ? {
+                              scope: "project" as const,
+                              projectId: newRule.projectId,
+                              projectName: meta?.name ?? newRule.projectId,
+                            }
+                          : { scope: "workspace" as const }),
                       },
                     ]);
-                    setNewRule({ name: "", description: "", category: "Sprachliche Standards", severity: "major" });
+                    setNewRule({
+                      name: "",
+                      description: "",
+                      category: "Sprachliche Standards",
+                      severity: "major",
+                      scope: "workspace",
+                      projectId: workspaceProjectOptions[0]?.id ?? "",
+                    });
                     setShowNewRuleDialog(false);
                   }
                 }}

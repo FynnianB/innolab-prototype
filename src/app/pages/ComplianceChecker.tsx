@@ -40,6 +40,7 @@ import {
 } from "../components/ui/dialog";
 import { useAppContext } from "../context/AppContext";
 import {
+  PROJECT_LOGO_BY_ID,
   PROJECT_SEARCH_META,
   PROJECT_WORKSPACE,
 } from "../data/workspaces";
@@ -99,7 +100,7 @@ const severityConfig: Record<IssueSeverity, { label: string; color: string; bg: 
 };
 
 // ============================================================
-// PROJECT A – Automobil-Plattform (6 Seiten, Seite 1 voll ausgearbeitet)
+// Demo-Lastenheft (mehrseitig) — für alle Kundenprojekte wiederverwendet
 // ============================================================
 const projectA_Pages: DocumentPage[] = [
   {
@@ -324,207 +325,39 @@ const projectA_Issues: ComplianceIssue[] = [
   },
 ];
 
-// ============================================================
-// PROJECT B – Banking App (5 Seiten)
-// ============================================================
-const projectB_Pages: DocumentPage[] = [
-  {
-    pageNum: 1,
-    title: "Kontoverwaltung & Transaktionen",
-    content: `1. Funktionale Anforderungen
+const COMPLIANCE_PROJECT_IDS = [
+  "P-101",
+  "P-102",
+  "P-103",
+  "P-201",
+  "P-202",
+  "P-203",
+  "P-301",
+  "P-302",
+  "P-303",
+  "P-401",
+  "P-402",
+  "P-403",
+  "P-501",
+  "P-502",
+  "P-503",
+] as const;
 
-1.1 Kontoverwaltung
-Kunden können neue Konten eröffnen. Die Kontoeröffnung erfordert eine Identitätsprüfung. Kontodaten müssen sicher gespeichert werden. Das System muss verschiedene Kontotypen unterstützen.
-
-1.2 Transaktionsverarbeitung
-Das System muss Überweisungen in Echtzeit verarbeiten. SEPA-Überweisungen müssen unterstützt werden. Internationale Überweisungen sollten möglich sein. Transaktionslimits müssen konfigurierbar sein.`,
-  },
-  {
-    pageNum: 2,
-    title: "Benutzeroberfläche & Compliance",
-    content: `1.3 Benutzeroberfläche
-Die App muss modern und benutzerfreundlich sein. Das Dashboard zeigt alle wichtigen Informationen. Push-Benachrichtigungen informieren über Kontobewegungen. Biometrische Authentifizierung wird unterstützt.
-
-1.4 Compliance & Regulierung
-Das System muss PSD2-konform sein. Starke Kundenauthentifizierung (SCA) muss implementiert werden. Anti-Geldwäsche-Prüfungen müssen durchgeführt werden. Alle Transaktionen müssen für 10 Jahre aufbewahrt werden.`,
-  },
-  {
-    pageNum: 3,
-    title: "Schnittstellen & APIs",
-    content: `1.5 Schnittstellen
-APIs müssen für Drittanbieter bereitgestellt werden. Open Banking Schnittstellen gemäß PSD2 sind erforderlich. Das System muss mit dem bestehenden Core-Banking-System kommunizieren.
-
-1.6 Datenanalyse
-Das System muss Transaktionsanalysen in Echtzeit durchführen. Erkennung von Betrugsmustern mittels Machine Learning. Dashboard mit Risiko-Score pro Transaktion.`,
-  },
-  {
-    pageNum: 4,
-    title: "Sicherheitsarchitektur",
-    content: `2. Sicherheitsarchitektur
-
-2.1 Netzwerksicherheit
-DMZ-Architektur mit mehreren Sicherheitszonen. WAF (Web Application Firewall) vor allen öffentlichen Endpunkten. DDoS-Schutz mit automatischer Mitigation.
-
-2.2 Datensicherheit
-Verschlüsselung aller Daten at-rest und in-transit. HSM (Hardware Security Module) für kryptographische Schlüssel. Regelmäßige Penetrationstests (mindestens quartalsweise).`,
-  },
-  {
-    pageNum: 5,
-    title: "Betrieb & Monitoring",
-    content: `3. Betrieb & Monitoring
-
-3.1 Monitoring
-24/7 Monitoring aller kritischen Systemkomponenten. Automatisierte Alerting-Regeln bei Schwellwertüberschreitung. Integration mit bestehenden ITSM-Tools (ServiceNow).
-
-3.2 Disaster Recovery
-RPO: 15 Minuten, RTO: 1 Stunde für kritische Systeme. Regelmäßige DR-Tests (mindestens halbjährlich). Georedundantes Backup in verschiedenen Rechenzentren.`,
-  },
-];
-
-const projectB_Issues: ComplianceIssue[] = [
-  {
-    id: "CB-001", severity: "critical", category: "legal",
-    title: "BaFin: Unzureichende KYC-Spezifikation",
-    description: "Die Identitätsprüfung bei Kontoeröffnung muss gemäß GwG und BaFin-Richtlinien spezifiziert werden.",
-    rule: "GwG §10 – Allgemeine Sorgfaltspflichten",
-    suggestion: "Spezifizieren Sie die akzeptierten Identifizierungsverfahren und deren Compliance-Level.",
-    before: "Die Kontoeröffnung erfordert eine Identitätsprüfung",
-    after: "Die Kontoeröffnung erfordert eine Identitätsprüfung gemäß GwG §10: VideoIdent (BaFin-zertifiziert), eID (nPA), oder qualifizierte elektronische Signatur. PEP-Screening und Sanktionslisten-Abgleich obligatorisch.",
-    textHighlight: "Die Kontoeröffnung erfordert eine Identitätsprüfung",
-    section: "1.1", page: 1,
-  },
-  {
-    id: "CB-002", severity: "critical", category: "dsgvo",
-    title: "DSGVO: 10 Jahre Speicherung ohne Differenzierung",
-    description: "10 Jahre Aufbewahrung gilt nur für steuerrelevante Daten (AO §147). Personenbezogene Transaktionsdaten benötigen differenzierte Fristen.",
-    rule: "DSGVO Art. 5 Abs. 1e / AO §147",
-    suggestion: "Differenzieren Sie Aufbewahrungsfristen nach Datenkategorie und gesetzlicher Grundlage.",
-    before: "Alle Transaktionen müssen für 10 Jahre aufbewahrt werden",
-    after: "Steuerrelevante Transaktionsdaten: 10 Jahre (AO §147). Personenbezogene Metadaten: 6 Jahre. Nicht-steuerrelevante Daten: 3 Jahre nach Kontoschließung. Automatische Löschung nach Fristablauf.",
-    textHighlight: "Alle Transaktionen müssen für 10 Jahre aufbewahrt werden",
-    section: "1.4", page: 2,
-  },
-  {
-    id: "CB-003", severity: "critical", category: "corporate",
-    title: "Fehlende SCA-Implementierungsdetails",
-    description: "PSD2 erfordert spezifische SCA-Verfahren. Die akzeptierten Authentifizierungsmethoden und Ausnahmen sind nicht definiert.",
-    rule: "PSD2 Art. 97 – Starke Kundenauthentifizierung",
-    suggestion: "Definieren Sie die SCA-Methoden und RTS-konforme Ausnahmeregeln.",
-    before: "Starke Kundenauthentifizierung (SCA) muss implementiert werden",
-    after: "SCA durch Kombination von zwei Faktoren: Wissen (PIN), Besitz (Smartphone/TAN-Generator), Inhärenz (Fingerabdruck/Face-ID). Ausnahmen gemäß PSD2 RTS Art. 10-18.",
-    textHighlight: "Starke Kundenauthentifizierung (SCA) muss implementiert werden",
-    section: "1.4", page: 2,
-  },
-  {
-    id: "CB-004", severity: "major", category: "ambiguity",
-    title: "Unklare Formulierung: 'modern und benutzerfreundlich'",
-    description: "'Modern und benutzerfreundlich' ist subjektiv und nicht testbar.",
-    rule: "ISO 29148 §5.2.5 – Messbarkeit",
-    suggestion: "Definieren Sie konkrete Usability-Metriken und Design-Standards.",
-    before: "Die App muss modern und benutzerfreundlich sein",
-    after: "Die App muss Material Design 3 Guidelines folgen. SUS Score >= 80. Task Completion Rate für Kernprozesse >= 95%. Maximale Klicktiefe: 3.",
-    textHighlight: "Die App muss modern und benutzerfreundlich sein",
-    section: "1.3", page: 2,
-  },
-  {
-    id: "CB-005", severity: "major", category: "ambiguity",
-    title: "Unklarer Umfang: 'verschiedene Kontotypen'",
-    description: "Die unterstützten Kontotypen sind nicht aufgelistet.",
-    rule: "Strukturvorgabe §4.2 – Vollständigkeit",
-    suggestion: "Listen Sie die unterstützten Kontotypen explizit auf.",
-    before: "Das System muss verschiedene Kontotypen unterstützen",
-    after: "Das System muss folgende Kontotypen unterstützen: Girokonto, Sparkonto, Tagesgeld, Festgeld, Gemeinschaftskonto (ODER/UND-Konto).",
-    textHighlight: "Das System muss verschiedene Kontotypen unterstützen",
-    section: "1.1", page: 1,
-  },
-  {
-    id: "CB-006", severity: "major", category: "legal",
-    title: "Fehlende AML-Detailspezifikation",
-    description: "Anti-Geldwäsche-Prüfungen müssen detaillierter spezifiziert werden.",
-    rule: "GwG §43 – Verdachtsmeldungen",
-    suggestion: "Spezifizieren Sie Schwellwerte, automatisierte Erkennung und Meldeprozesse.",
-    before: "Anti-Geldwäsche-Prüfungen müssen durchgeführt werden",
-    after: "AML-Prüfungen: Automatisches Transaction-Monitoring (Schwelle: 10.000EUR). Pattern-Erkennung für Structuring. Automatisierte SAR-Generierung. PEP-Screening bei Onboarding.",
-    textHighlight: "Anti-Geldwäsche-Prüfungen müssen durchgeführt werden",
-    section: "1.4", page: 2,
-  },
-  {
-    id: "CB-007", severity: "minor", category: "style",
-    title: "Inkonsistente Verbindlichkeit",
-    description: "'sollten möglich sein' vs. 'müssen unterstützt werden' – Inkonsistente Modalverben.",
-    rule: "Sprachstandard §1.2 – Modalverben",
-    suggestion: "Klären Sie, ob internationale Überweisungen verbindlich oder optional sind.",
-    before: "Internationale Überweisungen sollten möglich sein",
-    after: "Internationale Überweisungen (SWIFT) müssen für Geschäftskunden unterstützt werden. Für Privatkunden optional (Phase 2).",
-    textHighlight: "Internationale Überweisungen sollten möglich sein",
-    section: "1.2", page: 1,
-  },
-  {
-    id: "CB-008", severity: "minor", category: "structure",
-    title: "Fehlende API-Versionierung",
-    description: "APIs für Drittanbieter benötigen eine Versionierungsstrategie.",
-    rule: "Architekturstandard A-2024 §3.1",
-    suggestion: "Definieren Sie eine API-Versionierungsstrategie und Deprecation-Policy.",
-    before: "APIs müssen für Drittanbieter bereitgestellt werden",
-    after: "RESTful APIs (OpenAPI 3.0) mit semantischer Versionierung. Deprecation-Policy: 12 Monate. Maximale parallele Unterstützung: 2 Major-Versionen. Rate-Limiting: 1000 Req/Min pro Partner.",
-    textHighlight: "APIs müssen für Drittanbieter bereitgestellt werden",
-    section: "1.5", page: 3,
-  },
-];
-
-const projects: ProjectData[] = [
-  {
-    id: "P-001",
-    name: "Automobil-Plattform Redesign",
-    description: "Komplettes Redesign der Infotainment-Plattform inkl. OTA-Update-Funktionalität",
-    document: "Lastenheft v2.3 – 47 Seiten, 186 Anforderungen",
-    lastReview: "vor 2 Stunden",
-    stories: 234,
-    status: "Aktiv",
+const projects: ProjectData[] = COMPLIANCE_PROJECT_IDS.map((id) => {
+  const meta = PROJECT_SEARCH_META[id];
+  return {
+    id,
+    name: meta.name,
+    description: meta.description,
+    document: "Lastenheft (Auszug) – Prototyp-Compliance",
+    lastReview: "—",
+    stories: 120,
+    status: "Aktiv" as const,
     statusColor: "#4f46e5",
     pages: projectA_Pages,
     issues: projectA_Issues,
-  },
-  {
-    id: "P-002",
-    name: "Banking App v3.2 Migration",
-    description: "Migration der Legacy-Banking-App auf neue Microservice-Architektur",
-    document: "Anforderungsspezifikation v1.8 – 62 Seiten, 243 Anforderungen",
-    lastReview: "vor 5 Stunden",
-    stories: 187,
-    status: "Review",
-    statusColor: "#f59e0b",
-    pages: projectB_Pages,
-    issues: projectB_Issues,
-  },
-  ...(
-    [
-      "P-003",
-      "P-004",
-      "P-005",
-      "P-006",
-      "P-007",
-      "P-008",
-      "P-009",
-      "P-010",
-      "P-011",
-    ] as const
-  ).map((id) => {
-    const meta = PROJECT_SEARCH_META[id];
-    return {
-      id,
-      name: meta.name,
-      description: meta.description,
-      document: "Lastenheft (Auszug) – Prototyp-Compliance",
-      lastReview: "—",
-      stories: 120,
-      status: "Aktiv" as const,
-      statusColor: "#4f46e5",
-      pages: projectA_Pages,
-      issues: projectA_Issues,
-    };
-  }),
-];
+  };
+});
 
 interface FixLogEntry {
   id: string;
@@ -685,8 +518,17 @@ export function ComplianceChecker() {
               >
                 <CardContent className="p-6">
                   <div className="flex items-start gap-5">
-                    <div className="w-14 h-14 rounded-2xl bg-[#f1f0ff] flex items-center justify-center flex-shrink-0 group-hover:bg-[#4f46e5] transition-colors">
-                      <FolderOpen className="w-7 h-7 text-[#4f46e5] group-hover:text-white transition-colors" />
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 border border-transparent overflow-hidden transition-colors group-hover:border-[#e0e7ff] bg-[#f1f5f9] group-hover:bg-[#f1f0ff]">
+                      {PROJECT_LOGO_BY_ID[project.id] ? (
+                        <img
+                          src={PROJECT_LOGO_BY_ID[project.id]}
+                          alt=""
+                          className="w-9 h-9 object-contain"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <FolderOpen className="w-7 h-7 text-[#64748b] group-hover:text-[#4f46e5] transition-colors" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
@@ -864,11 +706,27 @@ export function ComplianceChecker() {
               >
                 <ArrowLeft className="w-4 h-4" />Projekte
               </Button>
-              <div>
-                <h2 className="text-[#1e1e2e]">Requirements Review</h2>
-                <p className="text-[13px] text-muted-foreground mt-0.5">
-                  {selectedProject.name} – {selectedProject.document.split("–")[0].trim()}
-                </p>
+              <div className="flex items-start gap-3 min-w-0">
+                {PROJECT_LOGO_BY_ID[selectedProject.id] ? (
+                  <div className="w-11 h-11 rounded-xl border border-border bg-white flex items-center justify-center shrink-0 shadow-sm">
+                    <img
+                      src={PROJECT_LOGO_BY_ID[selectedProject.id]}
+                      alt=""
+                      className="max-w-[36px] max-h-[36px] object-contain"
+                      loading="lazy"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-11 h-11 rounded-xl bg-[#f1f5f9] flex items-center justify-center shrink-0 border border-border">
+                    <FolderOpen className="w-5 h-5 text-[#64748b]" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <h2 className="text-[#1e1e2e]">Requirements Review</h2>
+                  <p className="text-[13px] text-muted-foreground mt-0.5">
+                    {selectedProject.name} – {selectedProject.document.split("–")[0].trim()}
+                  </p>
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-3">

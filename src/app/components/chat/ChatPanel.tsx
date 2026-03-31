@@ -40,7 +40,7 @@ export function ChatPanel() {
               className="text-[13px] text-white leading-tight truncate"
               style={{ fontWeight: 600 }}
             >
-              ReqWise AI Assistant
+              Assistent
             </h3>
             <p className="text-[11px] text-white/70 leading-tight truncate">
               Bulk-Ops & Wissensabfragen

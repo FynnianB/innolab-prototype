@@ -15,7 +15,6 @@ import {
   Copy,
   Download,
   ExternalLink,
-  FileSearch,
   FileText,
   FolderOpen,
   GitCompare,
@@ -41,6 +40,7 @@ import {
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router";
+import { ALL_DEMO_PROJECT_OPTIONS } from "../data/workspaces";
 import { StoryLink } from "../components/StoryLink";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -224,110 +224,91 @@ const initialDocIssues: DocIssue[] = [
 
 const initialStories: UserStory[] = [
   {
-    id: "US-001",
-    title: "Benutzer-Authentifizierung via SSO",
-    role: "Unternehmensadministrator",
-    goal: "mich über Single Sign-On (SSO) anmelden können",
-    benefit:
-      "ich keinen separaten Login benötige und die Sicherheitsrichtlinien eingehalten werden",
+    id: "SG-001",
+    title: "Forecast-Schnittstelle für Versuchsteil-Bedarf (Rolling 13W)",
+    role: "Planer Versuchsbau",
+    goal: "Bedarf und Forecast für Versuchsteile konsolidiert in SAP Analytics Cloud zu sehen",
+    benefit: "Engpässe vor Serienfreigabe sichtbar werden und Termine stabil bleiben",
     acceptance: [
-      "SSO-Integration mit Azure AD und Okta ist verfügbar",
-      "Session-Timeout nach 15 Minuten Inaktivität für administrative Accounts, 30 Minuten für Standard-Benutzer",
-      "Multi-Faktor-Authentifizierung wird unterstützt",
-      "Fehlermeldung bei ungültigen Credentials innerhalb von 2 Sekunden",
-      "Bei SSO-Ausfall steht eine lokale Fallback-Authentifizierung mit Zeitbegrenzung von 4 Stunden zur Verfügung",
+      "Forecast pro Teilenummer und Werk mit täglicher Aktualisierung aus ERP-Quelle",
+      "Abweichung >10% ggü. Vormonat wird als Ampel im Dashboard markiert",
+      "Export CSV/XLSX für Stakeholder-Reviews mit festem Spaltenlayout",
+      "Berechtigungen nach Rolle (nur eigenes Programmfahrzeug)",
+    ],
+    effort: "Mittel",
+    priority: "Hoch",
+  },
+  {
+    id: "SG-002",
+    title: "Versuchsteil-Status in der Supply-Chain-Ansicht",
+    role: "Einkauf",
+    goal: "Versuchsteil-Status (bestellt, in QS, freigegeben) ohne E-Mail-Pingpong zu verfolgen",
+    benefit: "Abnahmen und Logistik-Stopps rechtzeitig koordiniert werden können",
+    acceptance: [
+      "Statusmodell mind. 5 Zustände, Übergänge mit Zeitstempel und Akteur",
+      "Webhook/Event an abonnierende Teams bei Statuswechsel „freigegeben“",
+      "Verknüpfung zur Teilestückliste des Versuchsfahrzeugs",
+      "SLA-Hinweis wenn Status >48h unverändert in „QS“",
     ],
     effort: "Hoch",
     priority: "Hoch",
   },
   {
-    id: "US-002",
-    title: "Dashboard-Personalisierung",
-    role: "Endbenutzer",
-    goal: "mein Dashboard individuell anpassen können",
-    benefit:
-      "ich die für mich konfigurierten KPI-Metriken, Projektstatusupdates und priorisierte Benachrichtigungen auf einen Blick sehe",
+    id: "SG-003",
+    title: "Händler-ETA für werksausgehende Fahrzeuglogistik",
+    role: "Händlerbetreuer",
+    goal: "voraussichtliche Ankunft werksneuer Fahrzeuge im Händlersystem zu sehen",
+    benefit: "Übergabe- und PDI-Termine planbar sind",
     acceptance: [
-      "Widgets können per Drag & Drop oder alternativ über Tastatur-Navigation angeordnet werden",
-      "Mindestens 8 verschiedene Widget-Typen stehen zur Verfügung. Maximal 12 Widgets pro Dashboard. Ladezeit unter 3 Sekunden.",
-      "Layout wird benutzerspezifisch gespeichert",
-      "Neuen Benutzern wird ein Standard-Layout mit 6 vordefinierten Widgets zugewiesen",
+      "ETA basiert auf IoT/OBD-Events und Transport-Meilensteinen",
+      "Aktualisierung mind. alle 30 Minuten oder bei Meilenstein",
+      "Hinweis bei manueller Korrektur durch Logistik (Audit-Eintrag)",
+      "API-Versionierung und Abwärtskompatibilität für Händler-Backends",
+    ],
+    effort: "Hoch",
+    priority: "Mittel",
+  },
+  {
+    id: "SG-004",
+    title: "GPS-Geofence-Alerts für Abweichung von Soll-Route (Pilot)",
+    role: "Logistik-Operations",
+    goal: "Abweichungen von der geplanten Transportroute früh zu erkennen",
+    benefit: "Schäden und Verzögerungen minimiert werden",
+    acceptance: [
+      "Geofence pro Transportauftrag konfigurierbar (Radius oder Polygon)",
+      "Alert an Monitoring-Console und optional SMS an Bereitschaft",
+      "False-Positive-Rate im Pilot dokumentiert (<5% Ziel)",
+      "DSGVO-konforme Aufbewahrungsfrist für Positionsdaten definiert",
     ],
     effort: "Mittel",
     priority: "Mittel",
   },
   {
-    id: "US-003",
-    title: "Echtzeit-Benachrichtigungen",
-    role: "Projektmanager",
-    goal: "Echtzeit-Benachrichtigungen bei Statusänderungen der Schweregrade P1 und P2 erhalten",
-    benefit: "ich sofort reagieren kann und keine wichtigen Updates verpasse",
+    id: "SG-005",
+    title: "Gaia-X-konformer Datenraum: Consent pro Use Case",
+    role: "Datenverantwortlicher Konzern",
+    goal: "Datenfreigaben nur mit nachvollziehbarem Consent und Zweckbindung zu ermöglichen",
+    benefit: "Mobilitäts-Use-Cases regulatorisch tragfähig bleiben",
     acceptance: [
-      "Push-Benachrichtigungen via WebSocket mit automatischem Reconnect nach 5 Sekunden",
-      "Konfigurierbare Benachrichtigungsregeln pro Projekt und Schweregrad",
-      "Benachrichtigungshistorie der letzten 90 Tage",
+      "Consent-Artefakt versioniert, mit Ablauf und Widerrufspfad",
+      "Technische Durchsetzung über Policy Engine vor Datenaustausch",
+      "Nachweis exportierbar für Prüfungen (Audit-Trail)",
+      "Trennung Demo-/Produktiv-Mandant in Konfiguration erzwingbar",
     ],
     effort: "Hoch",
     priority: "Hoch",
   },
   {
-    id: "US-004",
-    title: "Datenexport in Standardformate",
-    role: "Business Analyst",
-    goal: "Analysedaten in CSV, PDF und Excel exportieren können",
-    benefit: "ich die Daten in externen Tools weiterverarbeiten kann",
+    id: "SG-006",
+    title: "Event-Hub-Schema für Konzern-APIs (Versionierung)",
+    role: "Integrationsarchitekt",
+    goal: "einheitliche Event-Schemas und Breaking-Change-Regeln bereitzustellen",
+    benefit: "Marken und Partner stabil anbinden können",
     acceptance: [
-      "Export-Formate: CSV, PDF, XLSX",
-      "Maximale Export-Größe: 100.000 Datensätze pro Einzelexport. Batch-Export für größere Datenmengen.",
-      "Export-Job läuft asynchron mit Fortschrittsanzeige und Audit-Trail-Protokollierung",
-      "E-Mail-Benachrichtigung bei Abschluss",
-    ],
-    effort: "Mittel",
-    priority: "Mittel",
-  },
-  {
-    id: "US-005",
-    title: "Audit-Trail für alle Änderungen",
-    role: "Compliance-Beauftragter",
-    goal: "einen vollständigen Audit-Trail aller Systemänderungen einsehen können",
-    benefit:
-      "regulatorische Anforderungen erfüllt werden und Änderungen nachvollziehbar sind",
-    acceptance: [
-      "Alle CRUD-Operationen werden protokolliert",
-      "Audit-Daten sind unveränderlich (Append-Only)",
-      "Filterung nach Benutzer, Zeitraum und Aktion",
-      "Aufbewahrungsdauer: 7 Jahre für steuerrelevante, 3 Jahre für operationale Daten",
-    ],
-    effort: "Hoch",
-    priority: "Hoch",
-  },
-  {
-    id: "US-006",
-    title: "Rollenbasierte Zugriffskontrolle",
-    role: "Systemadministrator",
-    goal: "Benutzerrollen mit granularen Berechtigungen definieren können",
-    benefit: "das Prinzip der minimalen Rechtevergabe umgesetzt wird",
-    acceptance: [
-      "5 vordefinierte Rollen: Administrator, Projektleiter, Requirements Engineer, Reviewer, Auditor",
-      "Benutzerdefinierte Rollen sind erstellbar, unterliegen einem 4-Augen-Prinzip mit SoD-Prüfung",
-      "Berechtigungen auf Modul- und Aktionsebene gemäß Berechtigungsmatrix BM-2024-v1",
-    ],
-    effort: "Hoch",
-    priority: "Hoch",
-  },
-  {
-    id: "US-007",
-    title: "Automatisierte Regressionstests",
-    role: "QA-Engineer",
-    goal: "automatisierte Regressionstests bei jedem Deployment ausführen können",
-    benefit:
-      "die Softwarequalität kontinuierlich sichergestellt wird und Fehler frühzeitig erkannt werden",
-    acceptance: [
-      "CI/CD-Pipeline führt automatisierte Tests bei jedem Merge-Request aus",
-      "Testabdeckung (Code Coverage) muss mindestens 80% betragen",
-      "Testergebnisse werden im Dashboard mit Trend-Verlauf visualisiert",
-      "Fehlgeschlagene Tests blockieren das Deployment automatisch",
-      "Benachrichtigung an das Entwicklungsteam bei Testfehlern innerhalb von 5 Minuten",
+      "AsyncAPI/JSON-Schema in Git mit semver für Schemas",
+      "Deprecation-Zeitraum mind. 90 Tage für Major-Änderungen",
+      "Consumer-Registry mit Kontakt und SLA",
+      "Monitoring: Dead-Letter-Quote und Lag pro Topic",
     ],
     effort: "Mittel",
     priority: "Hoch",
@@ -336,189 +317,132 @@ const initialStories: UserStory[] = [
 
 const mockJiraTickets: JiraTicket[] = [
   {
-    key: "PROJ-101",
-    summary: "SSO-Authentifizierung mit Azure AD implementieren",
+    key: "PROJ-601",
+    summary: "Backend: SAP Analytics Cloud Pipeline Stabilität",
     type: "Story",
     status: "In Progress",
-    assignee: "M. Schmidt",
-    sprint: "Sprint 43",
-    storyPoints: 13,
+    assignee: "A. Hoffmann",
+    sprint: "Sprint Ops-4",
+    storyPoints: 3,
   },
   {
-    key: "PROJ-102",
-    summary: "Dashboard Widget-Framework aufbauen",
-    type: "Epic",
+    key: "PROJ-602",
+    summary: "Backend: Forecast Pipeline Stabilität",
+    type: "Task",
     status: "To Do",
-    assignee: "L. Weber",
-    sprint: "Sprint 44",
-    storyPoints: 21,
+    assignee: "P. Richter",
+    sprint: "Backlog",
+    storyPoints: 5,
   },
   {
-    key: "PROJ-145",
-    summary: "Push-Notification Service einrichten",
+    key: "PROJ-603",
+    summary: "Backend: IoT Pipeline Stabilität",
     type: "Story",
     status: "In Review",
     assignee: "K. Fischer",
-    sprint: "Sprint 43",
-    storyPoints: 8,
+    sprint: "Sprint Ops-4",
+    storyPoints: 3,
   },
   {
-    key: "PROJ-156",
-    summary: "CSV/PDF Export für Reports",
-    type: "Story",
-    status: "Done",
-    assignee: "A. Braun",
-    sprint: "Sprint 42",
+    key: "PROJ-604",
+    summary: "Backend: GPS Pipeline Stabilität",
+    type: "Bug",
+    status: "In Progress",
+    assignee: "A. Hoffmann",
+    sprint: "Sprint Ops-4",
     storyPoints: 5,
   },
   {
-    key: "PROJ-200",
-    summary: "Rollen- und Berechtigungskonzept",
-    type: "Epic",
-    status: "To Do",
-    assignee: "S. Müller",
-    sprint: "Backlog",
-    storyPoints: 34,
-  },
-  {
-    key: "PROJ-210",
-    summary: "Audit-Log Viewer Komponente",
+    key: "PROJ-607",
+    summary: "Backend: Gaia-X Pipeline Stabilität",
     type: "Task",
-    status: "In Progress",
-    assignee: "T. Hoffmann",
-    sprint: "Sprint 43",
-    storyPoints: 5,
-  },
-  {
-    key: "PROJ-089",
-    summary: "Okta SSO Integration (Legacy)",
-    type: "Story",
-    status: "Done",
-    assignee: "M. Schmidt",
-    sprint: "Sprint 38",
-    storyPoints: 8,
-  },
-  {
-    key: "PROJ-220",
-    summary: "Automatisierte E2E Tests mit Playwright",
-    type: "Story",
-    status: "In Progress",
-    assignee: "P. Richter",
-    sprint: "Sprint 43",
-    storyPoints: 13,
-  },
-  {
-    key: "PROJ-301",
-    summary: "Mobile-App Offline Sync",
-    type: "Epic",
     status: "To Do",
-    assignee: "Nicht zugewiesen",
+    assignee: "A. Hoffmann",
+    sprint: "Sprint Ops-4",
+    storyPoints: 3,
+  },
+  {
+    key: "PROJ-608",
+    summary: "Backend: Datensouveränität Pipeline Stabilität",
+    type: "Story",
+    status: "In Review",
+    assignee: "P. Richter",
     sprint: "Backlog",
-    storyPoints: 21,
+    storyPoints: 5,
   },
 ];
 
 const initialJiraMatches: JiraMatch[] = [
   {
     id: "JM-001",
-    storyId: "US-001",
-    ticketKey: "PROJ-101",
-    type: "overlap",
+    storyId: "SG-001",
+    ticketKey: "PROJ-601",
+    type: "dependency",
     severity: "major",
     description:
-      "US-001 definiert SSO für Azure AD und Okta. PROJ-101 implementiert nur Azure AD.",
+      "SG-001 (Forecast) benötigt stabile SAC-Datenlieferung und Monitoring aus PROJ-601.",
     recommendation:
-      "PROJ-101 um Okta-Scope erweitern oder separates Ticket erstellen.",
+      "Runbooks und Alert-Schwellen in PROJ-601 vor Abnahme des Forecast-Dashboards abstimmen.",
     status: "pending",
   },
   {
     id: "JM-002",
-    storyId: "US-001",
-    ticketKey: "PROJ-089",
-    type: "duplicate",
-    severity: "critical",
+    storyId: "SG-002",
+    ticketKey: "PROJ-602",
+    type: "overlap",
+    severity: "minor",
     description:
-      "PROJ-089 (Legacy Okta SSO) ist als 'Done' markiert, aber US-001 fordert eine neue Okta-Integration.",
-    recommendation:
-      "Prüfen, ob PROJ-089 die Anforderungen aus US-001 bereits erfüllt.",
+      "Versuchsteil-Status (SG-002) und Forecast-Pipeline (PROJ-602) teilen Teile-Master-Events.",
+    recommendation: "Event-Namen und Versionierung zwischen beiden Teams synchronisieren.",
     status: "pending",
   },
   {
     id: "JM-003",
-    storyId: "US-002",
-    ticketKey: "PROJ-102",
-    type: "overlap",
-    severity: "minor",
+    storyId: "SG-003",
+    ticketKey: "PROJ-603",
+    type: "dependency",
+    severity: "major",
     description:
-      "PROJ-102 (Dashboard Widget-Framework) deckt die technische Basis ab, enthält aber keine spezifischen Widget-Typen.",
-    recommendation:
-      "Akzeptanzkriterien von US-002 als Sub-Tasks in PROJ-102 übernehmen.",
+      "Händler-ETA (SG-003) hängt an zuverlässigen IoT-Meilensteinen aus PROJ-603.",
+    recommendation: "End-to-End-Latenz IoT→API in PROJ-603 messen und dokumentieren.",
     status: "pending",
   },
   {
     id: "JM-004",
-    storyId: "US-003",
-    ticketKey: "PROJ-145",
-    type: "contradiction",
+    storyId: "SG-004",
+    ticketKey: "PROJ-604",
+    type: "dependency",
     severity: "critical",
     description:
-      "PROJ-145 implementiert Push-Notifications über Firebase. US-003 fordert WebSocket-basierte Benachrichtigungen.",
-    recommendation: "Technologie-Entscheidung treffen: WebSocket vs. Firebase.",
+      "Geofence-Alerts (SG-004) benötigen GPS-Stream-Qualität und Alerting aus PROJ-604.",
+    recommendation: "False-Positive-Handling und Eskalationspfad mit Operations klären.",
     status: "pending",
   },
   {
     id: "JM-005",
-    storyId: "US-004",
-    ticketKey: "PROJ-156",
+    storyId: "SG-005",
+    ticketKey: "PROJ-607",
     type: "overlap",
-    severity: "minor",
+    severity: "major",
     description:
-      "PROJ-156 (CSV/PDF Export) ist als 'Done'. US-004 erweitert um XLSX und Batch-Export.",
-    recommendation:
-      "Neues Ticket für XLSX-Export und Batch-Funktion erstellen.",
+      "Consent pro Use Case (SG-005) und Gaia-X-Pipeline (PROJ-607) müssen Policy- und Audit-Anforderungen gemeinsam erfüllen.",
+    recommendation: "Security & Legal Review vor Pilotfreigabe terminieren.",
     status: "pending",
   },
   {
     id: "JM-006",
-    storyId: "US-006",
-    ticketKey: "PROJ-200",
-    type: "dependency",
-    severity: "major",
-    description:
-      "PROJ-200 definiert Rollen-Konzept ohne SoD-Prüfung. US-006 erweitert die Anforderungen erheblich.",
-    recommendation: "PROJ-200 Akzeptanzkriterien mit US-006 synchronisieren.",
-    status: "pending",
-  },
-  {
-    id: "JM-007",
-    storyId: "US-007",
-    ticketKey: "PROJ-220",
-    type: "overlap",
-    severity: "minor",
-    description:
-      "PROJ-220 nutzt Playwright für E2E-Tests. Coverage-Anforderung (80%) fehlt in PROJ-220.",
-    recommendation: "Coverage-Anforderung aus US-007 in PROJ-220 ergänzen.",
-    status: "pending",
-  },
-  {
-    id: "JM-008",
     storyId: "",
-    ticketKey: "PROJ-301",
+    ticketKey: "PROJ-608",
     type: "gap",
     severity: "major",
     description:
-      "PROJ-301 (Mobile-App Offline Sync) hat kein Gegenstück in den generierten User Stories.",
-    recommendation: "Offline-Anforderung mit Product Owner klären.",
+      "PROJ-608 (Datensouveränität) hat noch kein explizites Gegenstück in den aktuellen Generator-Story-Entwürfen.",
+    recommendation: "Mit Datenraum-Product-Owner klären, ob separates Epic nötig ist.",
     status: "pending",
   },
 ];
 
-const availableProjects = [
-  { id: "P-001", name: "Automobil-Plattform Redesign" },
-  { id: "P-002", name: "Banking App v3.2 Migration" },
-  { id: "P-003", name: "Healthcare Portal DSGVO" },
-  { id: "P-004", name: "E-Commerce Checkout Flow" },
-];
+const availableProjects = ALL_DEMO_PROJECT_OPTIONS;
 
 const docAnalyzeSteps = [
   { label: "Dokumente parsen" },
@@ -629,7 +553,7 @@ export function StoryGenerator() {
   >("config");
   const [confluenceSync, setConfluenceSync] = useState(true);
   const [jiraExportConfig, setJiraExportConfig] = useState({
-    project: "PROJ",
+    project: "BMWVTE",
     sprintTarget: "Sprint 44",
     autoAssign: true,
     createEpic: true,
@@ -835,11 +759,21 @@ export function StoryGenerator() {
           </p>
         </div>
 
-        <WorkflowStepper
-          steps={workflowSteps}
-          currentStep={0}
-          className="mb-8"
-        />
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 min-w-0">
+          <WorkflowStepper
+            steps={workflowSteps}
+            currentStep={0}
+            className="mb-0 min-w-0 flex-1 sm:mr-2"
+          />
+          <Button
+            className="h-11 shrink-0 bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 shadow-sm w-full sm:w-auto"
+            disabled={storyGenSourceCount === 0}
+            onClick={startDocAnalysis}
+          >
+            <Sparkles className="w-4 h-4" />
+            Story Generator starten
+          </Button>
+        </div>
 
         <Card className="border-2 border-dashed border-border bg-white mb-6 overflow-hidden">
           <CardContent className="p-0">
@@ -1055,15 +989,6 @@ export function StoryGenerator() {
             </CardContent>
           </Card>
         )}
-
-        <Button
-          className="w-full h-12 bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 shadow-sm"
-          disabled={storyGenSourceCount === 0}
-          onClick={startDocAnalysis}
-        >
-          <FileSearch className="w-5 h-5" />
-          Dokumentenprüfung starten
-        </Button>
       </div>
     );
   }
@@ -2871,9 +2796,12 @@ export function StoryGenerator() {
                     }
                     className="w-full px-3 py-2 rounded-lg border border-border bg-white text-[13px] outline-none focus:border-[#4f46e5]"
                   >
-                    <option value="PROJ">PROJ - Automobil-Plattform</option>
-                    <option value="BANK">BANK - Banking App</option>
-                    <option value="HC">HC - Healthcare Portal</option>
+                    <option value="BMWVTE">BMWVTE - Versuchsteile & Analytics</option>
+                    <option value="BMWLOG">BMWLOG - Fahrzeuglogistik</option>
+                    <option value="VWDATA">VWDATA - Datenraum Mobilität</option>
+                    <option value="MBEMOB">MBEMOB - E-Mobility Software</option>
+                    <option value="AUDIHMI">AUDIHMI - Infotainment</option>
+                    <option value="PORENA">PORENA - Motorsport Telemetrie</option>
                   </select>
                 </div>
                 <div>
@@ -3098,7 +3026,7 @@ export function StoryGenerator() {
                     1 Duplikat erkannt und übersprungen
                   </span>
                   <span className="text-[11px] text-muted-foreground ml-auto">
-                    PROJ-156 (CSV/PDF Export)
+                    DBNAV-501 (Touch&Travel Belegvalidierung)
                   </span>
                 </div>
               </div>

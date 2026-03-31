@@ -20,12 +20,10 @@ const joyrideLocale = {
 const joyrideStyles = {
   options: {
     zIndex: 10050,
-    arrowColor: "#1e1e2e",
-    backgroundColor: "#1e1e2e",
-    overlayColor: "rgba(15, 23, 42, 0.72)",
+    arrowColor: "#ffffff",
+    backgroundColor: "#ffffff",
     primaryColor: "#4f46e5",
-    textColor: "#ffffff",
-    spotlightShadow: "0 0 0 2px rgba(99, 102, 241, 0.95)",
+    textColor: "#1e1e2e",
   },
 };
 
@@ -94,6 +92,7 @@ export function OnboardingHost() {
       showSkipButton
       hideCloseButton
       scrollOffset={80}
+      disableOverlay
       disableOverlayClose
       callback={handleCallback}
       tooltipComponent={OnboardingTooltip}
@@ -101,7 +100,7 @@ export function OnboardingHost() {
       styles={joyrideStyles}
       floaterProps={{
         styles: {
-          floater: { filter: "drop-shadow(0 12px 24px rgba(0,0,0,0.25))" },
+          floater: { zIndex: 10055 },
         },
       }}
     />

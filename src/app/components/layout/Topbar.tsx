@@ -14,7 +14,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAppContext } from "../../context/AppContext";
 import { useMobileNav } from "../../context/MobileNavContext";
-import { useOnboardingReset } from "../../onboarding/OnboardingResetContext";
 import {
   listProjectsForSearchInWorkspace,
   PROJECT_LOGO_BY_ID,
@@ -100,7 +99,6 @@ function WorkspaceGlyph({
 export function Topbar() {
   const navigate = useNavigate();
   const mobileNav = useMobileNav();
-  const { resetAllTours } = useOnboardingReset();
   const {
     workspaces,
     selectedWorkspace,
@@ -420,14 +418,6 @@ export function Topbar() {
                 Enterprise
               </Badge>
             </div>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={() => {
-              resetAllTours();
-            }}
-          >
-            Einführung erneut starten
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem className="text-[#ef4444]">

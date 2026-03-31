@@ -1,122 +1,106 @@
 import type { Step } from "react-joyride";
+import { hasCustomerJourneyNavCookie } from "./navTourConfig";
 
 function sel(id: string): string {
   return `[data-tour="${id}"]`;
 }
 
-/** Dashboard: optional mobiler Menü-Schritt, Navigation, Workspace, Suche, Export, Projekte, Aktivitäten. */
+function navOverviewContent(): string {
+  const cj = hasCustomerJourneyNavCookie()
+    ? "\nCustomer Journey · Touchpoints entlang der Experience\n"
+    : "";
+  return (
+    "Oben links: Enterprise-Mandant der Lösung. Im Hauptmenü wechseln Sie zwischen den Bereichen:\n\n" +
+    "Dashboard · Überblick und Kennzahlen\n" +
+    "Story Generator · Anforderungen mit KI\n" +
+    "Compliance Checker · Prüfung gegen Vorgaben\n" +
+    "Story-Abhängigkeiten · Verknüpfungen zwischen Stories\n" +
+    "Projekte · Teams und Archiv" +
+    cj +
+    "\n\nDarunter: Einstellungen und Hilfe & Support."
+  );
+}
+
+const navStep: Step = {
+  target: sel("nav-main"),
+  title: "Hauptmenü",
+  content: "", // wird zur Laufzeit gesetzt
+  placement: "right-start",
+  disableBeacon: true,
+};
+
+const WORKSPACE =
+  "Workspace = Kundenorganisation (z. B. BMW Group, Volkswagen Group). Projekte und Stories sind immer diesem Kontext zugeordnet – hier wechseln Sie zwischen OEMs.";
+
+const EXPORT =
+  "Export: Inhalte aus dem aktuellen Workspace zusammenstellen und herunterladen (z. B. für Berichte).";
+
+const PROJECTS_CARD =
+  "Kurzüberblick Ihrer Projekte – volle Liste über „Alle anzeigen“ oder „Projekte“ im Menü.";
+
+/**
+ * Dashboard: ein Nav-Schritt (alle Punkte in einer Kachel), dann Workspace, Export, Projekte.
+ */
 export function getDashboardSteps(includeMobileMenuStep: boolean): Step[] {
-  const steps: Step[] = [];
+  const nav: Step = {
+    ...navStep,
+    content: navOverviewContent(),
+  };
 
-  if (includeMobileMenuStep) {
-    steps.push({
-      target: sel("topbar-mobile-menu"),
-      title: "Navigation auf dem Smartphone",
-      content:
-        "Tippen Sie hier, um die Seitenleiste zu öffnen. Dort erreichen Sie Dashboard, Story Generator, Projekte und mehr.",
-      placement: "bottom",
-      disableBeacon: true,
-    });
-  }
-
-  steps.push(
-    {
-      target: sel("nav-main"),
-      title: "Hauptnavigation",
-      content:
-        "Wechseln Sie zwischen den Bereichen der App. Alles Wichtige — von der Übersicht bis zu Compliance und Projekten — startet hier.",
-      placement: "right",
-      disableBeacon: true,
-    },
+  const tail: Step[] = [
     {
       target: sel("topbar-workspace"),
       title: "Workspace",
-      content:
-        "Projekte, Stories und Suchergebnisse hängen vom gewählten Workspace ab. Wechseln Sie den Kontext, wenn Sie für ein anderes Team oder Mandant arbeiten.",
-      placement: "bottom",
-      disableBeacon: true,
-    },
-    {
-      target: sel("topbar-search"),
-      title: "Globale Suche",
-      content:
-        "Schnell zu Stories oder Projekten im aktuellen Workspace: Tippen Sie Titel oder IDs. Tastenkürzel: Strg+K (bzw. Cmd+K).",
+      content: WORKSPACE,
       placement: "bottom",
       disableBeacon: true,
     },
     {
       target: sel("topbar-export"),
       title: "Export",
-      content:
-        "Hier exportieren Sie Inhalte (z. B. Stories) für Berichte oder Weitergabe — je nach gewähltem Umfang im Dialog.",
+      content: EXPORT,
       placement: "bottom",
       disableBeacon: true,
     },
     {
       target: sel("dashboard-projects-card"),
       title: "Ihre Projekte",
-      content:
-        "Diese Liste zeigt Projekte, in deren Team Sie sind. Über „Alle anzeigen“ oder die Seitenleiste öffnen Sie die vollständige Projektübersicht.",
+      content: PROJECTS_CARD,
       placement: "top",
       disableBeacon: true,
     },
-    {
-      target: sel("dashboard-activity-card"),
-      title: "Letzte Aktivitäten",
-      content:
-        "Kurzüberblick, was sich in diesem Workspace zuletzt getan hat — ergänzend zu Ihren Projekten in der linken Spalte.",
-      placement: "top",
-      disableBeacon: true,
-    },
-  );
+  ];
 
-  return steps;
+  if (includeMobileMenuStep) {
+    return [
+      {
+        target: sel("topbar-mobile-menu"),
+        title: "Menü",
+        content:
+          "Seitenleiste öffnen. Im nächsten Schritt erklären wir alle Einträge des Hauptmenüs auf einen Blick.",
+        placement: "bottom",
+        disableBeacon: true,
+      },
+      nav,
+      ...tail,
+    ];
+  }
+
+  return [nav, ...tail];
 }
 
+/** Vorerst deaktiviert — Fokus liegt auf dem Dashboard. */
 export function getProjectsListSteps(): Step[] {
-  return [
-    {
-      target: sel("projects-list-search"),
-      title: "Projekte durchsuchen",
-      content:
-        "Filtern Sie die Karten nach Name oder Beschreibung. Klicken Sie eine Karte, um Details, Stories und das Team zu öffnen.",
-      placement: "bottom",
-      disableBeacon: true,
-    },
-    {
-      target: sel("projects-list-grid"),
-      title: "Projektkarten",
-      content:
-        "Jede Karte fasst Status, Stories und Team-Kürzel zusammen. Von hier springen Sie ins Projekt.",
-      placement: "top",
-      disableBeacon: true,
-    },
-  ];
+  return [];
 }
 
+/** Vorerst deaktiviert — Fokus liegt auf dem Dashboard. */
 export function getProjectsDetailSteps(): Step[] {
-  return [
-    {
-      target: sel("projects-detail-tabs"),
-      title: "Projekt-Bereiche",
-      content:
-        "Übersicht und Versionshistorie fassen Status und Änderungen zusammen. Der Tab Team ist zentral für Ihre Zuordnung zum Projekt.",
-      placement: "bottom",
-      disableBeacon: true,
-    },
-    {
-      target: sel("projects-detail-tab-team"),
-      title: "Team",
-      content:
-        "Hier sehen Sie alle Projektmitglieder, können Kolleg:innen hinzufügen oder entfernen und sich selbst zum Team hinzufügen. Nur wenn Sie im Team sind, erscheint das Projekt unter „Ihre Projekte“ auf dem Dashboard.",
-      placement: "bottom",
-      disableBeacon: true,
-    },
-  ];
+  return [];
 }
 
 export function getStepsForRoute(
-  key: OnboardingRouteKey,
+  key: import("./routeKeys").OnboardingRouteKey,
   options: { includeMobileMenuStep: boolean },
 ): Step[] {
   switch (key) {

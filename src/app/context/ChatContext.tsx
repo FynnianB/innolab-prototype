@@ -56,7 +56,7 @@ const WELCOME_MESSAGES: ChatMessage[] = [
     role: "assistant",
     type: "text",
     content:
-      "Hallo! Ich bin der **ReqWise AI Assistant**. Ich kann dir bei Bulk-Operationen auf deinen Tickets helfen oder Fragen zu bestehenden Projekten und Stories beantworten.",
+      "Hallo! Ich bin Ihr **Assistent**. Ich kann bei Bulk-Operationen auf Tickets helfen oder Fragen zu Projekten und Stories im aktuellen Workspace beantworten.",
     timestamp: Date.now(),
   },
   {
@@ -77,7 +77,7 @@ const WELCOME_MESSAGES: ChatMessage[] = [
         },
         {
           label: "Projektstatus",
-          message: "Was ist der aktuelle Stand vom Automobil-Projekt?",
+          message: "Was ist der aktuelle Stand beim Projekt Versuchsteile?",
         },
         {
           label: "Stories auflisten",

@@ -1,5 +1,6 @@
 /* ------------------------------------------------------------------ */
 /*  Workspace ↔ Projekt-Zuordnung (eine Quelle der Wahrheit)           */
+/*  Enterprise (Capgemini) ≠ Workspace (z. B. BMW Group)              */
 /* ------------------------------------------------------------------ */
 
 import type { Story } from "./stories";
@@ -7,79 +8,102 @@ import type { Story } from "./stories";
 export interface Workspace {
   id: string;
   name: string;
-  /** Relativer Pfad unter `public/`, z. B. `/logos/capgemini.svg` */
+  /** Relativer Pfad unter `public/` für Kundenlogo in der Workspace-Auswahl */
   logoSrc?: string;
 }
 
-export const WORKSPACE_STORAGE_KEY = "reqwise.selectedWorkspaceId";
+export const WORKSPACE_STORAGE_KEY = "reqwise.selectedWorkspaceId.v2";
 
-export const DEFAULT_WORKSPACE_ID = "ws-capgemini";
+export const DEFAULT_WORKSPACE_ID = "ws-bmw";
 
 /**
- * Kunden-/Marken-Logos (Wikimedia Commons / Marken-SVGs lokal unter `public/logos/`).
+ * Kundenlogos pro Projekt (Workspace-spezifische Vorhaben).
  */
 export const PROJECT_LOGO_BY_ID: Record<string, string> = {
-  "P-007": "/logos/db.svg",
-  "P-008": "/logos/allianz.svg",
-  "P-009": "/logos/enbw.svg",
-  "P-010": "/logos/bayern.svg",
-  "P-011": "/logos/rewe.svg",
+  "P-101": "/logos/bmw.svg",
+  "P-102": "/logos/bmw.svg",
+  "P-103": "/logos/bmw.svg",
+  "P-201": "/logos/vw.svg",
+  "P-202": "/logos/vw.svg",
+  "P-203": "/logos/vw.svg",
+  "P-301": "/logos/mercedes.svg",
+  "P-302": "/logos/mercedes.svg",
+  "P-303": "/logos/mercedes.svg",
+  "P-401": "/logos/audi.svg",
+  "P-402": "/logos/audi.svg",
+  "P-403": "/logos/audi.svg",
+  "P-501": "/logos/porsche.svg",
+  "P-502": "/logos/porsche.svg",
+  "P-503": "/logos/porsche.svg",
 };
 
-/** Workspaces wie in der Topbar (Anzeigenamen). */
+/** Workspaces = Kundenorganisationen (unter dem Enterprise Mandanten). */
 export const WORKSPACES: Workspace[] = [
   {
-    id: "ws-capgemini",
-    name: "Capgemini",
-    logoSrc: "/logos/capgemini.svg",
+    id: "ws-bmw",
+    name: "BMW Group",
+    logoSrc: "/logos/bmw.svg",
   },
-  { id: "ws-automobil", name: "Automobil-Projekt Alpha" },
-  { id: "ws-banking", name: "Banking Platform v3" },
-  { id: "ws-healthcare", name: "Healthcare Portal" },
-  { id: "ws-digital", name: "Digital & Growth" },
+  {
+    id: "ws-vw",
+    name: "Volkswagen Group",
+    logoSrc: "/logos/vw.svg",
+  },
+  {
+    id: "ws-mercedes",
+    name: "Mercedes-Benz Group",
+    logoSrc: "/logos/mercedes.svg",
+  },
+  {
+    id: "ws-audi",
+    name: "AUDI",
+    logoSrc: "/logos/audi.svg",
+  },
+  {
+    id: "ws-porsche",
+    name: "Porsche AG",
+    logoSrc: "/logos/porsche.svg",
+  },
 ];
 
-/**
- * Projekt-IDs aus Projects.tsx → Workspace.
- * Mehrere Projekte pro Workspace (z. B. Digital & Growth).
- */
 export const PROJECT_WORKSPACE: Record<string, string> = {
-  "P-001": "ws-automobil",
-  "P-002": "ws-banking",
-  "P-003": "ws-healthcare",
-  "P-004": "ws-digital",
-  "P-005": "ws-digital",
-  "P-006": "ws-digital",
-  "P-007": "ws-capgemini",
-  "P-008": "ws-capgemini",
-  "P-009": "ws-capgemini",
-  "P-010": "ws-capgemini",
-  "P-011": "ws-capgemini",
+  "P-101": "ws-bmw",
+  "P-102": "ws-bmw",
+  "P-103": "ws-bmw",
+  "P-201": "ws-vw",
+  "P-202": "ws-vw",
+  "P-203": "ws-vw",
+  "P-301": "ws-mercedes",
+  "P-302": "ws-mercedes",
+  "P-303": "ws-mercedes",
+  "P-401": "ws-audi",
+  "P-402": "ws-audi",
+  "P-403": "ws-audi",
+  "P-501": "ws-porsche",
+  "P-502": "ws-porsche",
+  "P-503": "ws-porsche",
 };
 
-/**
- * Standard-Projektteams (Initialen). Prototyp-Nutzerin Sarah entspricht **SM**
- * (vgl. Dashboard / Versionshistorie „Dr. Sarah Müller“).
- * Dashboard „Letzte Projekte“ = nur Projekte, deren Team SM enthält.
- */
 export const PROTOTYPE_USER_INITIALS = "SM";
 
-/** Default-Teams pro Projekt (Quelle für Anzeige + Vergleich bei localStorage-Overrides). */
 export const PROJECT_TEAM_BY_ID: Record<string, string[]> = {
-  "P-001": ["SM", "TK", "AH", "JR"],
-  "P-002": ["SM", "BW"],
-  "P-003": ["SM", "ML", "KD"],
-  "P-004": ["TK", "AH"],
-  "P-005": ["JR"],
-  "P-006": ["SM", "BW", "ML"],
-  "P-007": ["SM", "MK", "SR", "LB", "TH"],
-  "P-008": ["SM", "LB", "MK", "AH"],
-  "P-009": ["SM", "SR", "TH", "BW"],
-  "P-010": ["SM", "MK", "JR"],
-  "P-011": ["TH", "LB"],
+  "P-101": ["SM", "MK", "SR", "LB", "TH"],
+  "P-102": ["SM", "MK", "SR"],
+  "P-103": ["SM", "LB", "TH"],
+  "P-201": ["SM", "MK", "AH"],
+  "P-202": ["SM", "SR", "TH"],
+  "P-203": ["LB", "MK"],
+  "P-301": ["SM", "SR", "BW"],
+  "P-302": ["SM", "MK", "TH"],
+  "P-303": ["JR", "LB"],
+  "P-401": ["SM", "MK", "SR", "LB"],
+  "P-402": ["SM", "AH"],
+  "P-403": ["TH", "BW"],
+  "P-501": ["SM", "MK", "SR"],
+  "P-502": ["SM", "LB", "JR"],
+  "P-503": ["MK", "TH"],
 };
 
-/** Anzeigenamen für den Team-Tab (Initialen → Person, Prototyp). */
 export const TEAM_MEMBER_LABELS: Record<string, string> = {
   SM: "Sarah Müller (Sie)",
   TK: "Thomas König",
@@ -94,24 +118,26 @@ export const TEAM_MEMBER_LABELS: Record<string, string> = {
   TH: "Tim Hoffmann",
 };
 
-/** Alle zuweisbaren Kolleg:innen (für „Hinzufügen“ im Team-Tab). */
 export const ALL_TEAM_ROSTER_INITIALS: string[] = Object.keys(
   TEAM_MEMBER_LABELS,
 ).sort();
 
-/**
- * Story-Feld `project` (Name) → Workspace.
- * Muss mit den Namen in Projects.tsx / stories.ts übereinstimmen.
- */
 export const STORY_PROJECT_TO_WORKSPACE: Record<string, string> = {
-  "Automobil-Plattform Redesign": "ws-automobil",
-  "Banking App v3.2 Migration": "ws-banking",
-  "Healthcare Portal DSGVO": "ws-healthcare",
-  "Deutsche Bahn — Reisenden-Navigator 2.0": "ws-capgemini",
-  "Allianz — Schaden-FNOL Portal": "ws-capgemini",
-  "EnBW — MeinEnBW Transformation": "ws-capgemini",
-  "Freistaat Bayern — Bürgerportal Suite": "ws-capgemini",
-  "REWE digital — Filialbestand Echtzeit": "ws-capgemini",
+  "BMW Group — Versuchsteile & Entwicklungs-Analytics": "ws-bmw",
+  "BMW Group — Fahrzeuglogistik & Vertriebs-Transparenz": "ws-bmw",
+  "BMW Group — Digital Core & ERP-Roadmap": "ws-bmw",
+  "Volkswagen Group — Datenraum Mobilität": "ws-vw",
+  "Volkswagen Group — Konzern-IT & Integrationsplattform": "ws-vw",
+  "Volkswagen Group — Marken-Apps & Partner-Ökosystem": "ws-vw",
+  "Mercedes-Benz Group — E-Mobility Software & Baukasten": "ws-mercedes",
+  "Mercedes-Benz Group — OTA & Fahrzeug-Software-Releases": "ws-mercedes",
+  "Mercedes-Benz Group — Vertrieb & Aftersales Digital": "ws-mercedes",
+  "AUDI — Infotainment & HMI": "ws-audi",
+  "AUDI — Konfigurator & Commerce": "ws-audi",
+  "AUDI — Vernetzung & Drittpartner-APIs": "ws-audi",
+  "Porsche AG — Motorsport & Fahrzeugdaten": "ws-porsche",
+  "Porsche AG — Kundenplattform & Personalisierung": "ws-porsche",
+  "Porsche AG — Supply Chain & Teile-Transparenz": "ws-porsche",
 };
 
 export function getWorkspaceById(id: string): Workspace | undefined {
@@ -128,69 +154,94 @@ export function getProjectIdsForWorkspace(workspaceId: string): string[] {
     .map(([pid]) => pid);
 }
 
-/**
- * Namen/Beschreibungen für globale Suche (IDs wie in Projects.tsx / PROJECT_WORKSPACE).
- */
 export const PROJECT_SEARCH_META: Record<
   string,
   { name: string; description: string }
 > = {
-  "P-001": {
-    name: "Automobil-Plattform Redesign",
+  "P-101": {
+    name: "BMW Group — Versuchsteile & Entwicklungs-Analytics",
     description:
-      "Komplettes Redesign der Infotainment-Plattform inkl. OTA-Update-Funktionalität",
+      "SAP Analytics Cloud, Forecast und Versuchsteil-Transparenz: KPIs, Schnittstellen und Abnahme mit Engineering",
   },
-  "P-002": {
-    name: "Banking App v3.2 Migration",
+  "P-102": {
+    name: "BMW Group — Fahrzeuglogistik & Vertriebs-Transparenz",
     description:
-      "Migration der Legacy-Banking-App auf neue Microservice-Architektur",
+      "IoT-/GPS-Tracking, ETA zu Händlern und Vertriebskanälen, operative Dashboards",
   },
-  "P-003": {
-    name: "Healthcare Portal DSGVO",
+  "P-103": {
+    name: "BMW Group — Digital Core & ERP-Roadmap",
     description:
-      "DSGVO-konforme Patientenportal-Spezifikation für Kliniken",
+      "S/4HANA-Roadmap, Integrations-Governance und Release-Kadenz für Konzern-IT",
   },
-  "P-004": {
-    name: "E-Commerce Checkout Flow",
+  "P-201": {
+    name: "Volkswagen Group — Datenraum Mobilität",
     description:
-      "Optimierung des Checkout-Prozesses für höhere Conversion Rate",
+      "Gaia-X-orientierter Datenraum: Consent, Use Cases und souveräne Datenfreigaben",
   },
-  "P-005": {
-    name: "IoT Dashboard Spezifikation",
+  "P-202": {
+    name: "Volkswagen Group — Konzern-IT & Integrationsplattform",
     description:
-      "Real-time Dashboard für IoT-Sensordaten in Produktionsumgebungen",
+      "API- und Event-Hub, IAM, Monitoring und Standardisierung über Marken hinweg",
   },
-  "P-006": {
-    name: "CRM Integration Suite",
+  "P-203": {
+    name: "Volkswagen Group — Marken-Apps & Partner-Ökosystem",
     description:
-      "Salesforce und HubSpot Integration für die Vertriebsabteilung",
+      "SDK, OAuth, Deep Links und B2B-Partneranbindung für Marken-Apps",
   },
-  "P-007": {
-    name: "Deutsche Bahn — Reisenden-Navigator 2.0",
+  "P-301": {
+    name: "Mercedes-Benz Group — E-Mobility Software & Baukasten",
     description:
-      "Ausbau DB Navigator: Störungskommunikation, Touch&Travel, barrierefreie Reisekette",
+      "HV-Batterie-Software, Feature-Flags, Safety-Backlog und ASIL-relevante Anforderungen",
   },
-  "P-008": {
-    name: "Allianz — Schaden-FNOL Portal",
+  "P-302": {
+    name: "Mercedes-Benz Group — OTA & Fahrzeug-Software-Releases",
     description:
-      "First Notice of Loss: Self-Service Schadenmeldung mit Medien-Upload und Status-Tracking",
+      "Over-the-Air-Kampagnen, Signatur, Rollback und Fahrzeug-Flottensteuerung",
   },
-  "P-009": {
-    name: "EnBW — MeinEnBW Transformation",
+  "P-303": {
+    name: "Mercedes-Benz Group — Vertrieb & Aftersales Digital",
     description:
-      "B2C-Energieportal: Vertragswechsel, dynamische Tarife, Verbrauchstransparenz und E-Mobilität",
+      "Leads, Werkstatt-Termine und OneWeb-Journeys für Vertrieb und Service",
   },
-  "P-010": {
-    name: "Freistaat Bayern — Bürgerportal Suite",
+  "P-401": {
+    name: "AUDI — Infotainment & HMI",
     description:
-      "Landesweite digitale Antragswege, BAYERN-ID-Anbindung und Once-Only-Prinzip",
+      "MMI, Voice, HUD und UX-Abnahme für Fahrzeug-HMI und Begleit-Apps",
   },
-  "P-011": {
-    name: "REWE digital — Filialbestand Echtzeit",
+  "P-402": {
+    name: "AUDI — Konfigurator & Commerce",
     description:
-      "Omnichannel: Lagerbestand Filiale vs. Online, Reservierung und Abholfenster",
+      "Fahrzeug-Konfigurator, Preislogik, Bestellung und Payment im Omnichannel",
+  },
+  "P-403": {
+    name: "AUDI — Vernetzung & Drittpartner-APIs",
+    description:
+      "MQTT, SLA, Rate-Limits und Partner-APIs für vernetzte Fahrzeugfunktionen",
+  },
+  "P-501": {
+    name: "Porsche AG — Motorsport & Fahrzeugdaten",
+    description:
+      "Telemetrie, Rundenzeiten, Latenz und Track-Daten für Motorsport und Serien-Feedback",
+  },
+  "P-502": {
+    name: "Porsche AG — Kundenplattform & Personalisierung",
+    description:
+      "My Porsche, Garage-Ansicht, Notifications und personalisierte Inhalte",
+  },
+  "P-503": {
+    name: "Porsche AG — Supply Chain & Teile-Transparenz",
+    description:
+      "VIN-basierte Teilelogistik, Lieferanten-ATP und Supply-Chain-Sichtbarkeit",
   },
 };
+
+/** Alle Demo-Projekte (für Story Generator & ähnliche globale Auswahlen). */
+export const ALL_DEMO_PROJECT_OPTIONS: { id: string; name: string }[] = (
+  Object.keys(PROJECT_SEARCH_META) as string[]
+).map((id) => ({
+  id,
+  name: PROJECT_SEARCH_META[id]!.name,
+}));
 
 export function listProjectsForSearchInWorkspace(workspaceId: string) {
   return getProjectIdsForWorkspace(workspaceId)
@@ -218,11 +269,27 @@ export function filterStoriesByWorkspace(
   return stories.filter((s) => storyBelongsToWorkspace(s, workspaceId));
 }
 
+const LEGACY_WORKSPACE_IDS = new Set([
+  "ws-capgemini",
+  "ws-automobil",
+  "ws-banking",
+  "ws-healthcare",
+  "ws-digital",
+  "ws-deutsche-bahn",
+  "ws-allianz",
+  "ws-enbw",
+  "ws-bayern",
+  "ws-rewe",
+]);
+
 export function readStoredWorkspaceId(): string {
   if (typeof window === "undefined") return DEFAULT_WORKSPACE_ID;
   try {
     const v = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
     if (v && isValidWorkspaceId(v)) return v;
+    const legacy = window.localStorage.getItem("reqwise.selectedWorkspaceId");
+    if (legacy && isValidWorkspaceId(legacy)) return legacy;
+    if (legacy && LEGACY_WORKSPACE_IDS.has(legacy)) return DEFAULT_WORKSPACE_ID;
   } catch {
     /* ignore */
   }
@@ -238,10 +305,6 @@ export function persistWorkspaceId(id: string): void {
   }
 }
 
-/* ------------------------------------------------------------------ */
-/*  Projektteams: Overrides (localStorage)                            */
-/* ------------------------------------------------------------------ */
-
 export const PROJECT_TEAM_OVERRIDES_KEY = "reqwise.projectTeamOverrides";
 
 export function projectTeamsEqual(a: string[], b: string[]): boolean {
@@ -251,7 +314,6 @@ export function projectTeamsEqual(a: string[], b: string[]): boolean {
   return sa.every((v, i) => v === sb[i]);
 }
 
-/** Nur Projekte mit bekannter ID; Arrays aus nicht-leeren Strings. */
 export function readProjectTeamOverrides(): Record<string, string[]> {
   if (typeof window === "undefined") return {};
   try {

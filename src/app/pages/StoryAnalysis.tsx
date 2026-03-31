@@ -7,6 +7,7 @@ import {
   Copy,
   Download,
   FileText,
+  FolderOpen,
   GitCompare,
   Globe,
   Layers,
@@ -29,13 +30,19 @@ import { useNavigate, useSearchParams } from "react-router";
 import { StoryLink } from "../components/StoryLink";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { Checkbox } from "../components/ui/checkbox";
-import { Label } from "../components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "../components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "../components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 import { cn } from "../components/ui/utils";
 import { useAppContext } from "../context/AppContext";
 import {
@@ -46,6 +53,7 @@ import {
 } from "../data/stories";
 import {
   getProjectIdsForWorkspace,
+  PROJECT_LOGO_BY_ID,
   PROJECT_SEARCH_META,
   PROJECT_WORKSPACE,
 } from "../data/workspaces";
@@ -112,6 +120,51 @@ const typeIcons: Record<string, typeof FileText> = {
 type RelationType = TicketRelation["type"];
 type StatusQuickFilter = "all" | "open" | "active" | "done";
 
+/** Einheitliche Filter-Trigger (Popover / Radix-Select): neutral, Akzent nur bei open oder aktivem Filter. */
+const filterFieldTriggerClass =
+  "rounded-xl border border-slate-200 bg-white text-[12px] text-slate-700 shadow-sm transition-[border-color,box-shadow,background-color] duration-150 hover:border-slate-300 hover:bg-slate-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5]/20 data-[state=open]:border-[#4f46e5]/40 data-[state=open]:ring-2 data-[state=open]:ring-[#4f46e5]/12";
+
+const filterSelectContentClass =
+  "z-[200] rounded-xl border border-slate-200 bg-white shadow-lg";
+
+function ProjectFilterGlyph({
+  projectId,
+  size = "md",
+}: {
+  /** `null` = „Alle Projekte“ */
+  projectId: string | null;
+  size?: "sm" | "md";
+}) {
+  const outer =
+    size === "sm"
+      ? "flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200/90 bg-white"
+      : "flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200/90 bg-white";
+  const imgClass = size === "sm" ? "size-5 object-contain" : "size-[22px] object-contain";
+
+  if (!projectId) {
+    return (
+      <span className={cn(outer, "bg-slate-50")} aria-hidden>
+        <Layers className={size === "sm" ? "size-3.5 text-slate-500" : "size-4 text-slate-500"} />
+      </span>
+    );
+  }
+  const src = PROJECT_LOGO_BY_ID[projectId];
+  if (src) {
+    return (
+      <span className={outer} aria-hidden>
+        <img src={src} alt="" className={imgClass} loading="lazy" />
+      </span>
+    );
+  }
+  return (
+    <span className={cn(outer, "bg-slate-50")} aria-hidden>
+      <FolderOpen
+        className={size === "sm" ? "size-3.5 text-slate-500" : "size-4 text-slate-500"}
+      />
+    </span>
+  );
+}
+
 function countRelationsByType(relations: TicketRelation[]) {
   const c = { duplicates: 0, depends_on: 0, blocks: 0, related_to: 0 };
   relations.forEach((r) => {
@@ -120,16 +173,18 @@ function countRelationsByType(relations: TicketRelation[]) {
   return c;
 }
 
+/** Kanten nur aus `relations` (z. B. workspace-gefiltert) — gleiche Menge wie Badges/Zähler. */
 function storyIdsTouchingRelationType(
+  relations: TicketRelation[],
   workspaceStoryIds: Set<string>,
   type: RelationType,
 ): Set<string> {
   const ids = new Set<string>();
-  allRelations.forEach((r) => {
-    if (r.type !== type) return;
+  for (const r of relations) {
+    if (r.type !== type) continue;
     if (workspaceStoryIds.has(r.sourceId)) ids.add(r.sourceId);
     if (workspaceStoryIds.has(r.targetId)) ids.add(r.targetId);
-  });
+  }
   return ids;
 }
 
@@ -533,15 +588,29 @@ export function StoryAnalysis() {
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
-  const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(
-    () => new Set(),
+  /** `null` = alle Projekte im Workspace; sonst genau eine Projekt-ID. */
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    null,
   );
   const [statusQuickFilter, setStatusQuickFilter] =
     useState<StatusQuickFilter>("all");
   const [filterWithLinks, setFilterWithLinks] = useState(false);
-  const [filterHighPriority, setFilterHighPriority] = useState(false);
   const [relationTypeFilter, setRelationTypeFilter] =
     useState<RelationType | null>(null);
+  const [projectFilterOpen, setProjectFilterOpen] = useState(false);
+
+  const prevWorkspaceForFilters = useRef(selectedWorkspaceId);
+
+  useLayoutEffect(() => {
+    if (prevWorkspaceForFilters.current === selectedWorkspaceId) return;
+    prevWorkspaceForFilters.current = selectedWorkspaceId;
+    setTypeFilter("all");
+    setSourceFilter("all");
+    setRelationTypeFilter(null);
+    setStatusQuickFilter("all");
+    setFilterWithLinks(false);
+    setSearchQuery("");
+  }, [selectedWorkspaceId]);
 
   /** Verhindert, dass die URL bei jedem Render die Projekt-Mehrfachauswahl überschreibt. */
   const lastSyncedProjectIdFromUrl = useRef<string | null>(null);
@@ -549,10 +618,6 @@ export function StoryAnalysis() {
   const defaultsAppliedForWorkspace = useRef<string | null>(null);
 
   const projectIdFromUrl = searchParams.get("projectId");
-  const projectSelectionKey = useMemo(
-    () => [...selectedProjectIds].sort().join("\0"),
-    [selectedProjectIds],
-  );
 
   const projectOptions = useMemo(() => {
     return getProjectIdsForWorkspace(selectedWorkspaceId)
@@ -574,14 +639,14 @@ export function StoryAnalysis() {
       prevWorkspaceIdRef.current = ws;
       if (pid && PROJECT_SEARCH_META[pid] && PROJECT_WORKSPACE[pid] === ws) {
         lastSyncedProjectIdFromUrl.current = pid;
-        setSelectedProjectIds(new Set([pid]));
+        setSelectedProjectId(pid);
       } else {
         lastSyncedProjectIdFromUrl.current = null;
-        const mine =
+        const first =
           myProjectIdsInWorkspace.length > 0
-            ? new Set(myProjectIdsInWorkspace)
-            : new Set<string>();
-        setSelectedProjectIds(mine);
+            ? myProjectIdsInWorkspace[0]
+            : null;
+        setSelectedProjectId(first);
         if (pid) {
           setSearchParams(
             (prev) => {
@@ -599,7 +664,7 @@ export function StoryAnalysis() {
     if (pid && PROJECT_SEARCH_META[pid] && PROJECT_WORKSPACE[pid] === ws) {
       if (lastSyncedProjectIdFromUrl.current !== pid) {
         lastSyncedProjectIdFromUrl.current = pid;
-        setSelectedProjectIds(new Set([pid]));
+        setSelectedProjectId(pid);
       }
       return;
     }
@@ -635,55 +700,40 @@ export function StoryAnalysis() {
 
   useEffect(() => {
     const ws = selectedWorkspaceId;
-    const pid = searchParams.get("projectId");
-    if (pid) {
+    if (projectIdFromUrl) {
       defaultsAppliedForWorkspace.current = ws;
       return;
     }
     if (defaultsAppliedForWorkspace.current !== ws) {
       defaultsAppliedForWorkspace.current = ws;
-      if (myProjectIdsInWorkspace.length > 0) {
-        setSelectedProjectIds(new Set(myProjectIdsInWorkspace));
-      } else {
-        setSelectedProjectIds(new Set());
-      }
+      const first =
+        myProjectIdsInWorkspace.length > 0 ? myProjectIdsInWorkspace[0] : null;
+      setSelectedProjectId(first);
     }
-  }, [
-    selectedWorkspaceId,
-    searchParams,
-    myProjectIdsInWorkspace,
-  ]);
+  }, [selectedWorkspaceId, projectIdFromUrl, myProjectIdsInWorkspace]);
 
+  /** State → URL (Deep Links / Teilen), ohne Schleife wenn bereits konsistent. */
   useEffect(() => {
-    if (selectedProjectIds.size === 1) {
-      const only = [...selectedProjectIds][0];
-      if (projectIdFromUrl !== only) {
-        setSearchParams(
-          (prev) => {
-            const next = new URLSearchParams(prev);
-            next.set("projectId", only);
-            return next;
-          },
-          { replace: true },
-        );
-      }
+    const pid = projectIdFromUrl;
+    if (selectedProjectId) {
+      if (pid === selectedProjectId) return;
+    } else if (!pid) {
       return;
     }
-    if (selectedProjectIds.size !== 1 && projectIdFromUrl) {
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          next.delete("projectId");
-          return next;
-        },
-        { replace: true },
-      );
-    }
-  }, [projectSelectionKey, selectedProjectIds, projectIdFromUrl, setSearchParams]);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (selectedProjectId) next.set("projectId", selectedProjectId);
+        else next.delete("projectId");
+        return next;
+      },
+      { replace: true },
+    );
+  }, [selectedProjectId, projectIdFromUrl, setSearchParams]);
 
   const clearProjectSelection = useCallback(() => {
     lastSyncedProjectIdFromUrl.current = null;
-    setSelectedProjectIds(new Set());
+    setSelectedProjectId(null);
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
@@ -692,7 +742,17 @@ export function StoryAnalysis() {
       },
       { replace: true },
     );
+    setProjectFilterOpen(false);
   }, [setSearchParams]);
+
+  const selectSingleProject = useCallback(
+    (id: string) => {
+      lastSyncedProjectIdFromUrl.current = id;
+      setSelectedProjectId(id);
+      setProjectFilterOpen(false);
+    },
+    [],
+  );
 
   const onRelationTypeFilterClick = useCallback((type: RelationType) => {
     setRelationTypeFilter((prev) => (prev === type ? null : type));
@@ -729,18 +789,28 @@ export function StoryAnalysis() {
     [stories],
   );
 
+  const activeProjectName = useMemo(() => {
+    if (!selectedProjectId) return null;
+    return PROJECT_SEARCH_META[selectedProjectId]?.name ?? null;
+  }, [selectedProjectId]);
+
+  const projectTriggerLabel = useMemo(() => {
+    if (!selectedProjectId) return "Alle Projekte";
+    return (
+      PROJECT_SEARCH_META[selectedProjectId]?.name ?? "Projekt wählen"
+    );
+  }, [selectedProjectId]);
+
   const filteredStories = useMemo(() => {
     let result = stories;
 
-    if (selectedProjectIds.size > 0) {
-      const names = [...selectedProjectIds]
-        .map((id) => PROJECT_SEARCH_META[id]?.name)
-        .filter(Boolean) as string[];
-      result = result.filter((s) => names.includes(s.project));
+    if (activeProjectName) {
+      result = result.filter((s) => s.project === activeProjectName);
     }
 
     if (relationTypeFilter) {
       const allowed = storyIdsTouchingRelationType(
+        relationsTouchingWorkspace,
         workspaceStoryIdSet,
         relationTypeFilter,
       );
@@ -764,9 +834,6 @@ export function StoryAnalysis() {
     if (filterWithLinks) {
       result = result.filter((s) => (relationCountMap[s.id] || 0) > 0);
     }
-    if (filterHighPriority) {
-      result = result.filter((s) => s.priority === "Hoch");
-    }
 
     if (sourceFilter !== "all")
       result = result.filter((s) => s.source === sourceFilter);
@@ -785,17 +852,23 @@ export function StoryAnalysis() {
     return result;
   }, [
     stories,
-    selectedProjectIds,
+    activeProjectName,
     relationTypeFilter,
+    relationsTouchingWorkspace,
     workspaceStoryIdSet,
     statusQuickFilter,
     filterWithLinks,
-    filterHighPriority,
     relationCountMap,
     sourceFilter,
     typeFilter,
     searchQuery,
   ]);
+
+  useEffect(() => {
+    if (selectedStoryId == null) return;
+    if (filteredStories.some((s) => s.id === selectedStoryId)) return;
+    setSelectedStoryId(null);
+  }, [filteredStories, selectedStoryId]);
 
   const selectedStory = selectedStoryId
     ? stories.find((s) => s.id === selectedStoryId) ??
@@ -844,9 +917,11 @@ export function StoryAnalysis() {
   ];
 
   const chipBase =
-    "px-3 py-1.5 rounded-full text-[12px] border transition-colors";
-  const chipOn = "border-[#4f46e5] bg-[#4f46e5] text-white";
-  const chipOff = "border-slate-200 bg-white text-slate-600 hover:bg-slate-50";
+    "px-3 py-1.5 rounded-xl text-[12px] border transition-[color,background-color,border-color,box-shadow] duration-150";
+  const chipOn =
+    "border-[#4f46e5]/50 bg-[#4f46e5] text-white shadow-sm shadow-[#4f46e5]/20";
+  const chipOff =
+    "border-slate-200/90 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50/90";
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1440px] mx-auto min-w-0 flex flex-col gap-4">
@@ -889,83 +964,79 @@ export function StoryAnalysis() {
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm flex flex-col min-h-[min(72vh,760px)]">
         <div className="shrink-0 border-b border-slate-200 px-3 sm:px-4 py-3 space-y-3 bg-white">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <Popover>
+            <Popover
+              modal={false}
+              open={projectFilterOpen}
+              onOpenChange={setProjectFilterOpen}
+            >
               <PopoverTrigger asChild>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   className={cn(
-                    "h-10 w-full sm:w-auto sm:min-w-[280px] justify-between gap-2 text-[13px] border-slate-200 bg-white text-slate-800 shadow-sm",
-                    selectedProjectIds.size > 0 && "border-[#4f46e5]/50 bg-[#f1f5ff]/60",
+                    filterFieldTriggerClass,
+                    "h-10 min-h-10 w-full justify-between gap-2 px-3.5 font-medium sm:w-auto sm:min-w-[280px] border-slate-200 bg-white shadow-sm hover:bg-slate-50/80",
                   )}
-                  style={{ fontWeight: 600 }}
                 >
-                  <span className="flex items-center gap-2 min-w-0">
-                    <Layers className="w-4 h-4 text-[#4f46e5] shrink-0" />
-                    <span className="truncate">Projektfilter</span>
-                    {selectedProjectIds.size > 0 && (
-                      <span className="text-[10px] bg-[#4f46e5] text-white px-1.5 py-0.5 rounded-full font-semibold shrink-0">
-                        {selectedProjectIds.size}
-                      </span>
-                    )}
+                  <span className="flex items-center gap-2.5 min-w-0 text-left">
+                    <ProjectFilterGlyph projectId={selectedProjectId} size="md" />
+                    <span className="min-w-0 truncate text-[13px] text-slate-800">
+                      {projectTriggerLabel}
+                    </span>
                   </span>
-                  <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+                  <ChevronDown className="w-4 h-4 shrink-0 text-slate-400" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent
-                className="w-[min(100vw-2rem,320px)] p-0 z-[200]"
+                className="w-[min(100vw-2rem,320px)] rounded-xl border border-slate-200 p-0 shadow-lg z-[200]"
                 align="start"
               >
-                <div className="px-3 py-2 border-b border-slate-100 text-[11px] text-slate-500" style={{ fontWeight: 600 }}>
-                  Projekte im Workspace
+                <div
+                  className="px-3 py-2 border-b border-slate-100 text-[11px] text-slate-500"
+                  style={{ fontWeight: 600 }}
+                >
+                  Projekt (eine Auswahl)
                 </div>
-                <div className="p-2 border-b border-slate-100">
-                  <button
-                    type="button"
-                    className="w-full text-left px-2 py-2 rounded-lg text-[12px] text-[#4f46e5] hover:bg-[#f1f5ff]"
-                    style={{ fontWeight: 600 }}
-                    onClick={clearProjectSelection}
+                <RadioGroup
+                  value={selectedProjectId ?? "__all__"}
+                  onValueChange={(v) => {
+                    if (v === "__all__") clearProjectSelection();
+                    else selectSingleProject(v);
+                  }}
+                  className="gap-0"
+                >
+                  <label
+                    htmlFor="story-proj-all"
+                    className="flex cursor-pointer items-center gap-2.5 border-b border-slate-100 px-3 py-2.5 text-[12px] text-slate-800 hover:bg-slate-50/90"
                   >
-                    Alle Projekte anzeigen
-                  </button>
-                </div>
-                <div className="max-h-[240px] overflow-y-auto p-2 space-y-0.5">
-                  {projectOptions.map(({ id, name }) => {
-                    const boxId = `story-analysis-proj-${id}`;
-                    return (
-                      <div
+                    <RadioGroupItem value="__all__" id="story-proj-all" />
+                    <ProjectFilterGlyph projectId={null} size="sm" />
+                    <span className="min-w-0 flex-1 font-medium text-[#4f46e5]">
+                      Alle Projekte
+                    </span>
+                  </label>
+                  <div className="max-h-[min(52vh,280px)] overflow-y-auto p-2">
+                    {projectOptions.map(({ id, name }) => (
+                      <label
                         key={id}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 text-[12px] text-slate-800"
+                        htmlFor={`story-proj-${id}`}
+                        className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-2 text-[12px] text-slate-800 hover:bg-slate-50"
                       >
-                        <Checkbox
-                          id={boxId}
-                          checked={selectedProjectIds.has(id)}
-                          onCheckedChange={(checked) => {
-                            if (checked === "indeterminate") return;
-                            setSelectedProjectIds((prev) => {
-                              const next = new Set(prev);
-                              if (checked) next.add(id);
-                              else next.delete(id);
-                              return next;
-                            });
-                          }}
-                        />
-                        <Label
-                          htmlFor={boxId}
-                          className="flex-1 truncate cursor-pointer font-normal text-[12px] text-slate-800"
-                          title={name}
-                        >
+                        <RadioGroupItem value={id} id={`story-proj-${id}`} />
+                        <ProjectFilterGlyph projectId={id} size="sm" />
+                        <span className="min-w-0 flex-1 truncate" title={name}>
                           {name}
-                        </Label>
-                      </div>
-                    );
-                  })}
-                </div>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </RadioGroup>
               </PopoverContent>
             </Popover>
             <p className="text-[11px] text-slate-500 sm:pl-1 sm:flex-1 leading-snug">
-              Standard sind Ihre Projekte im Workspace. „Alle Projekte anzeigen“ hebt die Einschränkung auf.
+              Standard ist Ihr erstes Projekt im Team; „Alle Projekte“ zeigt den
+              ganzen Workspace.
             </p>
           </div>
 
@@ -981,51 +1052,103 @@ export function StoryAnalysis() {
               />
             </div>
 
-            <select
+            <Select
+              key={`type-${selectedWorkspaceId}`}
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="h-9 text-[12px] border border-slate-200 rounded-lg px-2.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/20 shrink-0"
+              onValueChange={setTypeFilter}
             >
-              <option value="all">Alle Typen</option>
-              <option value="Story">Story</option>
-              <option value="Epic">Epic</option>
-              <option value="Bug">Bug</option>
-              <option value="Task">Task</option>
-            </select>
+              <SelectTrigger
+                className={cn(
+                  filterFieldTriggerClass,
+                  "h-9 min-h-9 w-[min(100%,9.75rem)] shrink-0 px-3 font-normal",
+                )}
+              >
+                <SelectValue placeholder="Typ" />
+              </SelectTrigger>
+              <SelectContent
+                position="popper"
+                className={filterSelectContentClass}
+              >
+                <SelectItem value="all" className="rounded-lg text-[12px]">
+                  Alle Typen
+                </SelectItem>
+                <SelectItem value="Story" className="rounded-lg text-[12px]">
+                  Story
+                </SelectItem>
+                <SelectItem value="Epic" className="rounded-lg text-[12px]">
+                  Epic
+                </SelectItem>
+                <SelectItem value="Bug" className="rounded-lg text-[12px]">
+                  Bug
+                </SelectItem>
+                <SelectItem value="Task" className="rounded-lg text-[12px]">
+                  Task
+                </SelectItem>
+              </SelectContent>
+            </Select>
 
-            <select
+            <Select
+              key={`source-${selectedWorkspaceId}`}
               value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value)}
-              className="h-9 text-[12px] border border-slate-200 rounded-lg px-2.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/20 shrink-0"
+              onValueChange={setSourceFilter}
             >
-              <option value="all">Alle Quellen</option>
-              <option value="ai-generated">AI-generiert</option>
-              <option value="jira-import">Jira-Import</option>
-              <option value="manual">Manuell</option>
-            </select>
+              <SelectTrigger
+                className={cn(
+                  filterFieldTriggerClass,
+                  "h-9 min-h-9 w-[min(100%,11rem)] shrink-0 px-3 font-normal",
+                )}
+              >
+                <SelectValue placeholder="Quelle" />
+              </SelectTrigger>
+              <SelectContent
+                position="popper"
+                className={filterSelectContentClass}
+              >
+                <SelectItem value="all" className="rounded-lg text-[12px]">
+                  Alle Quellen
+                </SelectItem>
+                <SelectItem
+                  value="ai-generated"
+                  className="rounded-lg text-[12px]"
+                >
+                  AI-generiert
+                </SelectItem>
+                <SelectItem
+                  value="jira-import"
+                  className="rounded-lg text-[12px]"
+                >
+                  Jira-Import
+                </SelectItem>
+                <SelectItem value="manual" className="rounded-lg text-[12px]">
+                  Manuell
+                </SelectItem>
+              </SelectContent>
+            </Select>
 
-            <Popover>
+            <Popover modal={false}>
               <PopoverTrigger asChild>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   className={cn(
-                    "h-9 gap-1.5 text-[12px] border-slate-200 bg-white text-slate-700 font-normal shrink-0",
-                    relationTypeFilter && "border-[#4f46e5]/50 bg-[#f1f5ff]/60",
+                    filterFieldTriggerClass,
+                    "h-9 min-h-9 min-w-[9.5rem] gap-1.5 px-3 font-normal",
+                    relationTypeFilter && "text-[#4f46e5]",
                   )}
                 >
-                  Beziehungen
-                  {relationTypeFilter && (
-                    <span className="text-[10px] text-[#4f46e5] font-semibold">
-                      1
-                    </span>
-                  )}
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="truncate">Beziehungen</span>
+                  {relationTypeFilter ? (
+                    <span
+                      className="size-1.5 shrink-0 rounded-full bg-[#4f46e5]"
+                      aria-hidden
+                    />
+                  ) : null}
+                  <ChevronDown className="w-3.5 h-3.5 shrink-0 text-slate-400" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent
-                className="w-[min(100vw-2rem,280px)] p-0 z-[200]"
+                className="w-[min(100vw-2rem,280px)] rounded-xl border border-slate-200 p-0 shadow-lg z-[200]"
                 align="end"
               >
                 <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between gap-2">
@@ -1095,14 +1218,6 @@ export function StoryAnalysis() {
               style={{ fontWeight: filterWithLinks ? 600 : 500 }}
             >
               Mit Verknüpfungen
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterHighPriority((v) => !v)}
-              className={cn(chipBase, filterHighPriority ? chipOn : chipOff)}
-              style={{ fontWeight: filterHighPriority ? 600 : 500 }}
-            >
-              Hohe Priorität
             </button>
           </div>
         </div>

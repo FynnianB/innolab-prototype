@@ -31,6 +31,7 @@ import {
   FileText,
   ClipboardList,
 } from "lucide-react";
+import { ENTERPRISE } from "../data/enterprise";
 
 /* ------------------------------------------------------------------ */
 /*  DATA                                                               */
@@ -102,7 +103,7 @@ const phases: Phase[] = [
     id: "upload",
     number: 2,
     title: "Dokumente hochladen",
-    subtitle: "In ReqWise AI importieren",
+    subtitle: "In die Plattform importieren",
     icon: <Upload className="w-5 h-5" />,
     color: "bg-blue-600",
     colorLight: "bg-blue-50",
@@ -361,7 +362,7 @@ const phases: Phase[] = [
     thoughts: [
       `„Verstehen die Entwickler den Kontext hinter den Stories?"`,
       `„Wie kann ich Feedback effizient einarbeiten?"`,
-      `„Kann das Team direkt in ReqWise kommentieren?"`,
+      `„Kann das Team direkt in der Plattform kommentieren?"`,
     ],
     painPoints: [
       "Kontextverlust zwischen Requirements und Entwicklung",
@@ -595,7 +596,7 @@ export function CustomerJourney() {
               <div>
                 <h1 className="text-slate-900">Customer Journey Map</h1>
                 <p className="text-sm text-slate-500">
-                  ReqWise AI · Vom ersten Dokument bis zur fertigen User Story
+                  {ENTERPRISE.productName} · Vom ersten Dokument bis zur fertigen User Story
                 </p>
               </div>
             </div>
@@ -1101,7 +1102,7 @@ export function CustomerJourney() {
               },
               {
                 title: "Team-Kollaboration in Phase 8",
-                desc: "Die Übergabe an die Entwicklung ist der finale Moment of Truth. Ein Kommentar- und Feedback-System direkt in ReqWise verhindert Kontextverlust.",
+                desc: "Die Übergabe an die Entwicklung ist der finale Moment of Truth. Ein Kommentar- und Feedback-System direkt in der Plattform verhindert Kontextverlust.",
                 tag: "Strategisch",
                 tagColor: "bg-blue-400/20 text-blue-100",
               },

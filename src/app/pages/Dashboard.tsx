@@ -57,8 +57,8 @@ const kpiCards = [
   },
   {
     title: "Aktive Projekte",
-    value: "11",
-    change: "4 in Analyse",
+    value: "15",
+    change: "Automotive-Demo (5 OEM)",
     trend: "neutral",
     icon: BarChart3,
     color: "#8b5cf6",
@@ -67,17 +67,21 @@ const kpiCards = [
 ];
 
 const recentProjects = [
-  { id: "P-001", name: "Automobil-Plattform Redesign", status: "In Analyse", stories: 234, compliance: 91, updated: "vor 2 Stunden", statusColor: "#4f46e5" },
-  { id: "P-002", name: "Banking App v3.2 Migration", status: "Review", stories: 187, compliance: 96, updated: "vor 5 Stunden", statusColor: "#f59e0b" },
-  { id: "P-003", name: "Healthcare Portal DSGVO", status: "Abgeschlossen", stories: 342, compliance: 99, updated: "Gestern", statusColor: "#10b981" },
-  { id: "P-004", name: "E-Commerce Checkout Flow", status: "In Analyse", stories: 89, compliance: 78, updated: "vor 1 Tag", statusColor: "#4f46e5" },
-  { id: "P-005", name: "IoT Dashboard Spezifikation", status: "Entwurf", stories: 56, compliance: 65, updated: "vor 3 Tagen", statusColor: "#94a3b8" },
-  { id: "P-006", name: "CRM Integration Suite", status: "Aktiv", stories: 145, compliance: 85, updated: "vor 2 Tagen", statusColor: "#4f46e5" },
-  { id: "P-007", name: "Deutsche Bahn — Reisenden-Navigator 2.0", status: "Aktiv", stories: 412, compliance: 88, updated: "vor 45 Min.", statusColor: "#dc2626" },
-  { id: "P-008", name: "Allianz — Schaden-FNOL Portal", status: "Aktiv", stories: 268, compliance: 94, updated: "vor 3 Std.", statusColor: "#003781" },
-  { id: "P-009", name: "EnBW — MeinEnBW Transformation", status: "Review", stories: 331, compliance: 90, updated: "Gestern", statusColor: "#f59e0b" },
-  { id: "P-010", name: "Freistaat Bayern — Bürgerportal Suite", status: "Aktiv", stories: 189, compliance: 96, updated: "vor 6 Std.", statusColor: "#0f766e" },
-  { id: "P-011", name: "REWE digital — Filialbestand Echtzeit", status: "Entwurf", stories: 94, compliance: 72, updated: "vor 4 Tagen", statusColor: "#94a3b8" },
+  { id: "P-101", name: "BMW Group — Versuchsteile & Entwicklungs-Analytics", status: "Aktiv", stories: 7, compliance: 86, updated: "vor 35 Min.", statusColor: "#1c69d4" },
+  { id: "P-102", name: "BMW Group — Fahrzeuglogistik & Vertriebs-Transparenz", status: "Aktiv", stories: 7, compliance: 89, updated: "vor 2 Std.", statusColor: "#1c69d4" },
+  { id: "P-103", name: "BMW Group — Digital Core & ERP-Roadmap", status: "Review", stories: 7, compliance: 91, updated: "Gestern", statusColor: "#f59e0b" },
+  { id: "P-201", name: "Volkswagen Group — Datenraum Mobilität", status: "Aktiv", stories: 7, compliance: 88, updated: "vor 50 Min.", statusColor: "#001e50" },
+  { id: "P-202", name: "Volkswagen Group — Konzern-IT & Integrationsplattform", status: "Aktiv", stories: 7, compliance: 90, updated: "vor 4 Std.", statusColor: "#001e50" },
+  { id: "P-203", name: "Volkswagen Group — Marken-Apps & Partner-Ökosystem", status: "Entwurf", stories: 7, compliance: 78, updated: "vor 2 Tagen", statusColor: "#64748b" },
+  { id: "P-301", name: "Mercedes-Benz Group — E-Mobility Software & Baukasten", status: "Aktiv", stories: 7, compliance: 92, updated: "vor 20 Min.", statusColor: "#00adef" },
+  { id: "P-302", name: "Mercedes-Benz Group — OTA & Fahrzeug-Software-Releases", status: "Aktiv", stories: 7, compliance: 87, updated: "vor 6 Std.", statusColor: "#00adef" },
+  { id: "P-303", name: "Mercedes-Benz Group — Vertrieb & Aftersales Digital", status: "Review", stories: 7, compliance: 85, updated: "vor 1 Tag", statusColor: "#f59e0b" },
+  { id: "P-401", name: "AUDI — Infotainment & HMI", status: "Aktiv", stories: 7, compliance: 88, updated: "vor 90 Min.", statusColor: "#bb0a30" },
+  { id: "P-402", name: "AUDI — Konfigurator & Commerce", status: "Aktiv", stories: 7, compliance: 86, updated: "vor 5 Std.", statusColor: "#bb0a30" },
+  { id: "P-403", name: "AUDI — Vernetzung & Drittpartner-APIs", status: "Entwurf", stories: 7, compliance: 74, updated: "vor 3 Tagen", statusColor: "#94a3b8" },
+  { id: "P-501", name: "Porsche AG — Motorsport & Fahrzeugdaten", status: "Aktiv", stories: 7, compliance: 90, updated: "vor 40 Min.", statusColor: "#d5001c" },
+  { id: "P-502", name: "Porsche AG — Kundenplattform & Personalisierung", status: "Aktiv", stories: 7, compliance: 88, updated: "vor 8 Std.", statusColor: "#d5001c" },
+  { id: "P-503", name: "Porsche AG — Supply Chain & Teile-Transparenz", status: "Review", stories: 7, compliance: 84, updated: "Gestern", statusColor: "#f59e0b" },
 ];
 
 const recentActivity: {
@@ -88,13 +92,12 @@ const recentActivity: {
   color: string;
   workspaceId?: string | null;
 }[] = [
-  { icon: CheckCircle2, text: "23 neue Stories generiert", project: "Automobil-Plattform", time: "vor 15 Min.", color: "#10b981", workspaceId: "ws-automobil" },
-  { icon: XCircle, text: "3 Widersprüche erkannt", project: "Banking App v3.2", time: "vor 1 Std.", color: "#ef4444", workspaceId: "ws-banking" },
-  { icon: ShieldCheck, text: "Compliance-Check bestanden", project: "Healthcare Portal", time: "vor 2 Std.", color: "#10b981", workspaceId: "ws-healthcare" },
-  { icon: FileWarning, text: "5 unklare Formulierungen", project: "E-Commerce Checkout", time: "vor 3 Std.", color: "#f59e0b", workspaceId: "ws-digital" },
-  { icon: Activity, text: "Neue Regeln importiert", project: "Global", time: "vor 5 Std.", color: "#8b5cf6", workspaceId: null },
-  { icon: Zap, text: "Touch&Travel Pilot — API-SLA unterschrieben", project: "DB Navigator", time: "vor 25 Min.", color: "#10b981", workspaceId: "ws-capgemini" },
-  { icon: FileWarning, text: "Offene ACs Guidewire-Mapping (Workshop Do.)", project: "Allianz FNOL", time: "vor 2 Std.", color: "#f59e0b", workspaceId: "ws-capgemini" },
+  { icon: Zap, text: "SAC-KPI-Workshop abgeschlossen — nächster Schritt Abnahme", project: "BMW Versuchsteile", time: "vor 25 Min.", color: "#10b981", workspaceId: "ws-bmw" },
+  { icon: FileWarning, text: "Consent-Modell Datenraum — offene rechtliche Review-Punkte", project: "VW Datenraum", time: "vor 2 Std.", color: "#f59e0b", workspaceId: "ws-vw" },
+  { icon: ShieldCheck, text: "OTA-Signatur-Pipeline für Pilotflotte freigegeben", project: "Mercedes OTA", time: "vor 3 Std.", color: "#10b981", workspaceId: "ws-mercedes" },
+  { icon: CheckCircle2, text: "MMI Voice-Regressionstest Sprint grün", project: "AUDI Infotainment", time: "vor 5 Std.", color: "#10b981", workspaceId: "ws-audi" },
+  { icon: Activity, text: "Neue Compliance-Regeln importiert", project: "Global", time: "vor 6 Std.", color: "#8b5cf6", workspaceId: null },
+  { icon: FileWarning, text: "Telemetrie-Latenz Track-Tag über Schwelle (Alert)", project: "Porsche Motorsport", time: "vor 1 Std.", color: "#f59e0b", workspaceId: "ws-porsche" },
 ];
 
 export function Dashboard() {
