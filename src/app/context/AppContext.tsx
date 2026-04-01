@@ -640,11 +640,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }));
 
       try {
-        const existingInWorkspace = new Set(
-          storiesRef.current
-            .filter((s) => s.workspaceId === workspaceId)
-            .map((s) => s.id),
-        );
+        const existingIssueIds = new Set<string>();
+        for (const story of storiesRef.current.filter(
+          (s) => s.workspaceId === workspaceId,
+        )) {
+          existingIssueIds.add(story.id);
+          const issueKey = story.jiraIssueKey?.trim();
+          if (issueKey) existingIssueIds.add(issueKey);
+        }
+        for (const link of Object.values(jiraSyncLinksRef.current)) {
+          if (link.workspaceId !== workspaceId) continue;
+          const issueKey = link.jiraIssueKey?.trim();
+          if (issueKey) existingIssueIds.add(issueKey);
+        }
         const syncStartedAtIso = new Date().toISOString();
         const updatedSince =
           workspace.jira.lastSyncStatus === "success" &&
@@ -663,26 +671,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
           workspaceId,
           {
             updatedSince,
-            knownIssueIds: Array.from(existingInWorkspace),
+            knownIssueIds: Array.from(existingIssueIds),
           },
         );
 
-        const importedNewCount = result.stories.filter(
-          (s) => !existingInWorkspace.has(s.id),
-        ).length;
+        let importedNewCount = 0;
 
         const storiesForLinkUpdate: Story[] = [];
         const syncLinksSnapshot = jiraSyncLinksRef.current;
         setStories((prev) => {
           const incomingMap = new Map(
-            result.stories.map((s) => [keyByWorkspaceAndId(s), s]),
+            result.stories.map((s) => [keyByWorkspaceAndStoryId(workspaceId, s.id), s]),
           );
 
+          const popIncomingForStory = (story: Story): Story | undefined => {
+            const candidates = new Set<string>();
+            candidates.add(keyByWorkspaceAndStoryId(workspaceId, story.id));
+
+            const issueKey = story.jiraIssueKey?.trim();
+            if (issueKey) {
+              candidates.add(keyByWorkspaceAndStoryId(workspaceId, issueKey));
+            }
+
+            const link = syncLinksSnapshot[keyByWorkspaceAndStoryId(workspaceId, story.id)];
+            const linkIssueKey = link?.jiraIssueKey?.trim();
+            if (linkIssueKey) {
+              candidates.add(keyByWorkspaceAndStoryId(workspaceId, linkIssueKey));
+            }
+
+            for (const candidateKey of candidates) {
+              const incoming = incomingMap.get(candidateKey);
+              if (!incoming) continue;
+              incomingMap.delete(candidateKey);
+              return incoming;
+            }
+            return undefined;
+          };
+
           const merged = prev.map((s) => {
-            const key = keyByWorkspaceAndId(s);
-            const incoming = incomingMap.get(key);
+            const incoming = popIncomingForStory(s);
             if (!incoming) return s;
-            incomingMap.delete(key);
 
             const linkKey = keyByWorkspaceAndStoryId(workspaceId, s.id);
             const link = syncLinksSnapshot[linkKey];
@@ -710,6 +738,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             return mergedStory;
           });
 
+          importedNewCount = incomingMap.size;
           for (const story of incomingMap.values()) {
             const nextStory = {
               ...story,
@@ -719,7 +748,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
             storiesForLinkUpdate.push(nextStory);
           }
 
-          return merged;
+          const dedupePriority = (story: Story): number => {
+            const issueKey = story.jiraIssueKey?.trim() ?? "";
+            let score = 0;
+            if (story.source !== "jira-import") score += 2;
+            if (issueKey && story.id !== issueKey) score += 1;
+            return score;
+          };
+
+          const issueKeyToIndex = new Map<string, number>();
+          const deduped: Story[] = [];
+          for (const story of merged) {
+            if (story.workspaceId !== workspaceId) {
+              deduped.push(story);
+              continue;
+            }
+
+            const issueKey = story.jiraIssueKey?.trim();
+            if (!issueKey) {
+              deduped.push(story);
+              continue;
+            }
+
+            const existingIndex = issueKeyToIndex.get(issueKey);
+            if (existingIndex === undefined) {
+              issueKeyToIndex.set(issueKey, deduped.length);
+              deduped.push(story);
+              continue;
+            }
+
+            const existing = deduped[existingIndex];
+            if (dedupePriority(story) > dedupePriority(existing)) {
+              deduped[existingIndex] = story;
+            }
+          }
+
+          storiesForLinkUpdate.length = 0;
+          for (const story of deduped) {
+            if (story.workspaceId !== workspaceId) continue;
+            if (!story.jiraIssueKey?.trim()) continue;
+            storiesForLinkUpdate.push(story);
+          }
+
+          return deduped;
         });
         upsertJiraSyncLinks(workspaceId, storiesForLinkUpdate, syncStartedAtIso);
 
