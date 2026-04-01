@@ -10,21 +10,28 @@ import { allStories, type Story } from "../data/stories";
 import {
   DEFAULT_WORKSPACE_ID,
   WORKSPACES,
+  isBuiltinWorkspaceId,
   filterStoriesByWorkspace,
   ALL_TEAM_ROSTER_INITIALS,
   getProjectIdsForWorkspace,
-  getWorkspaceById,
-  isValidWorkspaceId,
+  persistExtraWorkspaces,
   persistProjectTeamOverrides,
   persistWorkspaceId,
   PROJECT_TEAM_BY_ID,
   PROJECT_WORKSPACE,
   projectTeamsEqual,
   PROTOTYPE_USER_INITIALS,
+  readExtraWorkspaces,
   readProjectTeamOverrides,
   readStoredWorkspaceId,
+  resolveWorkspaceTicketSystemId,
   type Workspace,
 } from "../data/workspaces";
+import {
+  getTicketSystem,
+  type TicketSystemDefinition,
+  type TicketSystemId,
+} from "../data/ticketSystems";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                               */
@@ -62,6 +69,17 @@ interface AppState {
   selectedWorkspaceId: string;
   setSelectedWorkspaceId: (id: string) => void;
   selectedWorkspace: Workspace;
+  /** Ticket-Tool des aktuellen Workspaces (Labels für UI). */
+  ticketSystem: TicketSystemDefinition;
+  addWorkspace: (input: {
+    name: string;
+    ticketSystemId: TicketSystemId;
+  }) => void;
+  updateWorkspace: (
+    id: string,
+    patch: { name?: string; ticketSystemId?: TicketSystemId },
+  ) => void;
+  removeWorkspace: (id: string) => void;
 
   /** Alle Stories (für Updates / Detail ohne Kontextwechsel). */
   stories: Story[];
@@ -84,8 +102,10 @@ interface AppState {
 
   showExportDialog: boolean;
   setShowExportDialog: (show: boolean) => void;
-  exportScope: "stories" | "compliance" | "jira" | "all";
-  setExportScope: (scope: "stories" | "compliance" | "jira" | "all") => void;
+  exportScope: "stories" | "guidelines" | "tickets" | "all";
+  setExportScope: (
+    scope: "stories" | "guidelines" | "tickets" | "all",
+  ) => void;
 
   /** Projekt-IDs im aktuellen Workspace, in deren Team Ihre Kennung (SM) geführt wird. */
   myProjectIdsInWorkspace: string[];
@@ -120,7 +140,7 @@ const defaultNotifications: Notification[] = [
   },
   {
     id: "N-003",
-    text: "HV-Batterie Feature-Flags — Review in Jira abgeschlossen",
+    text: "HV-Batterie Feature-Flags — Review im Ticket-Tool abgeschlossen",
     project: "Mercedes-Benz Group — E-Mobility Software & Baukasten",
     time: "vor 2 Std.",
     read: true,
@@ -138,7 +158,7 @@ const defaultNotifications: Notification[] = [
   },
   {
     id: "N-005",
-    text: "Neue Compliance-Regeln importiert",
+    text: "Neuer Regelkatalog für Guidelines importiert",
     project: "Global",
     time: "vor 5 Std.",
     read: true,
@@ -172,6 +192,9 @@ const defaultNotifications: Notification[] = [
 const AppContext = createContext<AppState | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const [extraWorkspaces, setExtraWorkspaces] = useState<Workspace[]>(() =>
+    readExtraWorkspaces(),
+  );
   const [selectedWorkspaceId, setSelectedWorkspaceIdState] = useState(
     readStoredWorkspaceId,
   );
@@ -184,22 +207,98 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [exportHistory, setExportHistory] = useState<ExportRecord[]>([]);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportScope, setExportScope] = useState<
-    "stories" | "compliance" | "jira" | "all"
+    "stories" | "guidelines" | "tickets" | "all"
   >("all");
 
   const [projectTeamOverrides, setProjectTeamOverrides] = useState<
     Record<string, string[]>
   >(() => readProjectTeamOverrides());
 
-  const setSelectedWorkspaceId = useCallback((id: string) => {
-    const next = isValidWorkspaceId(id) ? id : DEFAULT_WORKSPACE_ID;
-    setSelectedWorkspaceIdState(next);
-    persistWorkspaceId(next);
-  }, []);
+  const workspaces = useMemo(
+    () => [...WORKSPACES, ...extraWorkspaces],
+    [extraWorkspaces],
+  );
+
+  const setSelectedWorkspaceId = useCallback(
+    (id: string) => {
+      const next = workspaces.some((w) => w.id === id)
+        ? id
+        : DEFAULT_WORKSPACE_ID;
+      setSelectedWorkspaceIdState(next);
+      persistWorkspaceId(next);
+    },
+    [workspaces],
+  );
 
   const selectedWorkspace = useMemo(() => {
-    return getWorkspaceById(selectedWorkspaceId) ?? WORKSPACES[0];
-  }, [selectedWorkspaceId]);
+    return (
+      workspaces.find((w) => w.id === selectedWorkspaceId) ?? WORKSPACES[0]
+    );
+  }, [workspaces, selectedWorkspaceId]);
+
+  const ticketSystem = useMemo(
+    () =>
+      getTicketSystem(resolveWorkspaceTicketSystemId(selectedWorkspace)),
+    [selectedWorkspace],
+  );
+
+  const addWorkspace = useCallback(
+    (input: { name: string; ticketSystemId: TicketSystemId }) => {
+      const id = `ws-${Date.now().toString(36)}`;
+      const w: Workspace = {
+        id,
+        name: input.name.trim() || "Neuer Workspace",
+        ticketSystemId: input.ticketSystemId,
+      };
+      const next = [...extraWorkspaces, w];
+      setExtraWorkspaces(next);
+      persistExtraWorkspaces(next);
+      setSelectedWorkspaceIdState(id);
+      persistWorkspaceId(id);
+    },
+    [extraWorkspaces],
+  );
+
+  const updateWorkspace = useCallback(
+    (
+      id: string,
+      patch: { name?: string; ticketSystemId?: TicketSystemId },
+    ) => {
+      if (isBuiltinWorkspaceId(id)) return;
+      const idx = extraWorkspaces.findIndex((w) => w.id === id);
+      if (idx < 0) return;
+      const next = extraWorkspaces.map((w) => {
+        if (w.id !== id) return w;
+        return {
+          ...w,
+          ...(patch.name !== undefined
+            ? { name: patch.name.trim() || w.name }
+            : {}),
+          ...(patch.ticketSystemId !== undefined
+            ? { ticketSystemId: patch.ticketSystemId }
+            : {}),
+        };
+      });
+      setExtraWorkspaces(next);
+      persistExtraWorkspaces(next);
+    },
+    [extraWorkspaces],
+  );
+
+  const removeWorkspace = useCallback(
+    (id: string) => {
+      if (isBuiltinWorkspaceId(id)) return;
+      if (!extraWorkspaces.some((w) => w.id === id)) return;
+      const next = extraWorkspaces.filter((w) => w.id !== id);
+      setExtraWorkspaces(next);
+      persistExtraWorkspaces(next);
+      if (selectedWorkspaceId === id) {
+        setSelectedWorkspaceIdState(DEFAULT_WORKSPACE_ID);
+        persistWorkspaceId(DEFAULT_WORKSPACE_ID);
+      }
+    },
+    [extraWorkspaces, selectedWorkspaceId],
+  );
 
   const storiesInWorkspace = useMemo(
     () => filterStoriesByWorkspace(stories, selectedWorkspaceId),
@@ -314,10 +413,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value: AppState = {
-    workspaces: WORKSPACES,
+    workspaces,
     selectedWorkspaceId,
     setSelectedWorkspaceId,
     selectedWorkspace,
+    ticketSystem,
+    addWorkspace,
+    updateWorkspace,
+    removeWorkspace,
     stories,
     storiesInWorkspace,
     updateStories,

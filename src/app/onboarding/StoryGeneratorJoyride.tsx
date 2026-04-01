@@ -21,7 +21,10 @@ type SGPhase =
 
 type TourIdxEntry = { phase: SGPhase; step: Step };
 
-function buildTourSteps(): Record<number, TourIdxEntry> {
+function buildTourSteps(
+  compareStepLabel: string,
+  exportShortName: string,
+): Record<number, TourIdxEntry> {
   return {
     1: {
       phase: "upload",
@@ -29,7 +32,7 @@ function buildTourSteps(): Record<number, TourIdxEntry> {
         target: sel("storygen-workflow"),
         title: "Rundgang: Story Generator",
         content:
-          "Auf dieser Seite bündeln Sie **Quellen** (Dateien, optional Confluence/Audio, Freitext) und starten eine Kette aus Analyse → Review → Story-Erzeugung → Jira-Abgleich → Speichern.\n\n" +
+          `Auf dieser Seite bündeln Sie **Quellen** (Dateien, optional Confluence/Audio, Freitext) und starten eine Kette aus Analyse → Review → Story-Erzeugung → **${compareStepLabel}** → Speichern.\n\n` +
           "In der Tour sind **Demo-Dateien** bereits eingebunden, damit Sie den kompletten Ablauf ohne eigenes Material durchspielen können.\n\n" +
           "Der Button unten in der Kachel löst dieselbe Aktion aus wie **Story Generator starten** in der Leiste.",
         placement: "bottom",
@@ -111,8 +114,8 @@ function buildTourSteps(): Record<number, TourIdxEntry> {
         title: "Stories prüfen",
         content:
           "Jede Karte ist ein **Entwurf**: Sie können ihn übernehmen, ablehnen oder im Editor anpassen (Formulierung, Akzeptanz, Aufwand).\n\n" +
-          "Nutzen Sie die Suche, um gezielt nach IDs oder Stichworten zu filtern. Über die Kopfzeile stehen außerdem **Export** und **Jira-Export** bereit, bevor Sie in den Abgleich mit dem bestehenden Backlog gehen.\n\n" +
-          "Der Button in der Kachel führt zum **Jira-Abgleich** wie in der Toolbar.",
+          `Nutzen Sie die Suche, um gezielt nach IDs oder Stichworten zu filtern. Über die Kopfzeile stehen außerdem **Export** und **${exportShortName}-Export** bereit, bevor Sie in den Abgleich mit dem bestehenden Backlog gehen.\n\n` +
+          `Der Button in der Kachel führt zum **${compareStepLabel}** wie in der Toolbar.`,
         placement: "top",
         disableBeacon: true,
         data: {
@@ -124,7 +127,7 @@ function buildTourSteps(): Record<number, TourIdxEntry> {
       phase: "jira-compare",
       step: {
         target: sel("storygen-jira-continue"),
-        title: "Jira-Abgleich",
+        title: compareStepLabel,
         content:
           "Drei Bereiche: **bestehende Tickets**, **erkannte Zusammenhänge** (Überschneidung, Duplikat, Widerspruch, Lücke …) und eine **Kurzübersicht** nach Typ.\n\n" +
           "Pro Karte entscheiden Sie, ob ein Vorschlag **bestätigt**, **zusammengeführt** oder **verworfen** wird – damit Ihr Backlog konsistent bleibt.\n\n" +
@@ -155,7 +158,6 @@ function buildTourSteps(): Record<number, TourIdxEntry> {
   };
 }
 
-const TOUR_STEPS = buildTourSteps();
 const STORY_GEN_TOUR_TOTAL = 8;
 
 export type StoryGeneratorTourHandlers = {
@@ -174,6 +176,7 @@ function tutorialCardCtaForStep(
     pendingDocIssues: number;
     allResolved: boolean;
     storiesToSaveCount: number;
+    compareStepLabel: string;
   },
 ):
   | { label: string; onClick: () => void; disabled?: boolean }
@@ -195,7 +198,7 @@ function tutorialCardCtaForStep(
       };
     case 6:
       return {
-        label: "Weiter zum Jira-Abgleich",
+        label: `Weiter zum ${opts.compareStepLabel}`,
         onClick: h.goToJiraCompare,
       };
     case 7:
@@ -220,6 +223,9 @@ type Props = {
   tourHandlers: StoryGeneratorTourHandlers;
   pendingDocIssues: number;
   storiesToSaveCount: number;
+  /** Aus Workspace-Ticket-Tool (z. B. „Jira-Abgleich“). */
+  compareStepLabel: string;
+  exportShortName: string;
 };
 
 export function StoryGeneratorJoyride({
@@ -231,7 +237,13 @@ export function StoryGeneratorJoyride({
   tourHandlers,
   pendingDocIssues,
   storiesToSaveCount,
+  compareStepLabel,
+  exportShortName,
 }: Props) {
+  const tourSteps = useMemo(
+    () => buildTourSteps(compareStepLabel, exportShortName),
+    [compareStepLabel, exportShortName],
+  );
   const tourActive = !isRouteTourDone(ROUTE_KEY);
   const [tourIdx, setTourIdx] = useState(0);
   const [run, setRun] = useState(false);
@@ -275,7 +287,7 @@ export function StoryGeneratorJoyride({
     }
   }, [saveSuccess]);
 
-  const entry = TOUR_STEPS[tourIdx];
+  const entry = tourSteps[tourIdx];
   const steps = useMemo(() => {
     if (!entry) return [];
     const base = entry.step.data;
@@ -287,6 +299,7 @@ export function StoryGeneratorJoyride({
       pendingDocIssues,
       allResolved,
       storiesToSaveCount,
+      compareStepLabel,
     });
     if (cta) merged.tutorialCardCta = cta;
     return [
@@ -302,6 +315,7 @@ export function StoryGeneratorJoyride({
     pendingDocIssues,
     allResolved,
     storiesToSaveCount,
+    compareStepLabel,
   ]);
   const phaseOk = entry ? entry.phase === phase : false;
 

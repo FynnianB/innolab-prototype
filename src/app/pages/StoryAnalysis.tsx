@@ -332,6 +332,7 @@ function IssueDetailPane({
   dismissedIds,
   onConfirm,
   onDismiss,
+  ticketImportLabel,
 }: {
   story: Story;
   stories: Story[];
@@ -340,6 +341,7 @@ function IssueDetailPane({
   dismissedIds: Set<string>;
   onConfirm: (id: string) => void;
   onDismiss: (id: string) => void;
+  ticketImportLabel: string;
 }) {
   const navigate = useNavigate();
   const relations = useMemo(() => getRelationsForId(story.id), [story.id]);
@@ -364,7 +366,13 @@ function IssueDetailPane({
   }, [relations, story.id, stories]);
 
   const sc = statusConfig[story.status] || statusConfig.Draft;
-  const src = sourceConfig[story.source] || sourceConfig.manual;
+  const src =
+    story.source === "jira-import"
+      ? {
+          ...sourceConfig["jira-import"],
+          label: ticketImportLabel,
+        }
+      : sourceConfig[story.source] || sourceConfig.manual;
 
   const groupLabels: Record<string, string> = {
     duplicates: "Duplikate / Überschneidungen",
@@ -615,9 +623,9 @@ export function StoryAnalysis() {
     selectedWorkspace,
     selectedWorkspaceId,
     myProjectIdsInWorkspace,
-    setShowExportDialog,
-    setExportScope,
+    ticketSystem,
   } = useAppContext();
+  const ticketImportLabel = `${ticketSystem.name}-Import`;
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStoryId, setSelectedStoryId] = useState<string | null>(null);
@@ -1152,7 +1160,7 @@ export function StoryAnalysis() {
                     value="jira-import"
                     className="rounded-lg text-[12px]"
                   >
-                    Jira-Import
+                    {ticketImportLabel}
                   </SelectItem>
                   <SelectItem value="manual" className="rounded-lg text-[12px]">
                     Manuell
@@ -1383,6 +1391,7 @@ export function StoryAnalysis() {
                 dismissedIds={dismissedIds}
                 onConfirm={handleConfirm}
                 onDismiss={handleDismiss}
+                ticketImportLabel={ticketImportLabel}
               />
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-500 min-h-[200px]">
@@ -1395,7 +1404,8 @@ export function StoryAnalysis() {
                 </p>
                 <p className="text-[13px] text-slate-500 max-w-sm">
                   Wählen Sie links einen Vorgang aus, um Details und
-                  Zusammenhänge zu sehen — wie im Jira-Vorgangsnavigator.
+                  Zusammenhänge zu sehen — vergleichbar mit dem Vorgangsnavigator
+                  in {ticketSystem.name}.
                 </p>
               </div>
             )}

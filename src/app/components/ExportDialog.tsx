@@ -11,6 +11,7 @@ import {
 import { useMemo, useState, type ChangeEvent } from "react";
 import { useAppContext } from "../context/AppContext";
 import { ENTERPRISE } from "../data/enterprise";
+import type { TicketSystemDefinition } from "../data/ticketSystems";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import {
@@ -50,31 +51,30 @@ const formatConfig: Record<
   },
 };
 
-const scopeConfig: Record<
-  string,
-  { label: string; description: string; itemCount: number }
-> = {
-  stories: {
-    label: "User Stories",
-    description: "Alle generierten User Stories inkl. Akzeptanzkriterien",
-    itemCount: 7,
-  },
-  compliance: {
-    label: "Compliance-Bericht",
-    description: "Compliance-Check Ergebnisse mit Regelverweisen",
-    itemCount: 12,
-  },
-  jira: {
-    label: "Jira-Abgleich",
-    description: "Story-Ticket-Mapping und erkannte Beziehungen",
-    itemCount: 15,
-  },
-  all: {
-    label: "Vollständiger Export",
-    description: "Alle Daten inkl. Stories, Compliance und Jira-Mapping",
-    itemCount: 34,
-  },
-};
+function buildScopeConfig(ts: TicketSystemDefinition) {
+  return {
+    stories: {
+      label: "User Stories",
+      description: "Alle generierten User Stories inkl. Akzeptanzkriterien",
+      itemCount: 7,
+    },
+    guidelines: {
+      label: "Guidelines-Bericht",
+      description: "Ergebnisse der Guidelines-Prüfung mit Regelverweisen",
+      itemCount: 12,
+    },
+    tickets: {
+      label: `${ts.compareStepLabel}-Daten`,
+      description: `Story-Ticket-Mapping und Beziehungen (${ts.name})`,
+      itemCount: 15,
+    },
+    all: {
+      label: "Vollständiger Export",
+      description: `Alle Daten inkl. Stories, Guidelines-Prüfung und ${ts.name}-Bezügen`,
+      itemCount: 34,
+    },
+  } as const;
+}
 
 export function ExportDialog() {
   const {
@@ -83,6 +83,7 @@ export function ExportDialog() {
     exportScope,
     addExportRecord,
     storiesInWorkspace,
+    ticketSystem,
   } = useAppContext();
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("PDF");
   const [phase, setPhase] = useState<ExportPhase>("config");
@@ -90,15 +91,23 @@ export function ExportDialog() {
   const [includeMetadata, setIncludeMetadata] = useState(true);
   const [includeTimestamps, setIncludeTimestamps] = useState(true);
 
+  const scopeConfig = useMemo(
+    () => buildScopeConfig(ticketSystem),
+    [ticketSystem],
+  );
+
   const scopeInfo = useMemo(() => {
-    const base = scopeConfig[exportScope] || scopeConfig.all;
+    const base =
+      scopeConfig[exportScope as keyof typeof scopeConfig] ?? scopeConfig.all;
     const total = storiesInWorkspace.length;
-    const jiraN = storiesInWorkspace.filter((s) => s.source === "jira-import").length;
+    const ticketImportN = storiesInWorkspace.filter(
+      (s) => s.source === "jira-import",
+    ).length;
     if (exportScope === "stories") return { ...base, itemCount: total };
-    if (exportScope === "jira") return { ...base, itemCount: jiraN };
+    if (exportScope === "tickets") return { ...base, itemCount: ticketImportN };
     if (exportScope === "all") return { ...base, itemCount: total + 12 };
     return base;
-  }, [exportScope, storiesInWorkspace]);
+  }, [exportScope, storiesInWorkspace, scopeConfig]);
 
   const handleClose = () => {
     setShowExportDialog(false);

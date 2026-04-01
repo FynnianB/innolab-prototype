@@ -13,7 +13,7 @@ function navOverviewContent(): string {
     "Oben links sehen Sie Mandant und Produkt. Über das Hauptmenü wechseln Sie den Arbeitsbereich – jeweils mit eigenem Fokus:\n\n" +
     "Dashboard · Kennzahlen, Trends und Schnellzugriff auf Ihre Projekte im Workspace.\n\n" +
     "Story Generator · Dokumente und Notizen hochladen, die KI prüft und bereinigt, dann User Stories erzeugen, mit Jira abgleichen und speichern.\n\n" +
-    "Compliance Checker · Dokumente gegen Regelwerke (z. B. DSGVO, Hausstandards) prüfen; Befunde bearbeiten und exportieren.\n\n" +
+    "Guidelines · Dokumente gegen Regelwerke (z. B. DSGVO, Hausstandards) prüfen; Befunde bearbeiten und exportieren.\n\n" +
     "Story-Abhängigkeiten · Vorgänge filtern, Beziehungen (Duplikate, Blocker, verwandte Tickets) einsehen und Vorschläge bewerten.\n\n" +
     "Projekte · Projekte im Workspace listen, Teams und Versionen in der Detailansicht pflegen." +
     cj +
@@ -94,22 +94,22 @@ export function getDashboardSteps(includeMobileMenuStep: boolean): Step[] {
 }
 
 /**
- * Compliance Checker: nur Projekt-Auswahl (gleiche DOM-Struktur wie beim ersten Besuch).
+ * Guidelines: nur Projekt-Auswahl (gleiche DOM-Struktur wie beim ersten Besuch).
  * Nach Klick auf ein Projekt: Review-UI ohne neue Tour — Hinweise im letzten Schritt.
  */
-export function getComplianceSteps(): Step[] {
+export function getGuidelinesSteps(): Step[] {
   return [
     {
-      target: sel("compliance-intro"),
-      title: "Compliance Checker",
+      target: sel("guidelines-intro"),
+      title: "Guidelines",
       content:
-        "In diesem Bereich prüfen Sie Anforderungs- und Lastenheft-Dokumente automatisch gegen definierte Regeln (z. B. Datenschutz, Formulierungen, interne Standards).\n\n" +
+        "Hier prüfen Sie Anforderungs- und Lastenheft-Dokumente automatisch gegen Ihren Regelkatalog (Guidelines), z. B. Datenschutz, Formulierungen und interne Standards.\n\n" +
         "Ziel: Risiken und Lücken sichtbar machen, bevor sie in Jira oder bei Kunden landen. Alle angebotenen Dokumente gehören zum aktuell gewählten Workspace.",
       placement: "bottom",
       disableBeacon: true,
     },
     {
-      target: sel("compliance-project-list"),
+      target: sel("guidelines-project-list"),
       title: "Projekt wählen",
       content:
         "Jede Karte steht für ein prüfbares Dokument bzw. Paket im Workspace. Wählen Sie eines aus, um ins Review zu wechseln.\n\n" +
@@ -118,10 +118,10 @@ export function getComplianceSteps(): Step[] {
       disableBeacon: true,
     },
     {
-      target: sel("compliance-rules-btn"),
+      target: sel("guidelines-rules-btn"),
       title: "Regeln",
       content:
-        "Die Prüfung nutzt konfigurierbare Regelkataloge. Unter „Regeln verwalten“ legen Sie fest, welche Kriterien der Checker anwendet (z. B. projektspezifisch vs. workspace-weit).\n\n" +
+        "Die Prüfung nutzt konfigurierbare Regelkataloge. Unter „Regeln verwalten“ legen Sie fest, welche Kriterien angewendet werden (z. B. projektspezifisch vs. workspace-weit).\n\n" +
         "Änderungen wirken auf künftige Läufe – sinnvoll, wenn sich Standards oder Verträge ändern.",
       placement: "left",
       disableBeacon: true,
@@ -188,8 +188,8 @@ export function getStepsForRoute(
   switch (key) {
     case "route:dashboard":
       return getDashboardSteps(options.includeMobileMenuStep);
-    case "route:compliance":
-      return getComplianceSteps();
+    case "route:guidelines":
+      return getGuidelinesSteps();
     case "route:stories":
       return getStoryDependenciesSteps();
     case "route:story-generator":

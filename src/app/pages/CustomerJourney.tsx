@@ -260,17 +260,17 @@ const phases: Phase[] = [
     isTrustCritical: false,
   },
   {
-    id: "jira",
+    id: "ticket-backlog",
     number: 6,
-    title: "Jira-Abgleich",
-    subtitle: "Optional: Duplikate & Abhängigkeiten",
+    title: "Ticket-Backlog-Abgleich",
+    subtitle: "Jira, Asana, Azure Boards, … — Duplikate & Abhängigkeiten",
     icon: <GitCompare className="w-5 h-5" />,
     color: "bg-orange-600",
     colorLight: "bg-orange-50",
     colorText: "text-orange-700",
     colorBorder: "border-orange-200",
     actions: [
-      "Jira-Backlog mit generierten Stories abgleichen",
+      "Backlog im verknüpften Ticket-Tool mit generierten Stories abgleichen",
       "Duplikate und Überschneidungen identifizieren",
       "Abhängigkeiten zwischen neuen und bestehenden Stories erkennen",
     ],
@@ -657,7 +657,7 @@ export function CustomerJourney() {
                   <div className="min-w-0">
                     <div className="text-[11px] text-slate-400 mb-0.5">Hauptziel</div>
                     <p className="text-xs text-slate-600 leading-relaxed">
-                      Saubere User Stories erstellen, Compliance-Regeln
+                      Saubere User Stories erstellen, interne Guidelines
                       einhalten und mit dem Jira-Backlog synchronisieren
                     </p>
                   </div>

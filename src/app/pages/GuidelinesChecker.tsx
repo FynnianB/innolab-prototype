@@ -45,7 +45,7 @@ import {
   PROJECT_WORKSPACE,
 } from "../data/workspaces";
 
-type CompliancePhase = "project-select" | "review";
+type GuidelinesPhase = "project-select" | "review";
 
 interface ProjectData {
   id: string;
@@ -57,7 +57,7 @@ interface ProjectData {
   status: string;
   statusColor: string;
   pages: DocumentPage[];
-  issues: ComplianceIssue[];
+  issues: GuidelineFinding[];
 }
 
 interface DocumentPage {
@@ -69,7 +69,7 @@ interface DocumentPage {
 type IssueSeverity = "critical" | "major" | "minor";
 type IssueCategory = "dsgvo" | "legal" | "corporate" | "style" | "ambiguity" | "structure";
 
-interface ComplianceIssue {
+interface GuidelineFinding {
   id: string;
   severity: IssueSeverity;
   category: IssueCategory;
@@ -190,7 +190,7 @@ Unterstützung für mindestens 12 Sprachen. Lokalisierung von Datums-, Zeit- und
   },
 ];
 
-const projectA_Issues: ComplianceIssue[] = [
+const projectA_Issues: GuidelineFinding[] = [
   {
     id: "C-001", severity: "critical", category: "dsgvo",
     title: "DSGVO: Unbegrenzte Datenspeicherung",
@@ -349,7 +349,7 @@ const projects: ProjectData[] = COMPLIANCE_PROJECT_IDS.map((id) => {
     id,
     name: meta.name,
     description: meta.description,
-    document: "Lastenheft (Auszug) – Prototyp-Compliance",
+    document: "Lastenheft (Auszug) – Prototyp-Guidelines",
     lastReview: "—",
     stories: 120,
     status: "Aktiv" as const,
@@ -372,7 +372,7 @@ interface FixLogEntry {
   appliedBy: string;
 }
 
-export function ComplianceChecker() {
+export function GuidelinesChecker() {
   const navigate = useNavigate();
   const {
     setShowExportDialog,
@@ -388,7 +388,7 @@ export function ComplianceChecker() {
       ),
     [selectedWorkspaceId],
   );
-  const [phase, setPhase] = useState<CompliancePhase>("project-select");
+  const [phase, setPhase] = useState<GuidelinesPhase>("project-select");
   const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [documentTexts, setDocumentTexts] = useState<Record<number, string>>({});
@@ -397,7 +397,7 @@ export function ComplianceChecker() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [fixedIssues, setFixedIssues] = useState<Set<string>>(new Set());
   const [showSuggestion, setShowSuggestion] = useState<string | null>(null);
-  const [autoFixDialog, setAutoFixDialog] = useState<ComplianceIssue | null>(null);
+  const [autoFixDialog, setAutoFixDialog] = useState<GuidelineFinding | null>(null);
   const [fixLog, setFixLog] = useState<FixLogEntry[]>([]);
   const [showFixLog, setShowFixLog] = useState(false);
 
@@ -414,7 +414,7 @@ export function ComplianceChecker() {
     setSelectedIssue(null);
   };
 
-  const handleAutoFix = (issue: ComplianceIssue) => {
+  const handleAutoFix = (issue: GuidelineFinding) => {
     setFixedIssues((prev) => new Set(prev).add(issue.id));
     setDocumentTexts((prev) => {
       const pageText = prev[issue.page];
@@ -483,24 +483,24 @@ export function ComplianceChecker() {
         <div className="p-8 max-w-[900px] mx-auto">
           <div
             className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-            data-tour="compliance-intro"
+            data-tour="guidelines-intro"
           >
             <div className="min-w-0">
-              <h1 className="text-[#1e1e2e]">Compliance Checker</h1>
+              <h1 className="text-[#1e1e2e]">Guidelines</h1>
               <p className="text-[14px] text-muted-foreground mt-1">
                 Workspace:{" "}
                 <span className="text-foreground font-medium">
                   {selectedWorkspace.name}
                 </span>
                 {" · "}
-                Wählen Sie ein Projekt, um die Anforderungen gegen Compliance-Regeln zu prüfen.
+                Wählen Sie ein Projekt, um Dokumente gegen den hinterlegten Regelkatalog (Guidelines) zu prüfen.
               </p>
             </div>
             <Button
               type="button"
               variant="outline"
               className="gap-2 text-[13px] shrink-0 self-start"
-              data-tour="compliance-rules-btn"
+              data-tour="guidelines-rules-btn"
               onClick={() => navigate("/rules")}
             >
               <BookOpen className="w-4 h-4" />
@@ -508,10 +508,10 @@ export function ComplianceChecker() {
             </Button>
           </div>
 
-          <div className="space-y-4" data-tour="compliance-project-list">
+          <div className="space-y-4" data-tour="guidelines-project-list">
             {workspaceProjects.length === 0 && (
               <p className="text-[14px] text-muted-foreground rounded-lg border border-dashed border-border bg-muted/30 px-4 py-8 text-center">
-                Für diesen Workspace sind keine Compliance-Projekte hinterlegt.
+                Für diesen Workspace sind keine Dokumente für die Guidelines-Prüfung hinterlegt.
               </p>
             )}
             {workspaceProjects.map((project) => (
@@ -743,7 +743,7 @@ export function ComplianceChecker() {
                   <span className="absolute inset-0 flex items-center justify-center text-[13px]" style={{ fontWeight: 700 }}>{totalScore}</span>
                 </div>
                 <div>
-                  <p className="text-[12px] text-muted-foreground">Compliance Score</p>
+                  <p className="text-[12px] text-muted-foreground">Guidelines-Quote</p>
                   <p className="text-[14px] text-[#1e1e2e]" style={{ fontWeight: 600 }}>
                     {totalScore >= 80 ? "Gut" : totalScore >= 60 ? "Verbesserungsbedarf" : "Kritisch"}
                   </p>
@@ -770,7 +770,7 @@ export function ComplianceChecker() {
               <Button
                 variant="outline"
                 className="text-[13px] gap-2"
-                onClick={() => { setExportScope("compliance"); setShowExportDialog(true); }}
+                onClick={() => { setExportScope("guidelines"); setShowExportDialog(true); }}
               >
                 <FileText className="w-4 h-4" />
                 Export
@@ -1088,7 +1088,7 @@ export function ComplianceChecker() {
                     </p>
                     <p className="text-[12px] text-muted-foreground mt-1">
                       {activeIssues.length === 0
-                        ? "Das Dokument entspricht den Compliance-Regeln."
+                        ? "Das Dokument entspricht den definierten Guidelines."
                         : "Passen Sie die Filter an, um weitere Probleme zu sehen."}
                     </p>
                   </div>

@@ -8,18 +8,23 @@ import {
   Menu,
   Plus,
   Search,
+  Settings2,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAppContext } from "../../context/AppContext";
 import { useMobileNav } from "../../context/MobileNavContext";
+import { getTicketSystem } from "../../data/ticketSystems";
 import {
   listProjectsForSearchInWorkspace,
   PROJECT_LOGO_BY_ID,
   PROTOTYPE_USER_ROLE,
+  resolveWorkspaceTicketSystemId,
 } from "../../data/workspaces";
 import type { Workspace } from "../../data/workspaces";
+import { ManageWorkspacesDialog } from "../ManageWorkspacesDialog";
+import { NewWorkspaceDialog } from "../NewWorkspaceDialog";
 import {
   isSearchEasterEggQuery,
   SearchEasterEgg,
@@ -118,6 +123,8 @@ export function Topbar() {
   } = useAppContext();
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [newWorkspaceOpen, setNewWorkspaceOpen] = useState(false);
+  const [manageWorkspacesOpen, setManageWorkspacesOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -671,14 +678,34 @@ export function Topbar() {
                 onClick={() => setSelectedWorkspaceId(ws.id)}
                 className={ws.id === selectedWorkspaceId ? "bg-[#f1f0ff]" : ""}
               >
-                <WorkspaceGlyph workspace={ws} sizeClass="w-6 h-6 mr-2" />
-                {ws.name}
+                <WorkspaceGlyph workspace={ws} sizeClass="w-6 h-6 mr-2 shrink-0" />
+                <div className="flex flex-col min-w-0 gap-0.5">
+                  <span className="truncate">{ws.name}</span>
+                  <span className="text-[10px] text-muted-foreground truncate">
+                    {getTicketSystem(resolveWorkspaceTicketSystemId(ws)).name}
+                  </span>
+                </div>
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                setNewWorkspaceOpen(true);
+              }}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Neuer Workspace
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                setManageWorkspacesOpen(true);
+              }}
+            >
+              <Settings2 className="w-4 h-4 mr-2" />
+              Manage Workspaces
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -693,6 +720,14 @@ export function Topbar() {
         {searchField}
       </div>
     </header>
+    <NewWorkspaceDialog
+      open={newWorkspaceOpen}
+      onOpenChange={setNewWorkspaceOpen}
+    />
+    <ManageWorkspacesDialog
+      open={manageWorkspacesOpen}
+      onOpenChange={setManageWorkspacesOpen}
+    />
     <SearchEasterEgg
       searchQuery={searchQuery}
       onClose={() => setSearchQuery("")}

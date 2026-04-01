@@ -332,7 +332,8 @@ function StoryView({
 }) {
   const navigate = useNavigate();
 
-  const hasCompliance = story.complianceScore != null && story.complianceChecks;
+  const hasGuidelinesChecks =
+    story.guidelinesScore != null && story.guidelineChecks;
   const hasAcQuality = story.acQuality && story.acQuality.length > 0;
   const hasAcceptance = story.acceptance && story.acceptance.length > 0;
   const hasSuggestions = story.suggestions && story.suggestions.length > 0;
@@ -448,26 +449,26 @@ function StoryView({
         </motion.div>
 
         {/* Analysis Results */}
-        {(hasCompliance || hasAcQuality) && (
+        {(hasGuidelinesChecks || hasAcQuality) && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="grid grid-cols-2 gap-5 mb-5"
           >
-            {hasCompliance && (
+            {hasGuidelinesChecks && (
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-[15px] text-slate-900" style={{ fontWeight: 600 }}>
-                    Compliance Check
+                    Story-Guidelines
                   </h3>
                   <span className="text-[22px] text-emerald-500" style={{ fontWeight: 700 }}>
-                    {story.complianceScore}%
+                    {story.guidelinesScore}%
                   </span>
                 </div>
-                <Progress value={story.complianceScore!} className="mb-5 h-2 [&>div]:bg-emerald-500" />
+                <Progress value={story.guidelinesScore!} className="mb-5 h-2 [&>div]:bg-emerald-500" />
                 <div className="space-y-3">
-                  {story.complianceChecks!.map((check, i) => (
+                  {story.guidelineChecks!.map((check, i) => (
                     <div key={i} className="flex items-start gap-3">
                       {check.passed ? (
                         <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />

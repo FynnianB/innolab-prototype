@@ -47,7 +47,7 @@ const kpiCards = [
     bgColor: "#fef3c7",
   },
   {
-    title: "Compliance Score",
+    title: "Guidelines-Quote",
     value: "94%",
     change: "+3% Verbesserung",
     trend: "up",
@@ -67,21 +67,21 @@ const kpiCards = [
 ];
 
 const recentProjects = [
-  { id: "P-101", name: "BMW Group — Versuchsteile & Entwicklungs-Analytics", status: "Aktiv", stories: 7, compliance: 86, updated: "vor 35 Min.", statusColor: "#1c69d4" },
-  { id: "P-102", name: "BMW Group — Fahrzeuglogistik & Vertriebs-Transparenz", status: "Aktiv", stories: 7, compliance: 89, updated: "vor 2 Std.", statusColor: "#1c69d4" },
-  { id: "P-103", name: "BMW Group — Digital Core & ERP-Roadmap", status: "Review", stories: 7, compliance: 91, updated: "Gestern", statusColor: "#f59e0b" },
-  { id: "P-201", name: "Volkswagen Group — Datenraum Mobilität", status: "Aktiv", stories: 7, compliance: 88, updated: "vor 50 Min.", statusColor: "#001e50" },
-  { id: "P-202", name: "Volkswagen Group — Konzern-IT & Integrationsplattform", status: "Aktiv", stories: 7, compliance: 90, updated: "vor 4 Std.", statusColor: "#001e50" },
-  { id: "P-203", name: "Volkswagen Group — Marken-Apps & Partner-Ökosystem", status: "Entwurf", stories: 7, compliance: 78, updated: "vor 2 Tagen", statusColor: "#64748b" },
-  { id: "P-301", name: "Mercedes-Benz Group — E-Mobility Software & Baukasten", status: "Aktiv", stories: 7, compliance: 92, updated: "vor 20 Min.", statusColor: "#00adef" },
-  { id: "P-302", name: "Mercedes-Benz Group — OTA & Fahrzeug-Software-Releases", status: "Aktiv", stories: 7, compliance: 87, updated: "vor 6 Std.", statusColor: "#00adef" },
-  { id: "P-303", name: "Mercedes-Benz Group — Vertrieb & Aftersales Digital", status: "Review", stories: 7, compliance: 85, updated: "vor 1 Tag", statusColor: "#f59e0b" },
-  { id: "P-401", name: "AUDI — Infotainment & HMI", status: "Aktiv", stories: 7, compliance: 88, updated: "vor 90 Min.", statusColor: "#bb0a30" },
-  { id: "P-402", name: "AUDI — Konfigurator & Commerce", status: "Aktiv", stories: 7, compliance: 86, updated: "vor 5 Std.", statusColor: "#bb0a30" },
-  { id: "P-403", name: "AUDI — Vernetzung & Drittpartner-APIs", status: "Entwurf", stories: 7, compliance: 74, updated: "vor 3 Tagen", statusColor: "#94a3b8" },
-  { id: "P-501", name: "Porsche AG — Motorsport & Fahrzeugdaten", status: "Aktiv", stories: 7, compliance: 90, updated: "vor 40 Min.", statusColor: "#d5001c" },
-  { id: "P-502", name: "Porsche AG — Kundenplattform & Personalisierung", status: "Aktiv", stories: 7, compliance: 88, updated: "vor 8 Std.", statusColor: "#d5001c" },
-  { id: "P-503", name: "Porsche AG — Supply Chain & Teile-Transparenz", status: "Review", stories: 7, compliance: 84, updated: "Gestern", statusColor: "#f59e0b" },
+  { id: "P-101", name: "BMW Group — Versuchsteile & Entwicklungs-Analytics", status: "Aktiv", stories: 7, guidelinesQuote: 86, updated: "vor 35 Min.", statusColor: "#1c69d4" },
+  { id: "P-102", name: "BMW Group — Fahrzeuglogistik & Vertriebs-Transparenz", status: "Aktiv", stories: 7, guidelinesQuote: 89, updated: "vor 2 Std.", statusColor: "#1c69d4" },
+  { id: "P-103", name: "BMW Group — Digital Core & ERP-Roadmap", status: "Review", stories: 7, guidelinesQuote: 91, updated: "Gestern", statusColor: "#f59e0b" },
+  { id: "P-201", name: "Volkswagen Group — Datenraum Mobilität", status: "Aktiv", stories: 7, guidelinesQuote: 88, updated: "vor 50 Min.", statusColor: "#001e50" },
+  { id: "P-202", name: "Volkswagen Group — Konzern-IT & Integrationsplattform", status: "Aktiv", stories: 7, guidelinesQuote: 90, updated: "vor 4 Std.", statusColor: "#001e50" },
+  { id: "P-203", name: "Volkswagen Group — Marken-Apps & Partner-Ökosystem", status: "Entwurf", stories: 7, guidelinesQuote: 78, updated: "vor 2 Tagen", statusColor: "#64748b" },
+  { id: "P-301", name: "Mercedes-Benz Group — E-Mobility Software & Baukasten", status: "Aktiv", stories: 7, guidelinesQuote: 92, updated: "vor 20 Min.", statusColor: "#00adef" },
+  { id: "P-302", name: "Mercedes-Benz Group — OTA & Fahrzeug-Software-Releases", status: "Aktiv", stories: 7, guidelinesQuote: 87, updated: "vor 6 Std.", statusColor: "#00adef" },
+  { id: "P-303", name: "Mercedes-Benz Group — Vertrieb & Aftersales Digital", status: "Review", stories: 7, guidelinesQuote: 85, updated: "vor 1 Tag", statusColor: "#f59e0b" },
+  { id: "P-401", name: "AUDI — Infotainment & HMI", status: "Aktiv", stories: 7, guidelinesQuote: 88, updated: "vor 90 Min.", statusColor: "#bb0a30" },
+  { id: "P-402", name: "AUDI — Konfigurator & Commerce", status: "Aktiv", stories: 7, guidelinesQuote: 86, updated: "vor 5 Std.", statusColor: "#bb0a30" },
+  { id: "P-403", name: "AUDI — Vernetzung & Drittpartner-APIs", status: "Entwurf", stories: 7, guidelinesQuote: 74, updated: "vor 3 Tagen", statusColor: "#94a3b8" },
+  { id: "P-501", name: "Porsche AG — Motorsport & Fahrzeugdaten", status: "Aktiv", stories: 7, guidelinesQuote: 90, updated: "vor 40 Min.", statusColor: "#d5001c" },
+  { id: "P-502", name: "Porsche AG — Kundenplattform & Personalisierung", status: "Aktiv", stories: 7, guidelinesQuote: 88, updated: "vor 8 Std.", statusColor: "#d5001c" },
+  { id: "P-503", name: "Porsche AG — Supply Chain & Teile-Transparenz", status: "Review", stories: 7, guidelinesQuote: 84, updated: "Gestern", statusColor: "#f59e0b" },
 ];
 
 const recentActivity: {
@@ -96,7 +96,7 @@ const recentActivity: {
   { icon: FileWarning, text: "Consent-Modell Datenraum — offene rechtliche Review-Punkte", project: "VW Datenraum", time: "vor 2 Std.", color: "#f59e0b", workspaceId: "ws-vw" },
   { icon: ShieldCheck, text: "OTA-Signatur-Pipeline für Pilotflotte freigegeben", project: "Mercedes OTA", time: "vor 3 Std.", color: "#10b981", workspaceId: "ws-mercedes" },
   { icon: CheckCircle2, text: "MMI Voice-Regressionstest Sprint grün", project: "AUDI Infotainment", time: "vor 5 Std.", color: "#10b981", workspaceId: "ws-audi" },
-  { icon: Activity, text: "Neue Compliance-Regeln importiert", project: "Global", time: "vor 6 Std.", color: "#8b5cf6", workspaceId: null },
+  { icon: Activity, text: "Neuer Regelkatalog für Guidelines importiert", project: "Global", time: "vor 6 Std.", color: "#8b5cf6", workspaceId: null },
   { icon: FileWarning, text: "Telemetrie-Latenz Track-Tag über Schwelle (Alert)", project: "Porsche Motorsport", time: "vor 1 Std.", color: "#f59e0b", workspaceId: "ws-porsche" },
 ];
 
@@ -230,7 +230,7 @@ export function Dashboard() {
                     <span>Projekt</span>
                     <span>Status</span>
                     <span className="text-center">Stories</span>
-                    <span>Compliance</span>
+                    <span>Guidelines-Quote</span>
                     <span className="text-right">Aktualisiert</span>
                   </div>
                   {displayedRecentProjects.length === 0 ? (
@@ -296,8 +296,8 @@ export function Dashboard() {
                       </Badge>
                       <span className="text-[13px] text-center text-muted-foreground">{project.stories}</span>
                       <div className="flex items-center gap-2">
-                        <Progress value={project.compliance} className="h-1.5 flex-1" />
-                        <span className="text-[12px] text-muted-foreground" style={{ fontWeight: 500 }}>{project.compliance}%</span>
+                        <Progress value={project.guidelinesQuote} className="h-1.5 flex-1" />
+                        <span className="text-[12px] text-muted-foreground" style={{ fontWeight: 500 }}>{project.guidelinesQuote}%</span>
                       </div>
                       <div className="flex items-center justify-end gap-1 text-[12px] text-muted-foreground">
                         <Clock className="w-3 h-3" />
@@ -394,10 +394,10 @@ export function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Compliance Overview Mini */}
+            {/* Guidelines-Überblick (Mini) */}
             <Card className="border border-border bg-white">
               <CardHeader className="pb-3">
-                <CardTitle className="text-[16px]" style={{ fontWeight: 600 }}>Compliance-Überblick</CardTitle>
+                <CardTitle className="text-[16px]" style={{ fontWeight: 600 }}>Guidelines-Überblick</CardTitle>
               </CardHeader>
               <CardContent className="px-5 pb-5 space-y-4">
                 {[

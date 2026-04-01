@@ -1,12 +1,19 @@
-import { ThumbsDown, ThumbsUp } from "lucide-react";
+import { ThumbsUp } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 
 export type SearchEasterEggKind =
   | "hsv"
   | "fireworks"
-  | "thumbDown"
+  | "bvbTire"
   | "schalke"
   | "thumbUp";
 
@@ -19,7 +26,7 @@ export type SearchEasterEggSpec = {
 export const SEARCH_EASTER_EGG_SPECS: Record<string, SearchEasterEggSpec> = {
   Fynnian: { kind: "hsv", caption: "Nur der HSV! ⚽" },
   Robert: { kind: "fireworks", caption: "Feuer frei! 🎆" },
-  Louis: { kind: "thumbDown", caption: "" },
+  Louis: { kind: "bvbTire", caption: "" },
   Golo: { kind: "schalke", caption: "Glück auf! ⛏️" },
   Inesa: { kind: "thumbUp", caption: "Daumen hoch! 👍" },
 };
@@ -514,6 +521,211 @@ function SchalkeEasterMark({ className }: { className?: string }) {
   );
 }
 
+/** Stilisierte Fan-Hommage (Schwarz/Gelb), kein offizielles Vereinslogo */
+function BvbEasterMark({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <circle cx="50" cy="50" r="48" fill="#0a0a0a" />
+      <path
+        d="M50 12 L88 50 L50 88 L12 50 Z"
+        fill="#fde100"
+        stroke="#0a0a0a"
+        strokeWidth="3"
+      />
+      <path d="M50 28 L72 50 L50 72 L28 50 Z" fill="#0a0a0a" />
+      <circle cx="50" cy="50" r="9" fill="#fde100" />
+    </svg>
+  );
+}
+
+function TireMark({ className }: { className?: string }) {
+  const treads = Array.from({ length: 18 }, (_, i) => i);
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <defs>
+        <radialGradient id="louis-tire-tread" cx="35%" cy="35%" r="65%">
+          <stop offset="0%" stopColor="#3d3d3d" />
+          <stop offset="100%" stopColor="#0d0d0d" />
+        </radialGradient>
+      </defs>
+      <circle cx="50" cy="50" r="48" fill="url(#louis-tire-tread)" />
+      {treads.map((i) => (
+        <rect
+          key={i}
+          x="47"
+          y="3"
+          width="6"
+          height="14"
+          rx="1.5"
+          fill="#141414"
+          transform={`rotate(${i * 20} 50 50)`}
+        />
+      ))}
+      <circle
+        cx="50"
+        cy="50"
+        r="26"
+        fill="#52525b"
+        stroke="#3f3f46"
+        strokeWidth="5"
+      />
+      <circle cx="50" cy="50" r="12" fill="#27272a" />
+    </svg>
+  );
+}
+
+type BvbTireStage = "wait" | "fall" | "roll";
+
+function LouisBvbTireScene({
+  reduced,
+  launchY,
+}: {
+  reduced: boolean;
+  launchY: number;
+}) {
+  const [stage, setStage] = useState<BvbTireStage>("wait");
+  const [logoSquashed, setLogoSquashed] = useState(false);
+
+  useEffect(() => {
+    if (reduced) return;
+    const tFall = window.setTimeout(() => setStage("fall"), 2000);
+    return () => window.clearTimeout(tFall);
+  }, [reduced]);
+
+  useEffect(() => {
+    if (reduced || stage !== "fall") return;
+    const tSquash = window.setTimeout(() => setLogoSquashed(true), 380);
+    const tRoll = window.setTimeout(() => setStage("roll"), 540);
+    return () => {
+      window.clearTimeout(tSquash);
+      window.clearTimeout(tRoll);
+    };
+  }, [reduced, stage]);
+
+  if (reduced) {
+    return (
+      <motion.div
+        className="relative z-[1] drop-shadow-[0_24px_48px_rgba(0,0,0,0.45)]"
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.25 }}
+      >
+        <BvbEasterMark className="block w-[min(52vw,220px)] h-auto max-h-[40vh] aspect-square select-none" />
+      </motion.div>
+    );
+  }
+
+  const logoCrushed = logoSquashed || stage === "roll";
+
+  return (
+    <div className="relative z-[1] flex min-h-[min(44vh,320px)] w-[min(92vw,420px)] items-center justify-center overflow-visible">
+      <motion.div
+        className="relative z-[1] drop-shadow-[0_24px_48px_rgba(0,0,0,0.5)]"
+        initial={{
+          y: launchY,
+          scale: 0.2,
+          rotate: -14,
+          opacity: 1,
+        }}
+        animate={
+          logoCrushed
+            ? {
+                y: 0,
+                scaleX: 1.38,
+                scaleY: 0.1,
+                rotate: 5,
+                opacity: 0.38,
+                filter: "blur(1.5px)",
+              }
+            : {
+                y: 0,
+                scale: 1,
+                rotate: 0,
+                opacity: 1,
+                filter: "blur(0px)",
+              }
+        }
+        transition={
+          logoCrushed
+            ? { type: "spring", stiffness: 520, damping: 26, mass: 0.4 }
+            : {
+                type: "spring",
+                stiffness: 200,
+                damping: 16,
+                mass: 0.88,
+              }
+        }
+      >
+        <motion.div
+          animate={
+            logoCrushed
+              ? {}
+              : {
+                  y: [0, -6, 0, -4, 0],
+                  rotate: [0, 1.2, -1, 0.6, 0],
+                }
+          }
+          transition={{
+            duration: 2.8,
+            delay: 0.65,
+            repeat: logoCrushed ? 0 : Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          <BvbEasterMark className="block w-[min(52vw,220px)] h-auto max-h-[40vh] aspect-square select-none" />
+        </motion.div>
+      </motion.div>
+
+      <motion.div
+        className="pointer-events-none absolute left-1/2 top-1/2 z-[3] h-[min(26vw,112px)] w-[min(26vw,112px)] -translate-x-1/2 -translate-y-1/2"
+        initial={false}
+        animate={
+          stage === "wait"
+            ? {
+                y: "-125vh",
+                x: 0,
+                rotate: 0,
+                opacity: 0,
+              }
+            : stage === "fall"
+              ? {
+                  y: 0,
+                  x: 0,
+                  rotate: 220,
+                  opacity: 1,
+                  transition: {
+                    duration: 0.52,
+                    ease: [0.52, 0, 0.74, 1],
+                  },
+                }
+              : {
+                  y: 8,
+                  x: 230,
+                  rotate: 220 + 520,
+                  opacity: 1,
+                  transition: {
+                    duration: 1.05,
+                    ease: "linear",
+                  },
+                }
+        }
+      >
+        <TireMark className="h-full w-full drop-shadow-[0_18px_28px_rgba(0,0,0,0.65)]" />
+      </motion.div>
+    </div>
+  );
+}
+
 function PulseRings({ reduced }: { reduced: boolean }) {
   if (reduced) return null;
   return (
@@ -602,15 +814,11 @@ function FlyInCenter({
 function ThumbFlyIn({
   reduced,
   launchY,
-  direction,
 }: {
   reduced: boolean;
   launchY: number;
-  direction: "up" | "down";
 }) {
-  const Icon = direction === "up" ? ThumbsUp : ThumbsDown;
-  const color = direction === "up" ? "text-emerald-400" : "text-rose-400";
-  const rotateEnd = direction === "up" ? 10 : -12;
+  const rotateEnd = 10;
 
   return (
     <motion.div
@@ -622,7 +830,7 @@ function ThumbFlyIn({
               y: launchY,
               x: 0,
               scale: 0.28,
-              rotate: direction === "down" ? -28 : 32,
+              rotate: 32,
               opacity: 1,
             }
       }
@@ -663,8 +871,8 @@ function ThumbFlyIn({
           ease: "easeInOut",
         }}
       >
-        <Icon
-          className={`${color} w-[min(28vw,140px)] h-[min(28vw,140px)] sm:w-40 sm:h-40 drop-shadow-[0_12px_32px_rgba(0,0,0,0.45)]`}
+        <ThumbsUp
+          className="text-emerald-400 w-[min(28vw,140px)] h-[min(28vw,140px)] sm:w-40 sm:h-40 drop-shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
           strokeWidth={2.25}
           aria-hidden
         />
@@ -757,13 +965,9 @@ export function SearchEasterEgg({
             </FlyInCenter>
           );
         case "thumbUp":
-          return (
-            <ThumbFlyIn reduced={reduced} launchY={launchY} direction="up" />
-          );
-        case "thumbDown":
-          return (
-            <ThumbFlyIn reduced={reduced} launchY={launchY} direction="down" />
-          );
+          return <ThumbFlyIn reduced={reduced} launchY={launchY} />;
+        case "bvbTire":
+          return <LouisBvbTireScene reduced={reduced} launchY={launchY} />;
         case "fireworks":
           return null;
         default:

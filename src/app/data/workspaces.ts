@@ -3,6 +3,8 @@
 /*  Enterprise (Capgemini) ≠ Workspace (z. B. BMW Group)              */
 /* ------------------------------------------------------------------ */
 
+import type { TicketSystemId } from "./ticketSystems";
+import { defaultTicketSystemId } from "./ticketSystems";
 import type { Story } from "./stories";
 
 export interface Workspace {
@@ -10,9 +12,12 @@ export interface Workspace {
   name: string;
   /** Relativer Pfad unter `public/` für Kundenlogo in der Workspace-Auswahl */
   logoSrc?: string;
+  /** Verknüpftes Ticket-/Backlog-Tool (Jira, Asana, …). */
+  ticketSystemId?: TicketSystemId;
 }
 
 export const WORKSPACE_STORAGE_KEY = "reqwise.selectedWorkspaceId.v2";
+export const EXTRA_WORKSPACES_STORAGE_KEY = "reqwise.extraWorkspaces.v1";
 
 export const DEFAULT_WORKSPACE_ID = "ws-bmw";
 
@@ -43,28 +48,69 @@ export const WORKSPACES: Workspace[] = [
     id: "ws-bmw",
     name: "BMW Group",
     logoSrc: "/logos/bmw.svg",
+    ticketSystemId: "jira",
   },
   {
     id: "ws-vw",
     name: "Volkswagen Group",
     logoSrc: "/logos/vw.svg",
+    ticketSystemId: "asana",
   },
   {
     id: "ws-mercedes",
     name: "Mercedes-Benz Group",
     logoSrc: "/logos/mercedes.svg",
+    ticketSystemId: "jira",
   },
   {
     id: "ws-audi",
     name: "AUDI",
     logoSrc: "/logos/audi.svg",
+    ticketSystemId: "azure_devops",
   },
   {
     id: "ws-porsche",
     name: "Porsche AG",
     logoSrc: "/logos/porsche.svg",
+    ticketSystemId: "linear",
   },
 ];
+
+export function resolveWorkspaceTicketSystemId(ws: Workspace): TicketSystemId {
+  return ws.ticketSystemId ?? defaultTicketSystemId();
+}
+
+function isWorkspaceShape(x: unknown): x is Workspace {
+  if (!x || typeof x !== "object") return false;
+  const o = x as Record<string, unknown>;
+  return typeof o.id === "string" && typeof o.name === "string";
+}
+
+/** Zusätzliche Workspaces aus dem Dialog „Neuer Workspace“ (localStorage). */
+export function readExtraWorkspaces(): Workspace[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(EXTRA_WORKSPACES_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isWorkspaceShape);
+  } catch {
+    return [];
+  }
+}
+
+export function persistExtraWorkspaces(list: Workspace[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      EXTRA_WORKSPACES_STORAGE_KEY,
+      JSON.stringify(list),
+    );
+  } catch {
+    /* ignore */
+  }
+}
 
 export const PROJECT_WORKSPACE: Record<string, string> = {
   "P-101": "ws-bmw",
@@ -166,6 +212,11 @@ export function getWorkspaceById(id: string): Workspace | undefined {
 }
 
 export function isValidWorkspaceId(id: string): boolean {
+  return WORKSPACES.some((w) => w.id === id);
+}
+
+/** Eingebaute Demo-Workspaces (nicht löschbar). */
+export function isBuiltinWorkspaceId(id: string): boolean {
   return WORKSPACES.some((w) => w.id === id);
 }
 
@@ -303,13 +354,21 @@ const LEGACY_WORKSPACE_IDS = new Set([
   "ws-rewe",
 ]);
 
+function allKnownWorkspaceIds(): Set<string> {
+  return new Set([
+    ...WORKSPACES.map((w) => w.id),
+    ...readExtraWorkspaces().map((w) => w.id),
+  ]);
+}
+
 export function readStoredWorkspaceId(): string {
   if (typeof window === "undefined") return DEFAULT_WORKSPACE_ID;
   try {
+    const known = allKnownWorkspaceIds();
     const v = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
-    if (v && isValidWorkspaceId(v)) return v;
+    if (v && known.has(v)) return v;
     const legacy = window.localStorage.getItem("reqwise.selectedWorkspaceId");
-    if (legacy && isValidWorkspaceId(legacy)) return legacy;
+    if (legacy && known.has(legacy)) return legacy;
     if (legacy && LEGACY_WORKSPACE_IDS.has(legacy)) return DEFAULT_WORKSPACE_ID;
   } catch {
     /* ignore */

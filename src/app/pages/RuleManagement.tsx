@@ -303,7 +303,7 @@ export function RuleManagement() {
           <div>
             <h1 className="text-[#1e1e2e]">Regel-Management</h1>
             <p className="text-[14px] text-muted-foreground mt-1">
-              Verwalten Sie Compliance-Regeln für{" "}
+              Verwalten Sie Regeln und Vorgaben (Guidelines) für{" "}
               <span style={{ fontWeight: 500 }}>{selectedWorkspace.name}</span>
               {" — "}
               workspace-weit oder projektspezifisch.{" "}
@@ -573,8 +573,8 @@ export function RuleManagement() {
                   Noch keine Regeln im Katalog
                 </p>
                 <p className="text-[13px] text-muted-foreground max-w-md mx-auto">
-                  Legen Sie eine neue Regel an oder importieren Sie ein Regelset, um den
-                  Compliance Checker zu speisen.
+                  Legen Sie eine neue Regel an oder importieren Sie ein Regelset für die
+                  Guidelines-Prüfung an.
                 </p>
                 <Button
                   className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 text-[13px] mt-2"
@@ -615,8 +615,8 @@ export function RuleManagement() {
                       „{rulePendingDelete.name}“
                     </span>{" "}
                     ({rulePendingDelete.id}) wird dauerhaft aus dem Katalog für
-                    diesen Workspace entfernt. Der Compliance Checker bezieht sie
-                    bei künftigen Prüfungen nicht mehr ein.
+                    diesen Workspace entfernt. Die Guidelines-Prüfung bezieht sie
+                    bei künftigen Läufen nicht mehr ein.
                   </>
                 ) : null}
               </AlertDialogDescription>

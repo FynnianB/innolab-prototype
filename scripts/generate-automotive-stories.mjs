@@ -140,8 +140,8 @@ for (const block of projects) {
         project: pname,
         tags: [t1, t2, block.prefix],
         source: s % 3 === 0 ? "jira-import" : "ai-generated",
-        complianceScore: 70 + ((s + pi * 7) % 25),
-        complianceChecks: [
+        guidelinesScore: 70 + ((s + pi * 7) % 25),
+        guidelineChecks: [
           { label: "User Story Format", description: "Format ok.", passed: true },
           { label: "Has Acceptance Criteria", description: "4 ACs.", passed: true },
           { label: "ACs Are Specific", description: "Messbar.", passed: s % 4 !== 0 },
@@ -243,8 +243,8 @@ export interface Story {
   goal?: string;
   benefit?: string;
   acceptance?: string[];
-  complianceScore?: number;
-  complianceChecks?: { label: string; description: string; passed: boolean }[];
+  guidelinesScore?: number;
+  guidelineChecks?: { label: string; description: string; passed: boolean }[];
   acQuality?: { criterion: string; score: number; suggestion: string }[];
   suggestions?: string[];
 

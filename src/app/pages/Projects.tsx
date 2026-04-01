@@ -84,7 +84,7 @@ interface Project {
   status: string;
   statusColor: string;
   stories: number;
-  compliance: number;
+  guidelinesQuote: number;
   issues: number;
   team: string[];
   versions: number;
@@ -101,7 +101,7 @@ function makeProject(
     status: string;
     statusColor: string;
     stories: number;
-    compliance: number;
+    guidelinesQuote: number;
     issues: number;
     versions: number;
     lastUpdated: string;
@@ -120,7 +120,7 @@ function makeProject(
     status: spec.status,
     statusColor: spec.statusColor,
     stories: spec.stories,
-    compliance: spec.compliance,
+    guidelinesQuote: spec.guidelinesQuote,
     issues: spec.issues,
     team: [...(PROJECT_TEAM_BY_ID[spec.id] ?? [])],
     versions: spec.versions,
@@ -138,7 +138,7 @@ const projects: Project[] = [
     status: "Aktiv",
     statusColor: "#1c69d4",
     stories: 7,
-    compliance: 86,
+    guidelinesQuote: 86,
     issues: 12,
     versions: 11,
     lastUpdated: "vor 35 Min.",
@@ -175,7 +175,7 @@ const projects: Project[] = [
     status: "Aktiv",
     statusColor: "#1c69d4",
     stories: 7,
-    compliance: 89,
+    guidelinesQuote: 89,
     issues: 8,
     versions: 7,
     lastUpdated: "vor 2 Std.",
@@ -197,7 +197,7 @@ const projects: Project[] = [
     status: "Review",
     statusColor: "#f59e0b",
     stories: 7,
-    compliance: 91,
+    guidelinesQuote: 91,
     issues: 6,
     versions: 5,
     lastUpdated: "Gestern",
@@ -209,7 +209,7 @@ const projects: Project[] = [
     status: "Aktiv",
     statusColor: "#001e50",
     stories: 7,
-    compliance: 88,
+    guidelinesQuote: 88,
     issues: 10,
     versions: 8,
     lastUpdated: "vor 50 Min.",
@@ -221,7 +221,7 @@ const projects: Project[] = [
     status: "Aktiv",
     statusColor: "#001e50",
     stories: 7,
-    compliance: 90,
+    guidelinesQuote: 90,
     issues: 7,
     versions: 12,
     lastUpdated: "vor 4 Std.",
@@ -233,7 +233,7 @@ const projects: Project[] = [
     status: "Entwurf",
     statusColor: "#64748b",
     stories: 7,
-    compliance: 78,
+    guidelinesQuote: 78,
     issues: 14,
     versions: 3,
     lastUpdated: "vor 2 Tagen",
@@ -245,7 +245,7 @@ const projects: Project[] = [
     status: "Aktiv",
     statusColor: "#00adef",
     stories: 7,
-    compliance: 92,
+    guidelinesQuote: 92,
     issues: 9,
     versions: 15,
     lastUpdated: "vor 20 Min.",
@@ -257,7 +257,7 @@ const projects: Project[] = [
     status: "Aktiv",
     statusColor: "#00adef",
     stories: 7,
-    compliance: 87,
+    guidelinesQuote: 87,
     issues: 11,
     versions: 9,
     lastUpdated: "vor 6 Std.",
@@ -269,7 +269,7 @@ const projects: Project[] = [
     status: "Review",
     statusColor: "#f59e0b",
     stories: 7,
-    compliance: 85,
+    guidelinesQuote: 85,
     issues: 5,
     versions: 4,
     lastUpdated: "vor 1 Tag",
@@ -281,7 +281,7 @@ const projects: Project[] = [
     status: "Aktiv",
     statusColor: "#bb0a30",
     stories: 7,
-    compliance: 88,
+    guidelinesQuote: 88,
     issues: 8,
     versions: 10,
     lastUpdated: "vor 90 Min.",
@@ -293,7 +293,7 @@ const projects: Project[] = [
     status: "Aktiv",
     statusColor: "#bb0a30",
     stories: 7,
-    compliance: 86,
+    guidelinesQuote: 86,
     issues: 9,
     versions: 6,
     lastUpdated: "vor 5 Std.",
@@ -305,7 +305,7 @@ const projects: Project[] = [
     status: "Entwurf",
     statusColor: "#94a3b8",
     stories: 7,
-    compliance: 74,
+    guidelinesQuote: 74,
     issues: 16,
     versions: 2,
     lastUpdated: "vor 3 Tagen",
@@ -317,7 +317,7 @@ const projects: Project[] = [
     status: "Aktiv",
     statusColor: "#d5001c",
     stories: 7,
-    compliance: 90,
+    guidelinesQuote: 90,
     issues: 7,
     versions: 8,
     lastUpdated: "vor 40 Min.",
@@ -329,7 +329,7 @@ const projects: Project[] = [
     status: "Aktiv",
     statusColor: "#d5001c",
     stories: 7,
-    compliance: 88,
+    guidelinesQuote: 88,
     issues: 6,
     versions: 5,
     lastUpdated: "vor 8 Std.",
@@ -341,7 +341,7 @@ const projects: Project[] = [
     status: "Review",
     statusColor: "#f59e0b",
     stories: 7,
-    compliance: 84,
+    guidelinesQuote: 84,
     issues: 10,
     versions: 4,
     lastUpdated: "Gestern",
@@ -359,8 +359,8 @@ const PROJECT_SORT_OPTIONS = [
   { value: "name-asc" as const, label: "Name A → Z" },
   { value: "name-desc" as const, label: "Name Z → A" },
   { value: "starred-first" as const, label: "Favoriten zuerst" },
-  { value: "compliance-desc" as const, label: "Compliance (höchste zuerst)" },
-  { value: "compliance-asc" as const, label: "Compliance (niedrigste zuerst)" },
+  { value: "guidelines-quote-desc" as const, label: "Guidelines-Quote (höchste zuerst)" },
+  { value: "guidelines-quote-asc" as const, label: "Guidelines-Quote (niedrigste zuerst)" },
   { value: "stories-desc" as const, label: "Meiste Stories zuerst" },
   { value: "stories-asc" as const, label: "Wenigste Stories zuerst" },
   { value: "id-asc" as const, label: "Projekt-ID (aufsteigend)" },
@@ -390,14 +390,14 @@ function sortProjects(list: Project[], option: ProjectSortOption): Project[] {
           Number(b.starred) - Number(a.starred) || byName(a, b),
       );
       break;
-    case "compliance-desc":
+    case "guidelines-quote-desc":
       arr.sort(
-        (a, b) => b.compliance - a.compliance || byName(a, b),
+        (a, b) => b.guidelinesQuote - a.guidelinesQuote || byName(a, b),
       );
       break;
-    case "compliance-asc":
+    case "guidelines-quote-asc":
       arr.sort(
-        (a, b) => a.compliance - b.compliance || byName(a, b),
+        (a, b) => a.guidelinesQuote - b.guidelinesQuote || byName(a, b),
       );
       break;
     case "stories-desc":
@@ -533,9 +533,9 @@ export function Projects() {
                 <Sparkles className="w-4 h-4" />
                 Stories generieren
               </Button>
-              <Button variant="outline" size="sm" className="text-[13px] gap-2" onClick={() => navigate("/compliance")}>
+              <Button variant="outline" size="sm" className="text-[13px] gap-2" onClick={() => navigate("/guidelines")}>
                 <ShieldCheck className="w-4 h-4" />
-                Compliance Check
+                Guidelines prüfen
               </Button>
             </div>
           </div>
@@ -571,10 +571,10 @@ export function Projects() {
                   <ShieldCheck className="w-5 h-5 text-[#10b981]" />
                 </div>
                 <div>
-                  <p className="text-[22px]" style={{ fontWeight: 600, color: getScoreColor(selectedProject.compliance) }}>
-                    {selectedProject.compliance}%
+                  <p className="text-[22px]" style={{ fontWeight: 600, color: getScoreColor(selectedProject.guidelinesQuote) }}>
+                    {selectedProject.guidelinesQuote}%
                   </p>
-                  <p className="text-[12px] text-muted-foreground">Compliance</p>
+                  <p className="text-[12px] text-muted-foreground">Guidelines-Quote</p>
                 </div>
               </CardContent>
             </Card>
@@ -673,11 +673,11 @@ export function Projects() {
                     </div>
                   </div>
                   <div className="flex justify-between text-[13px]">
-                    <span className="text-muted-foreground">Compliance-Score</span>
+                    <span className="text-muted-foreground">Guidelines-Quote</span>
                     <div className="flex items-center gap-2">
-                      <Progress value={selectedProject.compliance} className="h-1.5 w-24" />
-                      <span style={{ fontWeight: 600, color: getScoreColor(selectedProject.compliance) }}>
-                        {selectedProject.compliance}%
+                      <Progress value={selectedProject.guidelinesQuote} className="h-1.5 w-24" />
+                      <span style={{ fontWeight: 600, color: getScoreColor(selectedProject.guidelinesQuote) }}>
+                        {selectedProject.guidelinesQuote}%
                       </span>
                     </div>
                   </div>
@@ -1129,18 +1129,18 @@ export function Projects() {
                   </button>
                 )}
 
-                {/* Compliance Bar */}
+                {/* Guidelines-Quote */}
                 <div className="flex items-center gap-3 mb-3">
-                  <span className="text-[11px] text-muted-foreground" style={{ fontWeight: 500 }}>Compliance</span>
-                  <Progress value={project.compliance} className="h-1.5 flex-1" />
+                  <span className="text-[11px] text-muted-foreground" style={{ fontWeight: 500 }}>Guidelines-Quote</span>
+                  <Progress value={project.guidelinesQuote} className="h-1.5 flex-1" />
                   <span
                     className="text-[12px]"
                     style={{
                       fontWeight: 600,
-                      color: project.compliance >= 90 ? "#10b981" : project.compliance >= 70 ? "#f59e0b" : "#ef4444",
+                      color: project.guidelinesQuote >= 90 ? "#10b981" : project.guidelinesQuote >= 70 ? "#f59e0b" : "#ef4444",
                     }}
                   >
-                    {project.compliance}%
+                    {project.guidelinesQuote}%
                   </span>
                 </div>
 

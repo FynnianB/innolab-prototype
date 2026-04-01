@@ -450,19 +450,21 @@ function buildProjectStatusResponse(
     .map(([k, v]) => `${k}: ${v}`)
     .join(", ");
 
-  const withCompliance = matched.filter((s) => s.complianceScore != null);
-  const avgCompliance =
-    withCompliance.length > 0
+  const withGuidelinesScores = matched.filter((s) => s.guidelinesScore != null);
+  const avgGuidelinesQuote =
+    withGuidelinesScores.length > 0
       ? Math.round(
-          withCompliance.reduce((sum, s) => sum + (s.complianceScore || 0), 0) /
-            withCompliance.length,
+          withGuidelinesScores.reduce(
+            (sum, s) => sum + (s.guidelinesScore || 0),
+            0,
+          ) / withGuidelinesScores.length,
         )
       : 0;
 
   let summary = `**Projekt: ${projName}**\n\n`;
   summary += `**${matched.length} Stories:** ${statusLine}\n`;
-  if (withCompliance.length > 0)
-    summary += `**Durchschn. Compliance-Score:** ${avgCompliance}%`;
+  if (withGuidelinesScores.length > 0)
+    summary += `**Durchschn. Guidelines-Quote:** ${avgGuidelinesQuote}%`;
 
   return {
     messages: [

@@ -125,14 +125,6 @@ interface JiraMatch {
 }
 
 // --- Static data ---
-const workflowSteps = [
-  { label: "Upload", shortLabel: "Upload" },
-  { label: "Dokumentenprüfung", shortLabel: "Dok.-Prüfung" },
-  { label: "Story-Generierung", shortLabel: "Generierung" },
-  { label: "Jira-Abgleich", shortLabel: "Jira" },
-  { label: "Speichern", shortLabel: "Speichern" },
-];
-
 const initialDocIssues: DocIssue[] = [
   {
     id: "DOC-001",
@@ -526,7 +518,20 @@ export function StoryGenerator() {
   const location = useLocation();
   const { revision } = useOnboardingReset();
   const prevOnboardingRevisionRef = useRef<number | null>(null);
-  const { setShowExportDialog, setExportScope } = useAppContext();
+  const { setShowExportDialog, setExportScope, ticketSystem } = useAppContext();
+  const workflowSteps = useMemo(
+    () => [
+      { label: "Upload", shortLabel: "Upload" },
+      { label: "Dokumentenprüfung", shortLabel: "Dok.-Prüfung" },
+      { label: "Story-Generierung", shortLabel: "Generierung" },
+      {
+        label: ticketSystem.compareStepLabel,
+        shortLabel: ticketSystem.shortName,
+      },
+      { label: "Speichern", shortLabel: "Speichern" },
+    ],
+    [ticketSystem],
+  );
   const [phase, setPhase] = useState<Phase>("upload");
   const [dragOver, setDragOver] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
@@ -566,6 +571,13 @@ export function StoryGenerator() {
     createEpic: true,
     syncConfluence: true,
   });
+
+  useEffect(() => {
+    setJiraExportConfig((c) => ({
+      ...c,
+      project: ticketSystem.keyPrefixPlaceholder,
+    }));
+  }, [ticketSystem.id]);
 
   const storyGenSourceCount =
     uploadedFiles.length + (freeTextSource.trim() ? 1 : 0);
@@ -829,6 +841,8 @@ export function StoryGenerator() {
       tourHandlers={tourHandlers}
       pendingDocIssues={pendingDocIssues}
       storiesToSaveCount={storiesToSaveCount}
+      compareStepLabel={ticketSystem.compareStepLabel}
+      exportShortName={ticketSystem.shortName}
     />
   );
 
@@ -1701,10 +1715,10 @@ export function StoryGenerator() {
                   <ArrowLeft className="w-4 h-4" /> Zurück zu Stories
                 </Button>
                 <div className="min-w-0">
-                  <h2 className="text-[#1e1e2e]">Jira-Backlog Abgleich</h2>
+                  <h2 className="text-[#1e1e2e]">{ticketSystem.compareScreenTitle}</h2>
                   <p className="text-[13px] text-muted-foreground mt-0.5">
                     Vergleich der generierten Stories mit{" "}
-                    {mockJiraTickets.length} bestehenden Jira-Tickets
+                    {mockJiraTickets.length} bestehenden {ticketSystem.ticketsPlural}
                   </p>
                 </div>
               </div>
@@ -1749,7 +1763,7 @@ export function StoryGenerator() {
                   className="text-[14px] text-[#1e1e2e]"
                   style={{ fontWeight: 600 }}
                 >
-                  Bestehende Jira-Tickets
+                  Bestehende {ticketSystem.ticketsPlural}
                 </h4>
               </div>
               <div className="space-y-2">
@@ -2082,7 +2096,7 @@ export function StoryGenerator() {
             onClick={() => setPhase("jira-compare")}
             className="text-muted-foreground gap-1 mb-3"
           >
-            <ArrowLeft className="w-4 h-4" /> Zurück zum Jira-Abgleich
+            <ArrowLeft className="w-4 h-4" /> Zurück zum {ticketSystem.compareStepLabel}
           </Button>
           <h1 className="text-[#1e1e2e]">User Stories speichern</h1>
           <p className="text-[14px] text-muted-foreground mt-1">
@@ -2308,7 +2322,7 @@ export function StoryGenerator() {
                 }}
               >
                 <ExternalLink className="w-4 h-4" />
-                Direkt nach Jira exportieren (automatisiert)
+                Direkt nach {ticketSystem.name} exportieren (automatisiert)
               </Button>
             </div>
           </div>
@@ -2394,14 +2408,14 @@ export function StoryGenerator() {
                 }}
               >
                 <ExternalLink className="w-4 h-4" />
-                Jira-Export
+                {ticketSystem.shortName}-Export
               </Button>
               <Button
                 className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 text-[13px]"
                 onClick={() => setPhase("jira-compare")}
               >
                 <ArrowRight className="w-4 h-4" />
-                Weiter zum Jira-Abgleich
+                Weiter zum {ticketSystem.compareStepLabel}
               </Button>
             </div>
           </div>
@@ -2846,7 +2860,7 @@ export function StoryGenerator() {
         </div>
       </div>
 
-      {/* Jira Export Dialog */}
+      {/* Ticket-Tool-Export-Dialog (Prototyp) */}
       <Dialog
         open={jiraExportDialog}
         onOpenChange={(open) => {
@@ -2867,10 +2881,11 @@ export function StoryGenerator() {
                   J
                 </span>
               </div>
-              Jira-Export automatisieren
+              {ticketSystem.exportAutomateTitle}
             </DialogTitle>
             <DialogDescription>
-              Stories direkt als Jira-Tickets erstellen – kein Copy-Paste
+              Stories direkt als {ticketSystem.exportSuccessNoun} erstellen – kein
+              Copy-Paste
               erforderlich.
             </DialogDescription>
           </DialogHeader>
@@ -2883,7 +2898,7 @@ export function StoryGenerator() {
                     className="text-[12px] text-muted-foreground mb-1 block"
                     style={{ fontWeight: 500 }}
                   >
-                    Jira-Projekt
+                    {ticketSystem.targetProjectLabel}
                   </label>
                   <select
                     value={jiraExportConfig.project}
@@ -3018,7 +3033,7 @@ export function StoryGenerator() {
                     stories.filter((s) => storyActions[s.id] !== "rejected")
                       .length
                   }{" "}
-                  Stories werden als Jira-Tickets erstellt
+                  Stories werden als {ticketSystem.exportSuccessNoun} erstellt
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   Duplikat-Prüfung gegen bestehende Tickets wird automatisch
@@ -3073,7 +3088,7 @@ export function StoryGenerator() {
                       stories.filter((s) => storyActions[s.id] !== "rejected")
                         .length
                     }{" "}
-                    Jira-Tickets erstellt
+                    {ticketSystem.exportSuccessNoun} erstellt
                   </span>
                   <span className="text-[11px] text-muted-foreground ml-auto">
                     {jiraExportConfig.project}-401 bis{" "}
