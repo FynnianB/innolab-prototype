@@ -12,6 +12,7 @@ export interface Story {
   priority: "Hoch" | "Mittel" | "Niedrig";
   effort: "Niedrig" | "Mittel" | "Hoch";
   project: string;
+  workspaceId?: string;
   tags: string[];
   source: "ai-generated" | "jira-import" | "manual";
 

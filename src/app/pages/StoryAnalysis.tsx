@@ -46,8 +46,6 @@ import {
 import { cn } from "../components/ui/utils";
 import { useAppContext } from "../context/AppContext";
 import {
-  allRelations,
-  getRelationsForId,
   getTicketRelationOrigin,
   type Story,
   type TicketRelation,
@@ -442,6 +440,7 @@ function RelationTypeGroups({
 function IssueDetailPane({
   story,
   stories,
+  relations,
   onClose,
   confirmedIds,
   dismissedIds,
@@ -451,6 +450,7 @@ function IssueDetailPane({
 }: {
   story: Story;
   stories: Story[];
+  relations: TicketRelation[];
   onClose: () => void;
   confirmedIds: Set<string>;
   dismissedIds: Set<string>;
@@ -459,7 +459,10 @@ function IssueDetailPane({
   ticketImportLabel: string;
 }) {
   const navigate = useNavigate();
-  const relations = useMemo(() => getRelationsForId(story.id), [story.id]);
+  const storyRelations = useMemo(
+    () => relations.filter((r) => r.sourceId === story.id || r.targetId === story.id),
+    [relations, story.id],
+  );
 
   const {
     systemRels,
@@ -606,13 +609,13 @@ function IssueDetailPane({
               >
                 Zusammenhänge
               </h3>
-              {relations.length > 0 && (
+              {storyRelations.length > 0 && (
                 <span className="text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
                   {visibleRelationCount}
                 </span>
               )}
             </div>
-            {relations.length === 0 ? (
+            {storyRelations.length === 0 ? (
               <p className="text-[13px] text-slate-500 py-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 text-center">
                 Keine Zusammenhänge für diesen Vorgang.
               </p>
@@ -812,6 +815,7 @@ export function StoryAnalysis() {
   const {
     storiesInWorkspace: stories,
     stories: allStoriesForRelations,
+    relations,
     selectedWorkspace,
     selectedWorkspaceId,
     myProjectIdsInWorkspace,
@@ -998,10 +1002,10 @@ export function StoryAnalysis() {
 
   const relationsTouchingWorkspace = useMemo(() => {
     const ids = new Set(stories.map((s) => s.id));
-    return allRelations.filter(
+    return relations.filter(
       (r) => ids.has(r.sourceId) || ids.has(r.targetId),
     );
-  }, [stories]);
+  }, [stories, relations]);
 
   /** Nur Kanten im Workspace — konsistent mit „Mit Verknüpfungen“ und Badge. */
   const relationCountMap = useMemo(() => {
@@ -1578,6 +1582,7 @@ export function StoryAnalysis() {
               <IssueDetailPane
                 story={selectedStory}
                 stories={allStoriesForRelations}
+                relations={relations}
                 onClose={() => setSelectedStoryId(null)}
                 confirmedIds={confirmedIds}
                 dismissedIds={dismissedIds}

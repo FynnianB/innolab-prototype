@@ -2,6 +2,108 @@ import { defineConfig } from 'vite'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import { Buffer } from "node:buffer";
+import type { Connect, Plugin } from "vite";
+
+function normalizeBaseUrl(baseUrl: string): string {
+  return baseUrl.trim().replace(/\/+$/, "");
+}
+
+async function readJsonBody(req: Connect.IncomingMessage): Promise<unknown> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) {
+    if (typeof chunk === "string") {
+      chunks.push(Buffer.from(chunk));
+    } else {
+      chunks.push(chunk as Buffer);
+    }
+  }
+  const raw = Buffer.concat(chunks).toString("utf-8");
+  if (!raw.trim()) return null;
+  return JSON.parse(raw);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function jiraProxyMiddleware(): Connect.NextHandleFunction {
+  return async (req, res, next) => {
+    if (req.url !== "/api/jira/search-jql") return next();
+    if (req.method !== "POST") {
+      res.statusCode = 405;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ error: "Method not allowed" }));
+      return;
+    }
+
+    try {
+      const parsed = await readJsonBody(req);
+      if (!isRecord(parsed)) {
+        res.statusCode = 400;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: "Invalid JSON body" }));
+        return;
+      }
+
+      const baseUrl = typeof parsed.baseUrl === "string" ? parsed.baseUrl : "";
+      const email = typeof parsed.email === "string" ? parsed.email : "";
+      const apiToken = typeof parsed.apiToken === "string" ? parsed.apiToken : "";
+      const requestBody = isRecord(parsed.request) ? parsed.request : null;
+
+      if (!baseUrl || !email || !apiToken || !requestBody) {
+        res.statusCode = 400;
+        res.setHeader("Content-Type", "application/json");
+        res.end(
+          JSON.stringify({
+            error:
+              "Missing required fields: baseUrl, email, apiToken, request",
+          }),
+        );
+        return;
+      }
+
+      const auth = Buffer.from(`${email}:${apiToken}`).toString("base64");
+      const jiraUrl = `${normalizeBaseUrl(baseUrl)}/rest/api/3/search/jql`;
+
+      const jiraResponse = await fetch(jiraUrl, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Basic ${auth}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const responseText = await jiraResponse.text();
+      res.statusCode = jiraResponse.status;
+      res.setHeader(
+        "Content-Type",
+        jiraResponse.headers.get("content-type") ?? "application/json",
+      );
+      res.end(responseText);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      res.statusCode = 502;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ error: `Jira proxy error: ${message}` }));
+    }
+  };
+}
+
+function jiraProxyPlugin(): Plugin {
+  const middleware = jiraProxyMiddleware();
+  return {
+    name: "jira-search-jql-proxy",
+    configureServer(server) {
+      server.middlewares.use(middleware);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(middleware);
+    },
+  };
+}
 
 export default defineConfig({
   base: '/',
@@ -10,6 +112,7 @@ export default defineConfig({
     // Tailwind is not being actively used – do not remove them
     react(),
     tailwindcss(),
+    jiraProxyPlugin(),
   ],
   resolve: {
     alias: {

@@ -28,11 +28,8 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
 import { TicketTypeIcon } from "../components/TicketTypeIcon";
+import { useAppContext } from "../context/AppContext";
 import {
-  allStories,
-  getRelationsForId,
-  getItemTitle,
-  getItemProject,
   type Story,
   type TicketRelation,
 } from "../data/stories";
@@ -129,7 +126,8 @@ const relationTypeConfig: Record<
 
 function buildGraph(
   currentId: string,
-  relations: TicketRelation[]
+  relations: TicketRelation[],
+  storiesById: Map<string, Story>,
 ): { nodes: Node[]; edges: Edge[] } {
   const nodeIds = new Set<string>([currentId]);
   relations.forEach((r) => {
@@ -160,8 +158,8 @@ function buildGraph(
       type: "ticketNode",
       position: { x: centerX - 90, y: centerY - 25 },
       data: {
-        label: getItemTitle(currentId),
-        project: getItemProject(currentId),
+        label: storiesById.get(currentId)?.title || currentId,
+        project: storiesById.get(currentId)?.project || "",
         isCurrent: true,
         isStory: currentId.startsWith("US-"),
       },
@@ -176,8 +174,8 @@ function buildGraph(
           y: centerY - 25 + Math.sin(angle) * radiusY,
         },
         data: {
-          label: getItemTitle(id),
-          project: getItemProject(id),
+          label: storiesById.get(id)?.title || id,
+          project: storiesById.get(id)?.project || "",
           isCurrent: false,
           isStory: id.startsWith("US-"),
         },
@@ -259,27 +257,35 @@ export function StoryDetail() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const decodedId = id ? decodeURIComponent(id) : "";
+  const { stories, relations } = useAppContext();
+  const storiesById = useMemo(
+    () => new Map(stories.map((s) => [s.id, s])),
+    [stories],
+  );
 
-  const story = allStories.find((s) => s.id === decodedId);
+  const story = storiesById.get(decodedId);
 
-  const relations = getRelationsForId(decodedId);
+  const storyRelations = useMemo(
+    () => relations.filter((r) => r.sourceId === decodedId || r.targetId === decodedId),
+    [relations, decodedId],
+  );
   const { nodes, edges } = useMemo(
-    () => buildGraph(decodedId, relations),
-    [decodedId, relations.length]
+    () => buildGraph(decodedId, storyRelations, storiesById),
+    [decodedId, storyRelations, storiesById],
   );
 
   const relatedItems = useMemo(() => {
-    return relations.map((r) => {
+    return storyRelations.map((r) => {
       const otherId = r.sourceId === decodedId ? r.targetId : r.sourceId;
       return {
         relation: r,
         id: otherId,
-        title: getItemTitle(otherId),
-        project: getItemProject(otherId),
+        title: storiesById.get(otherId)?.title || otherId,
+        project: storiesById.get(otherId)?.project || "",
         isStory: true,
       };
     });
-  }, [decodedId, relations.length]);
+  }, [decodedId, storyRelations, storiesById]);
 
   const handleNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {

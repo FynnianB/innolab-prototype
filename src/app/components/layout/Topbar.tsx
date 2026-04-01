@@ -5,8 +5,10 @@ import {
   ChevronDown,
   Download,
   Info,
+  Loader2,
   Menu,
   Plus,
+  RefreshCw,
   Search,
   Settings2,
   X,
@@ -15,14 +17,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAppContext } from "../../context/AppContext";
 import { useMobileNav } from "../../context/MobileNavContext";
-import { getTicketSystem } from "../../data/ticketSystems";
 import {
   listProjectsForSearchInWorkspace,
   PROJECT_LOGO_BY_ID,
   PROTOTYPE_USER_DISPLAY_NAME,
   PROTOTYPE_USER_INITIALS,
   PROTOTYPE_USER_ROLE,
-  resolveWorkspaceTicketSystemId,
 } from "../../data/workspaces";
 import type { Workspace } from "../../data/workspaces";
 import { ManageWorkspacesDialog } from "../ManageWorkspacesDialog";
@@ -41,6 +41,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 
 /** Normalisiert Eingaben wie "us 001", "US001" → "US-001" / "PROJ-101". */
 function normalizeIdCandidates(raw: string): string[] {
@@ -122,13 +130,54 @@ export function Topbar() {
     unreadCount,
     setShowExportDialog,
     setExportScope,
+    createWorkspace,
+    syncWorkspaceFromJira,
+    workspaceSyncStateById,
   } = useAppContext();
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [newWorkspaceOpen, setNewWorkspaceOpen] = useState(false);
   const [manageWorkspacesOpen, setManageWorkspacesOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showNewWorkspaceDialog, setShowNewWorkspaceDialog] = useState(false);
+  const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
+  const [workspaceFormError, setWorkspaceFormError] = useState<string | null>(null);
+  const [workspaceCreatePhase, setWorkspaceCreatePhase] = useState<
+    "form" | "loading" | "success" | "error"
+  >("form");
+  const [workspaceCreateMessage, setWorkspaceCreateMessage] =
+    useState<string | null>(null);
+  const [workspaceCreateLogs, setWorkspaceCreateLogs] = useState<string[]>([]);
+  const [workspaceForm, setWorkspaceForm] = useState({
+    name: "",
+    logoSrc: "",
+    enableJira: true,
+    baseUrl: "",
+    projectKey: "",
+    email: "",
+    apiToken: "",
+  });
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const createAbortControllerRef = useRef<AbortController | null>(null);
+
+  const appendWorkspaceLog = (line: string) => {
+    setWorkspaceCreateLogs((prev) => [...prev, line]);
+  };
+
+  const formatErrorForDialog = (error: unknown): string => {
+    if (error instanceof Error) {
+      const stack =
+        typeof error.stack === "string"
+          ? error.stack.split("\n").slice(0, 3).join("\n")
+          : "";
+      return stack ? `${error.name}: ${error.message}\n${stack}` : `${error.name}: ${error.message}`;
+    }
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return String(error);
+    }
+  };
 
   const storySearchMatches = useMemo(() => {
     const q = searchQuery.trim();
@@ -304,6 +353,112 @@ export function Topbar() {
       return <AlertTriangle className="w-3.5 h-3.5 text-[#f59e0b]" />;
     if (type === "error") return <X className="w-3.5 h-3.5 text-[#ef4444]" />;
     return <Info className="w-3.5 h-3.5 text-[#4f46e5]" />;
+  };
+
+  const resetWorkspaceForm = () => {
+    setWorkspaceForm({
+      name: "",
+      logoSrc: "",
+      enableJira: true,
+      baseUrl: "",
+      projectKey: "",
+      email: "",
+      apiToken: "",
+    });
+    setWorkspaceFormError(null);
+    setWorkspaceCreatePhase("form");
+    setWorkspaceCreateMessage(null);
+    setWorkspaceCreateLogs([]);
+  };
+
+  const onLogoPicked = async (file: File | null) => {
+    if (!file) return;
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(new Error("Logo konnte nicht geladen werden."));
+      reader.readAsDataURL(file);
+    });
+    setWorkspaceForm((prev) => ({ ...prev, logoSrc: dataUrl }));
+  };
+
+  const submitNewWorkspace = async () => {
+    const name = workspaceForm.name.trim();
+    if (!name) {
+      setWorkspaceFormError("Bitte einen Workspace-Namen eingeben.");
+      return;
+    }
+
+    if (workspaceForm.enableJira) {
+      const missing = [
+        workspaceForm.baseUrl.trim(),
+        workspaceForm.projectKey.trim(),
+        workspaceForm.email.trim(),
+        workspaceForm.apiToken.trim(),
+      ].some((v) => !v);
+      if (missing) {
+        setWorkspaceFormError(
+          "Für die Jira-Verbindung bitte Base URL, Projekt-Key, E-Mail und API-Key ausfüllen.",
+        );
+        return;
+      }
+    }
+
+    setWorkspaceFormError(null);
+    setWorkspaceCreateMessage(null);
+    setWorkspaceCreateLogs([]);
+    setWorkspaceCreatePhase("loading");
+    setIsCreatingWorkspace(true);
+    const controller = new AbortController();
+    createAbortControllerRef.current = controller;
+    appendWorkspaceLog("Workspace-Erstellung gestartet");
+    appendWorkspaceLog("Initialer Jira-Import wird vorbereitet");
+    try {
+      const created = await createWorkspace({
+        name,
+        logoSrc: workspaceForm.logoSrc || undefined,
+        jiraConnection: workspaceForm.enableJira
+          ? {
+              baseUrl: workspaceForm.baseUrl,
+              projectKey: workspaceForm.projectKey,
+              email: workspaceForm.email,
+              apiToken: workspaceForm.apiToken,
+            }
+          : undefined,
+      }, {
+        signal: controller.signal,
+        onJiraProgress: (message) => {
+          appendWorkspaceLog(message);
+        },
+      });
+      appendWorkspaceLog(`Workspace erstellt: ${created.id}`);
+      setWorkspaceCreatePhase("success");
+      setWorkspaceCreateMessage(
+        `Workspace "${created.name}" wurde erfolgreich erstellt und importiert.`,
+      );
+      setWorkspaceForm((prev) => ({ ...prev, apiToken: "" }));
+    } catch (error) {
+      const msg = formatErrorForDialog(error);
+      appendWorkspaceLog(`ERROR: ${msg}`);
+      setWorkspaceFormError(msg);
+      setWorkspaceCreatePhase("error");
+      setWorkspaceCreateMessage(msg);
+    } finally {
+      createAbortControllerRef.current = null;
+      setIsCreatingWorkspace(false);
+    }
+  };
+
+  const renderConsoleLog = () => (
+    <div className="rounded-md border border-border bg-[#0b1021] text-[#dbeafe] px-3 py-2 text-[11px] max-h-[220px] overflow-auto whitespace-pre-wrap break-all font-mono">
+      {workspaceCreateLogs.length === 0
+        ? "Noch keine Log-Ausgaben."
+        : workspaceCreateLogs.join("\n")}
+    </div>
+  );
+
+  const cancelWorkspaceCreation = () => {
+    createAbortControllerRef.current?.abort();
   };
 
   const headerActions = (
@@ -674,26 +829,41 @@ export function Topbar() {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-[260px]">
-            {workspaces.map((ws) => (
+            {workspaces.map((ws) => {
+              const sync = workspaceSyncStateById[ws.id];
+              return (
+                <DropdownMenuItem
+                  key={ws.id}
+                  onClick={() => setSelectedWorkspaceId(ws.id)}
+                  className={ws.id === selectedWorkspaceId ? "bg-[#f1f0ff]" : ""}
+                >
+                  <WorkspaceGlyph workspace={ws} sizeClass="w-6 h-6 mr-2" />
+                  <span className="flex-1 truncate">{ws.name}</span>
+                  {sync?.isSyncing ? (
+                    <Loader2 className="w-3.5 h-3.5 text-[#4f46e5] animate-spin" />
+                  ) : sync?.lastError ? (
+                    <AlertTriangle className="w-3.5 h-3.5 text-[#ef4444]" />
+                  ) : ws.jira?.lastSyncStatus === "success" ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#10b981]" />
+                  ) : null}
+                </DropdownMenuItem>
+              );
+            })}
+            {selectedWorkspace.jira?.enabled ? (
               <DropdownMenuItem
-                key={ws.id}
-                onClick={() => setSelectedWorkspaceId(ws.id)}
-                className={ws.id === selectedWorkspaceId ? "bg-[#f1f0ff]" : ""}
+                onClick={() => {
+                  void syncWorkspaceFromJira(selectedWorkspace.id);
+                }}
               >
-                <WorkspaceGlyph workspace={ws} sizeClass="w-6 h-6 mr-2 shrink-0" />
-                <div className="flex flex-col min-w-0 gap-0.5">
-                  <span className="truncate">{ws.name}</span>
-                  <span className="text-[10px] text-muted-foreground truncate">
-                    {getTicketSystem(resolveWorkspaceTicketSystemId(ws)).name}
-                  </span>
-                </div>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Jira aktualisieren
               </DropdownMenuItem>
-            ))}
+            ) : null}
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onSelect={(e) => {
-                e.preventDefault();
-                setNewWorkspaceOpen(true);
+              onClick={() => {
+                setShowNewWorkspaceDialog(true);
+                setWorkspaceFormError(null);
               }}
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -734,6 +904,239 @@ export function Topbar() {
       searchQuery={searchQuery}
       onClose={() => setSearchQuery("")}
     />
+
+    <Dialog
+      open={showNewWorkspaceDialog}
+      onOpenChange={(open) => {
+        if (!open && isCreatingWorkspace) {
+          return;
+        }
+        setShowNewWorkspaceDialog(open);
+        if (!open) resetWorkspaceForm();
+      }}
+    >
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Neuen Workspace anlegen</DialogTitle>
+          <DialogDescription>
+            Name, optionales Logo und Jira-Verbindung hinterlegen. Beim Speichern wird
+            der initiale Jira-Import gestartet.
+          </DialogDescription>
+        </DialogHeader>
+        {workspaceCreatePhase === "loading" ? (
+          <div className="py-8 flex flex-col items-center text-center gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-[#4f46e5]" />
+            <div className="space-y-1">
+              <p className="text-[14px] text-[#1e1e2e]" style={{ fontWeight: 600 }}>
+                Jira-Import läuft
+              </p>
+              <p className="text-[12px] text-muted-foreground max-w-[360px]">
+                Tickets werden aus Jira geladen und in den Workspace übernommen.
+                Der Workspace wird erst nach erfolgreichem Import erstellt.
+              </p>
+            </div>
+            <Button variant="outline" onClick={cancelWorkspaceCreation}>
+              Abbrechen
+            </Button>
+            <div className="w-full max-w-[520px] text-left">
+              {renderConsoleLog()}
+            </div>
+          </div>
+        ) : workspaceCreatePhase === "success" ? (
+          <div className="py-8 flex flex-col items-center text-center gap-4">
+            <CheckCircle2 className="w-8 h-8 text-[#10b981]" />
+            <div className="space-y-1">
+              <p className="text-[14px] text-[#1e1e2e]" style={{ fontWeight: 600 }}>
+                Import erfolgreich
+              </p>
+              <p className="text-[12px] text-muted-foreground max-w-[420px] whitespace-pre-wrap">
+                {workspaceCreateMessage}
+              </p>
+            </div>
+            <div className="w-full max-w-[520px] text-left">
+              {renderConsoleLog()}
+            </div>
+            <Button
+              onClick={() => {
+                setShowNewWorkspaceDialog(false);
+                resetWorkspaceForm();
+              }}
+            >
+              Schließen
+            </Button>
+          </div>
+        ) : workspaceCreatePhase === "error" ? (
+          <div className="py-6 flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-[#ef4444]" />
+              <p className="text-[14px] text-[#1e1e2e]" style={{ fontWeight: 600 }}>
+                Import fehlgeschlagen
+              </p>
+            </div>
+            <div className="text-[12px] text-[#7f1d1d] bg-[#fef2f2] border border-[#fecaca] rounded-md px-3 py-2 whitespace-pre-wrap break-all">
+              {workspaceCreateMessage || "Unbekannter Fehler"}
+            </div>
+            {renderConsoleLog()}
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setWorkspaceCreatePhase("form");
+                }}
+              >
+                Zurück
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowNewWorkspaceDialog(false);
+                  resetWorkspaceForm();
+                }}
+              >
+                Schließen
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-4 py-2">
+              <div>
+                <label className="text-[12px] text-muted-foreground block mb-1.5">
+                  Workspace-Name
+                </label>
+                <input
+                  value={workspaceForm.name}
+                  onChange={(e) =>
+                    setWorkspaceForm((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  placeholder="z. B. Jira Beispielprojekt"
+                  className="w-full px-3 py-2 rounded-md border border-border text-[13px] outline-none focus:ring-2 focus:ring-[#4f46e5]/20"
+                />
+              </div>
+
+              <div>
+                <label className="text-[12px] text-muted-foreground block mb-1.5">
+                  Logo (optional)
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] ?? null;
+                      void onLogoPicked(f);
+                    }}
+                    className="text-[12px]"
+                  />
+                  {workspaceForm.logoSrc ? (
+                    <span className="w-8 h-8 rounded border border-border bg-white overflow-hidden inline-flex items-center justify-center">
+                      <img src={workspaceForm.logoSrc} alt="" className="max-w-[85%] max-h-[85%]" />
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={workspaceForm.enableJira}
+                  onChange={(e) =>
+                    setWorkspaceForm((prev) => ({ ...prev, enableJira: e.target.checked }))
+                  }
+                />
+                Jira-Verbindung einrichten
+              </label>
+
+              {workspaceForm.enableJira ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="text-[12px] text-muted-foreground block mb-1.5">
+                      Jira Base URL
+                    </label>
+                    <input
+                      value={workspaceForm.baseUrl}
+                      onChange={(e) =>
+                        setWorkspaceForm((prev) => ({ ...prev, baseUrl: e.target.value }))
+                      }
+                      placeholder="https://deinprojekt.atlassian.net"
+                      className="w-full px-3 py-2 rounded-md border border-border text-[13px] outline-none focus:ring-2 focus:ring-[#4f46e5]/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[12px] text-muted-foreground block mb-1.5">
+                      Projekt-Key oder Name
+                    </label>
+                    <input
+                      value={workspaceForm.projectKey}
+                      onChange={(e) =>
+                        setWorkspaceForm((prev) => ({ ...prev, projectKey: e.target.value }))
+                      }
+                      placeholder="z. B. SCRUM oder Beispielprojekt"
+                      className="w-full px-3 py-2 rounded-md border border-border text-[13px] outline-none focus:ring-2 focus:ring-[#4f46e5]/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[12px] text-muted-foreground block mb-1.5">
+                      E-Mail
+                    </label>
+                    <input
+                      value={workspaceForm.email}
+                      onChange={(e) =>
+                        setWorkspaceForm((prev) => ({ ...prev, email: e.target.value }))
+                      }
+                      placeholder="name@firma.de"
+                      className="w-full px-3 py-2 rounded-md border border-border text-[13px] outline-none focus:ring-2 focus:ring-[#4f46e5]/20"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="text-[12px] text-muted-foreground block mb-1.5">
+                      API-Key
+                    </label>
+                    <input
+                      type="password"
+                      value={workspaceForm.apiToken}
+                      onChange={(e) =>
+                        setWorkspaceForm((prev) => ({ ...prev, apiToken: e.target.value }))
+                      }
+                      placeholder="Atlassian API Token"
+                      className="w-full px-3 py-2 rounded-md border border-border text-[13px] outline-none focus:ring-2 focus:ring-[#4f46e5]/20"
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              {workspaceFormError ? (
+                <div className="text-[12px] text-[#ef4444] bg-[#fef2f2] border border-[#fecaca] rounded-md px-3 py-2">
+                  {workspaceFormError}
+                </div>
+              ) : null}
+              {workspaceCreateLogs.length > 0 ? renderConsoleLog() : null}
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowNewWorkspaceDialog(false);
+                  resetWorkspaceForm();
+                }}
+                disabled={isCreatingWorkspace}
+              >
+                Abbrechen
+              </Button>
+              <Button
+                onClick={() => {
+                  void submitNewWorkspace();
+                }}
+                disabled={isCreatingWorkspace}
+                className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2"
+              >
+                Workspace erstellen
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
     </>
   );
 }
