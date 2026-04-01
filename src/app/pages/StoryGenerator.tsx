@@ -40,7 +40,6 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { listProjectsForSearchInWorkspace } from "../data/workspaces";
 import { StoryLink } from "../components/StoryLink";
 import { GermanUserStoryFormulaLine } from "../components/UserStoryFormulaText";
 import { Badge } from "../components/ui/badge";
@@ -68,6 +67,7 @@ import { useOnboardingReset } from "../onboarding/OnboardingResetContext";
 import { getOnboardingKey } from "../onboarding/routeKeys";
 import { isRouteTourDone } from "../onboarding/onboardingStorage";
 import { StoryGeneratorJoyride } from "../onboarding/StoryGeneratorJoyride";
+import { type Story as PersistedStory } from "../data/stories";
 
 // --- Types ---
 type Phase =
@@ -527,16 +527,9 @@ export function StoryGenerator() {
     setExportScope,
     ticketSystem,
     selectedWorkspaceId,
+    workspaceProjects,
+    addStories,
   } = useAppContext();
-
-  const projectsInWorkspace = useMemo(
-    () =>
-      listProjectsForSearchInWorkspace(selectedWorkspaceId).map(
-        ({ id, name }) => ({ id, name }),
-      ),
-    [selectedWorkspaceId],
-  );
-
   const workflowSteps = useMemo(
     () => [
       { label: "Hochladen", shortLabel: "Hochladen" },
@@ -562,13 +555,14 @@ export function StoryGenerator() {
     new Set(),
   );
   const [docFixDialog, setDocFixDialog] = useState<DocIssue | null>(null);
+  const availableProjects = workspaceProjects;
   const [selectedProject, setSelectedProject] = useState<string>("");
   useEffect(() => {
     if (!selectedProject) return;
-    if (!projectsInWorkspace.some((p) => p.id === selectedProject)) {
+    if (!availableProjects.some((p) => p.id === selectedProject)) {
       setSelectedProject("");
     }
-  }, [projectsInWorkspace, selectedProject]);
+  }, [availableProjects, selectedProject]);
   const [searchQuery, setSearchQuery] = useState("");
   const [jiraMatches, setJiraMatches] =
     useState<JiraMatch[]>(initialJiraMatches);
@@ -776,6 +770,35 @@ export function StoryGenerator() {
 
   const handleSaveAll = () => {
     if (!selectedProject) return;
+    const selectedProjectMeta = availableProjects.find(
+      (p) => p.id === selectedProject,
+    );
+    if (!selectedProjectMeta) return;
+
+    const storiesToPersist = stories.filter(
+      (s) => storyActions[s.id] !== "rejected",
+    );
+    const saveBatchId = Date.now().toString(36).toUpperCase();
+    const mappedStories: PersistedStory[] = storiesToPersist.map(
+      (story, index) => ({
+        id: `SG-${saveBatchId}-${String(index + 1).padStart(2, "0")}`,
+        title: story.title,
+        description: `Als ${story.role} möchte ich ${story.goal}, damit ${story.benefit}.`,
+        type: "Story",
+        status: "Draft",
+        priority: story.priority,
+        effort: story.effort,
+        project: selectedProjectMeta.name,
+        workspaceId: selectedWorkspaceId,
+        tags: [],
+        source: "ai-generated",
+        role: story.role,
+        goal: story.goal,
+        benefit: story.benefit,
+        acceptance: story.acceptance,
+      }),
+    );
+    addStories(mappedStories);
     setSaveSuccess(true);
     setTimeout(() => {
       navigate("/");
@@ -783,14 +806,14 @@ export function StoryGenerator() {
   };
 
   const tourCompleteSaveDemo = useCallback(() => {
-    const id = selectedProject || projectsInWorkspace[0]?.id;
+    const id = selectedProject || availableProjects[0]?.id;
     if (!id) return;
     if (!selectedProject) setSelectedProject(id);
     setSaveSuccess(true);
     setTimeout(() => {
       navigate("/");
     }, 2000);
-  }, [selectedProject, projectsInWorkspace, navigate]);
+  }, [selectedProject, availableProjects, navigate]);
 
   const tourHandlers = useMemo(
     () => ({
@@ -2105,7 +2128,7 @@ export function StoryGenerator() {
   // ==============================
   if (phase === "save") {
     const projectName =
-      projectsInWorkspace.find((p) => p.id === selectedProject)?.name || "";
+      availableProjects.find((p) => p.id === selectedProject)?.name || "";
     const storiesToSave = stories.filter(
       (s) => storyActions[s.id] !== "rejected",
     );
@@ -2178,7 +2201,7 @@ export function StoryGenerator() {
                   className="w-full px-4 py-3 rounded-lg border border-border bg-white text-[14px] outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10 transition-all"
                 >
                   <option value="">Projekt wählen...</option>
-                  {projectsInWorkspace.map((p) => (
+                  {availableProjects.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>

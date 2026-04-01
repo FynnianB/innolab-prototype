@@ -2,7 +2,8 @@ import type { TicketRelation, Story } from "../../data/stories";
 
 export interface JiraConnectionInput {
   baseUrl: string;
-  projectKey: string;
+  projectKeys: string[];
+  importScope?: "selected" | "all";
   email: string;
   apiToken: string;
 }
@@ -221,20 +222,41 @@ function toJqlDateTime(value: string): string | undefined {
   return `${yyyy}-${mm}-${dd} ${hh}:${min}`;
 }
 
-function buildJql(projectKey: string, updatedSince?: string): { jql: string; isIncremental: boolean } {
-  const escapedProject = escapeJqlString(projectKey.trim());
-  const base = `project = "${escapedProject}"`;
+function buildProjectClause(projectKeys: string[], importScope: "selected" | "all"): string {
+  if (importScope === "all") return "";
+  const cleaned = projectKeys
+    .map((k) => k.trim())
+    .filter(Boolean)
+    .map((k) => `"${escapeJqlString(k)}"`);
+  if (cleaned.length === 0) return "";
+  if (cleaned.length === 1) return `project = ${cleaned[0]}`;
+  return `project in (${cleaned.join(", ")})`;
+}
+
+function buildJql(
+  projectKeys: string[],
+  importScope: "selected" | "all",
+  updatedSince?: string,
+): { jql: string; isIncremental: boolean } {
+  const projectClause = buildProjectClause(projectKeys, importScope);
   const since = updatedSince ? toJqlDateTime(updatedSince) : undefined;
+  const clauses = [projectClause];
+  if (since) clauses.push(`updated >= "${since}"`);
+  const where = clauses.filter(Boolean).join(" AND ");
+  const order = since ? "updated ASC" : "created DESC";
+  const jql = where
+    ? `${where} ORDER BY ${order}`
+    : `created is not EMPTY ORDER BY ${order}`;
 
   if (since) {
     return {
-      jql: `${base} AND updated >= "${since}" ORDER BY updated ASC`,
+      jql,
       isIncremental: true,
     };
   }
 
   return {
-    jql: `${base} ORDER BY created DESC`,
+    jql,
     isIncremental: false,
   };
 }
@@ -311,7 +333,7 @@ function mapIssuesToRelations(
 function mapIssuesToStories(
   issues: JiraIssue[],
   workspaceId: string,
-  projectKey: string,
+  projectLabelFallback: string,
 ): Story[] {
   const stories: Story[] = [];
 
@@ -336,7 +358,7 @@ function mapIssuesToStories(
       project:
         fields?.project?.name?.trim() ||
         fields?.project?.key?.trim() ||
-        projectKey,
+        projectLabelFallback,
       workspaceId,
       tags,
       source: "jira-import",
@@ -358,8 +380,11 @@ async function fetchProjectIssues(
   const baseUrl = normalizeBaseUrl(config.baseUrl);
   const email = config.email.trim();
   const apiToken = config.apiToken.trim();
-  const projectKey = config.projectKey.trim();
-  const jql = buildJql(projectKey, options.updatedSince);
+  const projectKeys = config.projectKeys
+    .map((k) => k.trim())
+    .filter(Boolean);
+  const importScope = config.importScope ?? "selected";
+  const jql = buildJql(projectKeys, importScope, options.updatedSince);
 
   const fields = [
     "summary",
@@ -438,7 +463,11 @@ export async function importJiraProjectData(
 ): Promise<JiraImportResult> {
   const { issues, isIncremental } = await fetchProjectIssues(config, options);
   const knownIssueIds = new Set(options.knownIssueIds ?? []);
-  const stories = mapIssuesToStories(issues, workspaceId, config.projectKey);
+  const fallbackProjectName =
+    config.importScope === "all"
+      ? "Jira"
+      : config.projectKeys.join(", ") || "Jira";
+  const stories = mapIssuesToStories(issues, workspaceId, fallbackProjectName);
   const relations = mapIssuesToRelations(issues, workspaceId, knownIssueIds);
 
   return {

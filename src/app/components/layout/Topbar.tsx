@@ -18,7 +18,6 @@ import { useNavigate } from "react-router";
 import { useAppContext } from "../../context/AppContext";
 import { useMobileNav } from "../../context/MobileNavContext";
 import {
-  listProjectsForSearchInWorkspace,
   PROJECT_LOGO_BY_ID,
   PROTOTYPE_USER_DISPLAY_NAME,
   PROTOTYPE_USER_INITIALS,
@@ -79,6 +78,14 @@ function normalizeProjectIdCandidates(raw: string): string[] {
   return [...out];
 }
 
+function parseProjectKeys(raw: string): string[] {
+  return raw
+    .split(/[,\n;]/g)
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .filter((x, i, all) => all.indexOf(x) === i);
+}
+
 function WorkspaceGlyph({
   workspace,
   sizeClass = "w-6 h-6",
@@ -125,6 +132,7 @@ export function Topbar() {
     selectedWorkspaceId,
     setSelectedWorkspaceId,
     storiesInWorkspace,
+    workspaceProjects,
     notificationsInWorkspace,
     markNotificationRead,
     unreadCount,
@@ -153,7 +161,8 @@ export function Topbar() {
     logoSrc: "",
     enableJira: true,
     baseUrl: "",
-    projectKey: "",
+    projectKeys: "",
+    importAllProjects: false,
     email: "",
     apiToken: "",
   });
@@ -211,16 +220,15 @@ export function Topbar() {
     if (q.length < 1) return [];
     const ql = q.toLowerCase();
     const pc = normalizeProjectIdCandidates(q).map((c) => c.toUpperCase());
-    const projects = listProjectsForSearchInWorkspace(selectedWorkspaceId);
     const out: { id: string; name: string }[] = [];
-    for (const p of projects) {
+    for (const p of workspaceProjects) {
       const idl = p.id.toLowerCase();
       const idHit =
         idl.includes(ql) ||
         pc.some(
           (c) =>
-            p.id.toUpperCase() === c ||
-            p.id.toUpperCase().replace(/-/g, "") === c.replace(/-/g, ""),
+          p.id.toUpperCase() === c ||
+          p.id.toUpperCase().replace(/-/g, "") === c.replace(/-/g, ""),
         );
       const textHit =
         p.name.toLowerCase().includes(ql) ||
@@ -232,7 +240,7 @@ export function Topbar() {
     return out.sort((a, b) =>
       a.id.localeCompare(b.id, undefined, { numeric: true }),
     );
-  }, [selectedWorkspaceId, searchQuery]);
+  }, [searchQuery, workspaceProjects]);
 
   const flatSearchItems = useMemo(() => {
     const items: { kind: "story" | "project"; id: string }[] = [];
@@ -304,9 +312,6 @@ export function Topbar() {
       return;
     }
     const projCand = normalizeProjectIdCandidates(q);
-    const workspaceProjects = listProjectsForSearchInWorkspace(
-      selectedWorkspaceId,
-    );
     const byExactProj = workspaceProjects.find((p) =>
       projCand.some((c) => p.id.toUpperCase() === c.toUpperCase()),
     );
@@ -361,7 +366,8 @@ export function Topbar() {
       logoSrc: "",
       enableJira: true,
       baseUrl: "",
-      projectKey: "",
+      projectKeys: "",
+      importAllProjects: false,
       email: "",
       apiToken: "",
     });
@@ -390,15 +396,15 @@ export function Topbar() {
     }
 
     if (workspaceForm.enableJira) {
+      const parsedProjectKeys = parseProjectKeys(workspaceForm.projectKeys);
       const missing = [
         workspaceForm.baseUrl.trim(),
-        workspaceForm.projectKey.trim(),
         workspaceForm.email.trim(),
         workspaceForm.apiToken.trim(),
-      ].some((v) => !v);
+      ].some((v) => !v) || (!workspaceForm.importAllProjects && parsedProjectKeys.length === 0);
       if (missing) {
         setWorkspaceFormError(
-          "Für die Jira-Verbindung bitte Base URL, Projekt-Key, E-Mail und API-Key ausfüllen.",
+          "Für die Jira-Verbindung bitte Base URL, E-Mail und API-Key ausfüllen. Bei deaktivierter Option \"Alle Projekte\" zusätzlich mindestens einen Projekt-Key angeben.",
         );
         return;
       }
@@ -420,7 +426,8 @@ export function Topbar() {
         jiraConnection: workspaceForm.enableJira
           ? {
               baseUrl: workspaceForm.baseUrl,
-              projectKey: workspaceForm.projectKey,
+              projectKeys: parseProjectKeys(workspaceForm.projectKeys),
+              importScope: workspaceForm.importAllProjects ? "all" : "selected",
               email: workspaceForm.email,
               apiToken: workspaceForm.apiToken,
             }
@@ -920,7 +927,8 @@ export function Topbar() {
           <DialogTitle>Neuen Workspace anlegen</DialogTitle>
           <DialogDescription>
             Name, optionales Logo und Jira-Verbindung hinterlegen. Beim Speichern wird
-            der initiale Jira-Import gestartet.
+            der initiale Jira-Import gestartet. Sie können mehrere Projekt-Keys
+            angeben oder alle Projekte importieren.
           </DialogDescription>
         </DialogHeader>
         {workspaceCreatePhase === "loading" ? (
@@ -1063,15 +1071,16 @@ export function Topbar() {
                   </div>
                   <div>
                     <label className="text-[12px] text-muted-foreground block mb-1.5">
-                      Projekt-Key oder Name
+                      Projekt-Keys
                     </label>
                     <input
-                      value={workspaceForm.projectKey}
+                      value={workspaceForm.projectKeys}
                       onChange={(e) =>
-                        setWorkspaceForm((prev) => ({ ...prev, projectKey: e.target.value }))
+                        setWorkspaceForm((prev) => ({ ...prev, projectKeys: e.target.value }))
                       }
-                      placeholder="z. B. SCRUM oder Beispielprojekt"
+                      placeholder="z. B. SCRUM, ABC (kommagetrennt)"
                       className="w-full px-3 py-2 rounded-md border border-border text-[13px] outline-none focus:ring-2 focus:ring-[#4f46e5]/20"
+                      disabled={workspaceForm.importAllProjects}
                     />
                   </div>
                   <div>
@@ -1086,6 +1095,21 @@ export function Topbar() {
                       placeholder="name@firma.de"
                       className="w-full px-3 py-2 rounded-md border border-border text-[13px] outline-none focus:ring-2 focus:ring-[#4f46e5]/20"
                     />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="flex items-center gap-2 text-[12px] text-muted-foreground mb-2">
+                      <input
+                        type="checkbox"
+                        checked={workspaceForm.importAllProjects}
+                        onChange={(e) =>
+                          setWorkspaceForm((prev) => ({
+                            ...prev,
+                            importAllProjects: e.target.checked,
+                          }))
+                        }
+                      />
+                      Alle Jira-Projekte importieren (statt ausgewählter Keys)
+                    </label>
                   </div>
                   <div className="sm:col-span-2">
                     <label className="text-[12px] text-muted-foreground block mb-1.5">

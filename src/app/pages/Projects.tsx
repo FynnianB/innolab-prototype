@@ -422,6 +422,8 @@ export function Projects() {
   const {
     selectedWorkspaceId,
     selectedWorkspace,
+    workspaceProjects,
+    storiesInWorkspace,
     getEffectiveProjectTeam,
     isPrototypeUserOnProjectTeam,
     addMemberToProjectTeam,
@@ -433,14 +435,70 @@ export function Projects() {
     "overview" | "history" | "team"
   >("overview");
 
+  const isCustomWorkspace = Boolean(selectedWorkspace.isCustom);
+
+  const dynamicProjects = useMemo<Project[]>(() => {
+    return workspaceProjects.map((p) => {
+      const projectStories = storiesInWorkspace.filter((s) => s.project === p.name);
+      const done = projectStories.filter(
+        (s) => s.status === "Done" || s.status === "Approved",
+      ).length;
+      const guidelinesQuoteRaw =
+        projectStories
+          .map((s) => s.guidelinesScore)
+          .filter((x): x is number => typeof x === "number")
+          .reduce((a, b) => a + b, 0) / Math.max(projectStories.length, 1);
+      const guidelinesQuote = Number.isFinite(guidelinesQuoteRaw)
+        ? Math.round(guidelinesQuoteRaw)
+        : 82;
+
+      return {
+        id: p.id,
+        workspaceId: selectedWorkspaceId,
+        name: p.name,
+        description: p.description,
+        status:
+          done === projectStories.length && projectStories.length > 0
+            ? "Review"
+            : "Aktiv",
+        statusColor: "#4f46e5",
+        stories: p.storyCount,
+        guidelinesQuote,
+        issues: Math.max(projectStories.length - done, 0),
+        team: [PROTOTYPE_USER_INITIALS],
+        versions: 1,
+        lastUpdated: "gerade eben",
+        starred: false,
+        savedStories: [],
+        versionHistory: [],
+      };
+    });
+  }, [selectedWorkspaceId, storiesInWorkspace, workspaceProjects]);
+
+  const workspaceScopedProjects = useMemo(
+    () =>
+      isCustomWorkspace
+        ? dynamicProjects
+        : projects.filter((p) => p.workspaceId === selectedWorkspaceId),
+    [dynamicProjects, isCustomWorkspace, selectedWorkspaceId],
+  );
+
   const selectedProject = projectId
-    ? (projects.find((p) => p.id === projectId) || null)
+    ? (workspaceScopedProjects.find((p) => p.id === projectId) || null)
     : null;
 
   const detailEffectiveTeam = useMemo(() => {
     if (!selectedProject) return [];
+    if (isCustomWorkspace) {
+      const assignees = storiesInWorkspace
+        .filter((s) => s.project === selectedProject.name)
+        .map((s) => s.assignee)
+        .filter((x): x is string => Boolean(x && x.trim()))
+        .map((x) => x.trim());
+      return Array.from(new Set(assignees)).slice(0, 8);
+    }
     return getEffectiveProjectTeam(selectedProject.id);
-  }, [selectedProject, getEffectiveProjectTeam]);
+  }, [getEffectiveProjectTeam, isCustomWorkspace, selectedProject, storiesInWorkspace]);
 
   const rosterAvailableToAdd = useMemo(
     () =>
@@ -453,6 +511,12 @@ export function Projects() {
   }, [projectId]);
 
   useEffect(() => {
+    if (isCustomWorkspace && activeTab === "team") {
+      setActiveTab("overview");
+    }
+  }, [activeTab, isCustomWorkspace]);
+
+  useEffect(() => {
     if (
       selectedProject &&
       selectedProject.workspaceId !== selectedWorkspaceId
@@ -463,8 +527,7 @@ export function Projects() {
 
   const filteredProjects = useMemo(
     () =>
-      projects
-        .filter((p) => p.workspaceId === selectedWorkspaceId)
+      workspaceScopedProjects
         .filter((p) => {
           if (isSearchEasterEggQuery(searchQuery)) return true;
           const q = searchQuery.toLowerCase();
@@ -473,7 +536,7 @@ export function Projects() {
             p.description.toLowerCase().includes(q)
           );
         }),
-    [selectedWorkspaceId, searchQuery],
+    [workspaceScopedProjects, searchQuery],
   );
 
   const sortedProjects = useMemo(
@@ -634,10 +697,14 @@ export function Projects() {
             {[
               { key: "overview" as const, label: "Übersicht" },
               { key: "history" as const, label: "Versionshistorie" },
-              {
-                key: "team" as const,
-                label: `Team (${detailEffectiveTeam.length})`,
-              },
+              ...(!isCustomWorkspace
+                ? [
+                    {
+                      key: "team" as const,
+                      label: `Team (${detailEffectiveTeam.length})`,
+                    },
+                  ]
+                : []),
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -675,28 +742,32 @@ export function Projects() {
                     <span className="text-muted-foreground shrink-0">Team</span>
                     <div className="flex items-center gap-2 min-w-0 justify-end">
                       <div className="flex items-center -space-x-2">
-                        {getEffectiveProjectTeam(selectedProject.id).map((m, i) => (
+                        {detailEffectiveTeam.map((m, i) => (
                           <div
                             key={`${m}-${i}`}
                             className={`w-6 h-6 rounded-full flex items-center justify-center border-2 border-white ${
-                              m === PROTOTYPE_USER_INITIALS
+                              !isCustomWorkspace && m === PROTOTYPE_USER_INITIALS
                                 ? "bg-[#059669]"
                                 : "bg-[#4f46e5]"
                             }`}
                           >
-                            <span className="text-[9px] text-white" style={{ fontWeight: 600 }}>{m}</span>
+                            <span className="text-[9px] text-white" style={{ fontWeight: 600 }}>
+                              {isCustomWorkspace ? m.slice(0, 2).toUpperCase() : m}
+                            </span>
                           </div>
                         ))}
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-[12px] h-8 px-2 text-[#4f46e5] shrink-0"
-                        onClick={() => setActiveTab("team")}
-                      >
-                        Verwalten
-                      </Button>
+                      {!isCustomWorkspace ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-[12px] h-8 px-2 text-[#4f46e5] shrink-0"
+                          onClick={() => setActiveTab("team")}
+                        >
+                          Verwalten
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
                   <div className="flex justify-between items-center text-[13px] gap-2">

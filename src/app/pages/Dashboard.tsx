@@ -109,25 +109,62 @@ export function Dashboard() {
     selectedWorkspaceId,
     selectedWorkspace,
     storiesInWorkspace,
+    workspaceProjects,
     myProjectIdsInWorkspace,
     isPrototypeUserOnProjectTeam,
   } = useAppContext();
 
+  const isCustomWorkspace = Boolean(selectedWorkspace.isCustom);
+
+  const dynamicRecentProjects = useMemo(() => {
+    return workspaceProjects.map((p) => {
+      const projectStories = storiesInWorkspace.filter((s) => s.project === p.name);
+      const done = projectStories.filter(
+        (s) => s.status === "Done" || s.status === "Approved",
+      ).length;
+      const guidelinesQuoteBase =
+        projectStories
+          .map((s) => s.guidelinesScore)
+          .filter((x): x is number => typeof x === "number")
+          .reduce((a, b) => a + b, 0) / Math.max(projectStories.length, 1);
+      const guidelinesQuote = Number.isFinite(guidelinesQuoteBase)
+        ? Math.round(guidelinesQuoteBase)
+        : 80;
+      const status =
+        done === projectStories.length && projectStories.length > 0
+          ? "Review"
+          : "Aktiv";
+      return {
+        id: p.id,
+        name: p.name,
+        status,
+        stories: p.storyCount,
+        guidelinesQuote,
+        updated: "gerade eben",
+        statusColor: "#4f46e5",
+      };
+    });
+  }, [storiesInWorkspace, workspaceProjects]);
+
   const dashboardRecentProjects = useMemo(
     () =>
-      recentProjects.filter(
-        (p) => PROJECT_WORKSPACE[p.id] === selectedWorkspaceId,
-      ),
-    [selectedWorkspaceId],
+      isCustomWorkspace
+        ? dynamicRecentProjects
+        : recentProjects.filter(
+            (p) => PROJECT_WORKSPACE[p.id] === selectedWorkspaceId,
+          ),
+    [dynamicRecentProjects, isCustomWorkspace, selectedWorkspaceId],
   );
 
   /** Projekte, in deren Team Ihre Kennung (PO / Sarah Müller) geführt wird. */
   const displayedRecentProjects = useMemo(
-    () =>
-      dashboardRecentProjects.filter((p) =>
+    () => {
+      if (isCustomWorkspace) return dashboardRecentProjects;
+      return dashboardRecentProjects.filter((p) =>
         isPrototypeUserOnProjectTeam(p.id),
-      ),
-    [dashboardRecentProjects, isPrototypeUserOnProjectTeam],
+      );
+    },
+    [dashboardRecentProjects, isCustomWorkspace, isPrototypeUserOnProjectTeam],
   );
 
   const dashboardActivity = useMemo(
@@ -147,7 +184,13 @@ export function Dashboard() {
     [selectedWorkspaceId],
   );
 
-  const myProjectCount = myProjectIdsInWorkspace.length;
+  const resolvedWorkspaceProjectCount = isCustomWorkspace
+    ? workspaceProjects.length
+    : workspaceProjectCount;
+
+  const myProjectCount = isCustomWorkspace
+    ? workspaceProjects.length
+    : myProjectIdsInWorkspace.length;
 
   const kpiCardsResolved = useMemo(() => {
     return kpiCards.map((kpi, i) =>
@@ -196,11 +239,11 @@ export function Dashboard() {
             <span>
               Übersicht für{" "}
               <span className="text-[#475569]" style={{ fontWeight: 500 }}>
-                {selectedWorkspace.name}
+              {selectedWorkspace.name}
               </span>
               {" · "}
               {myProjectCount} Ihr{myProjectCount === 1 ? " Projekt" : "e Projekte"} mit Team ·{" "}
-              {workspaceProjectCount} gesamt im Workspace
+              {resolvedWorkspaceProjectCount} gesamt im Workspace
             </span>
           </p>
         </div>
@@ -216,8 +259,14 @@ export function Dashboard() {
                     Ihre Projekte
                   </CardTitle>
                   <p className="text-[12px] text-muted-foreground font-normal mt-1 leading-snug">
-                    Nur Projekte, in deren Team Sie (PO) sind — alle Projekte unter{" "}
-                    <span className="text-[#475569]" style={{ fontWeight: 500 }}>Projekte</span>.
+                    {isCustomWorkspace
+                      ? "Alle aus Jira importierten Projekte dieses Workspaces."
+                      : (
+                          <>
+                            Nur Projekte, in deren Team Sie (SM) sind — alle Projekte unter{" "}
+                            <span className="text-[#475569]" style={{ fontWeight: 500 }}>Projekte</span>.
+                          </>
+                        )}
                   </p>
                 </div>
                 <Button
@@ -242,7 +291,7 @@ export function Dashboard() {
                   </div>
                   {displayedRecentProjects.length === 0 ? (
                     <div className="px-3 py-8 text-center space-y-3">
-                      {dashboardRecentProjects.length > 0 ? (
+                      {!isCustomWorkspace && dashboardRecentProjects.length > 0 ? (
                         <>
                           <p className="text-[13px] text-muted-foreground max-w-sm mx-auto leading-relaxed">
                             Sie sind in diesem Workspace keinem Projektteam zugewiesen.

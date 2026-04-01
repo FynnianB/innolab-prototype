@@ -51,10 +51,7 @@ import {
   type TicketRelation,
 } from "../data/stories";
 import {
-  getProjectIdsForWorkspace,
   PROJECT_LOGO_BY_ID,
-  PROJECT_SEARCH_META,
-  PROJECT_WORKSPACE,
 } from "../data/workspaces";
 
 /* ------------------------------------------------------------------ */
@@ -816,9 +813,9 @@ export function StoryAnalysis() {
     storiesInWorkspace: stories,
     stories: allStoriesForRelations,
     relations,
+    workspaceProjects,
     selectedWorkspace,
     selectedWorkspaceId,
-    myProjectIdsInWorkspace,
     ticketSystem,
   } = useAppContext();
   const ticketImportLabel = `${ticketSystem.name}-Import`;
@@ -853,64 +850,28 @@ export function StoryAnalysis() {
     setSearchQuery("");
   }, [selectedWorkspaceId]);
 
-  /** Verhindert, dass die URL bei jedem Render die Projekt-Mehrfachauswahl überschreibt. */
-  const lastSyncedProjectIdFromUrl = useRef<string | null>(null);
-  /** Default „Meine Projekte“ nur einmal pro Workspace (ohne projectId in der URL). */
-  const defaultsAppliedForWorkspace = useRef<string | null>(null);
-
   const projectIdFromUrl = searchParams.get("projectId");
 
   const projectOptions = useMemo(() => {
-    return getProjectIdsForWorkspace(selectedWorkspaceId)
-      .map((id) => {
-        const meta = PROJECT_SEARCH_META[id];
-        if (!meta) return null;
-        return { id, name: meta.name };
-      })
-      .filter(Boolean) as { id: string; name: string }[];
-  }, [selectedWorkspaceId]);
+    return workspaceProjects.map((p) => ({ id: p.id, name: p.name }));
+  }, [workspaceProjects]);
 
-  const prevWorkspaceIdRef = useRef(selectedWorkspaceId);
+  const projectOptionById = useMemo(
+    () => new Map(projectOptions.map((p) => [p.id, p])),
+    [projectOptions],
+  );
+  const projectIdSet = useMemo(
+    () => new Set(projectOptions.map((p) => p.id)),
+    [projectOptions],
+  );
 
-  useLayoutEffect(() => {
-    const pid = projectIdFromUrl;
-    const ws = selectedWorkspaceId;
-    const workspaceChanged = prevWorkspaceIdRef.current !== ws;
-    if (workspaceChanged) {
-      prevWorkspaceIdRef.current = ws;
-      if (pid && PROJECT_SEARCH_META[pid] && PROJECT_WORKSPACE[pid] === ws) {
-        lastSyncedProjectIdFromUrl.current = pid;
-        setSelectedProjectId(pid);
-      } else {
-        lastSyncedProjectIdFromUrl.current = null;
-        const first =
-          myProjectIdsInWorkspace.length > 0
-            ? myProjectIdsInWorkspace[0]
-            : null;
-        setSelectedProjectId(first);
-        if (pid) {
-          setSearchParams(
-            (prev) => {
-              const next = new URLSearchParams(prev);
-              next.delete("projectId");
-              return next;
-            },
-            { replace: true },
-          );
-        }
-      }
+  useEffect(() => {
+    if (projectIdFromUrl && projectIdSet.has(projectIdFromUrl)) {
+      setSelectedProjectId((prev) => (prev === projectIdFromUrl ? prev : projectIdFromUrl));
       return;
     }
 
-    if (pid && PROJECT_SEARCH_META[pid] && PROJECT_WORKSPACE[pid] === ws) {
-      if (lastSyncedProjectIdFromUrl.current !== pid) {
-        lastSyncedProjectIdFromUrl.current = pid;
-        setSelectedProjectId(pid);
-      }
-      return;
-    }
-    if (pid && PROJECT_SEARCH_META[pid] && PROJECT_WORKSPACE[pid] !== ws) {
-      lastSyncedProjectIdFromUrl.current = null;
+    if (projectIdFromUrl && !projectIdSet.has(projectIdFromUrl)) {
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);
@@ -921,37 +882,20 @@ export function StoryAnalysis() {
       );
       return;
     }
-    if (pid && !PROJECT_SEARCH_META[pid]) {
-      lastSyncedProjectIdFromUrl.current = null;
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev);
-          next.delete("projectId");
-          return next;
-        },
-        { replace: true },
-      );
+
+    if (selectedProjectId && !projectIdSet.has(selectedProjectId)) {
+      const fallback = projectOptions[0]?.id ?? null;
+      setSelectedProjectId(fallback);
+    } else if (!selectedProjectId && projectOptions.length > 0) {
+      setSelectedProjectId(projectOptions[0].id);
     }
   }, [
     projectIdFromUrl,
-    selectedWorkspaceId,
+    projectIdSet,
+    projectOptions,
+    selectedProjectId,
     setSearchParams,
-    myProjectIdsInWorkspace,
   ]);
-
-  useEffect(() => {
-    const ws = selectedWorkspaceId;
-    if (projectIdFromUrl) {
-      defaultsAppliedForWorkspace.current = ws;
-      return;
-    }
-    if (defaultsAppliedForWorkspace.current !== ws) {
-      defaultsAppliedForWorkspace.current = ws;
-      const first =
-        myProjectIdsInWorkspace.length > 0 ? myProjectIdsInWorkspace[0] : null;
-      setSelectedProjectId(first);
-    }
-  }, [selectedWorkspaceId, projectIdFromUrl, myProjectIdsInWorkspace]);
 
   /** State → URL (Deep Links / Teilen), ohne Schleife wenn bereits konsistent. */
   useEffect(() => {
@@ -973,7 +917,6 @@ export function StoryAnalysis() {
   }, [selectedProjectId, projectIdFromUrl, setSearchParams]);
 
   const clearProjectSelection = useCallback(() => {
-    lastSyncedProjectIdFromUrl.current = null;
     setSelectedProjectId(null);
     setSearchParams(
       (prev) => {
@@ -986,11 +929,13 @@ export function StoryAnalysis() {
     setProjectFilterOpen(false);
   }, [setSearchParams]);
 
-  const selectSingleProject = useCallback((id: string) => {
-    lastSyncedProjectIdFromUrl.current = id;
-    setSelectedProjectId(id);
-    setProjectFilterOpen(false);
-  }, []);
+  const selectSingleProject = useCallback(
+    (id: string) => {
+      setSelectedProjectId(id);
+      setProjectFilterOpen(false);
+    },
+    [],
+  );
 
   const onRelationTypeFilterClick = useCallback((type: RelationType) => {
     setRelationTypeFilter((prev) => (prev === type ? null : type));
@@ -1029,13 +974,13 @@ export function StoryAnalysis() {
 
   const activeProjectName = useMemo(() => {
     if (!selectedProjectId) return null;
-    return PROJECT_SEARCH_META[selectedProjectId]?.name ?? null;
-  }, [selectedProjectId]);
+    return projectOptionById.get(selectedProjectId)?.name ?? null;
+  }, [projectOptionById, selectedProjectId]);
 
   const projectTriggerLabel = useMemo(() => {
     if (!selectedProjectId) return "Alle Projekte";
-    return PROJECT_SEARCH_META[selectedProjectId]?.name ?? "Projekt wählen";
-  }, [selectedProjectId]);
+    return projectOptionById.get(selectedProjectId)?.name ?? "Projekt wählen";
+  }, [projectOptionById, selectedProjectId]);
 
   const filteredStories = useMemo(() => {
     let result = stories;

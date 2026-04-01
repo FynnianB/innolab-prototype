@@ -19,6 +19,7 @@ import {
   DEFAULT_WORKSPACE_ID,
   filterStoriesByWorkspace,
   getProjectIdsForWorkspace,
+  PROJECT_SEARCH_META,
   getWorkspaceById,
   isBuiltinWorkspaceId,
   isValidWorkspaceId,
@@ -95,6 +96,14 @@ export interface WorkspaceSyncState {
   lastImportedCount?: number;
 }
 
+export interface WorkspaceProject {
+  id: string;
+  name: string;
+  description: string;
+  storyCount: number;
+  workspaceId: string;
+}
+
 interface AppState {
   workspaces: Workspace[];
   selectedWorkspaceId: string;
@@ -115,8 +124,10 @@ interface AppState {
   stories: Story[];
   storiesInWorkspace: Story[];
   relations: TicketRelation[];
+  workspaceProjects: WorkspaceProject[];
 
   updateStories: (updates: StoryUpdate[]) => void;
+  addStories: (newStories: Story[]) => void;
 
   createWorkspace: (
     input: CreateWorkspaceInput,
@@ -240,13 +251,24 @@ function sanitizeWorkspaceIdPart(value: string): string {
   return value.replace(/[^A-Za-z0-9_-]/g, "_");
 }
 
+function normalizeProjectKeys(input: string[] | undefined): string[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .filter((x, i, all) => all.indexOf(x) === i);
+}
+
 function hasFilledJiraConnection(ws: Workspace | undefined): boolean {
   if (!ws?.jira?.enabled) return false;
+  const scope = ws.jira.importScope ?? "selected";
+  const projectKeys = normalizeProjectKeys(ws.jira.projectKeys);
+  const hasProjectSelection = scope === "all" || projectKeys.length > 0;
   return Boolean(
     ws.jira.baseUrl.trim() &&
-      ws.jira.projectKey.trim() &&
       ws.jira.email.trim() &&
-      ws.jira.apiToken.trim(),
+      ws.jira.apiToken.trim() &&
+      hasProjectSelection,
   );
 }
 
@@ -449,7 +471,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const result = await importJiraProjectData(
           {
             baseUrl: workspace.jira.baseUrl,
-            projectKey: workspace.jira.projectKey,
+            projectKeys: normalizeProjectKeys(workspace.jira.projectKeys),
+            importScope: workspace.jira.importScope ?? "selected",
             email: workspace.jira.email,
             apiToken: workspace.jira.apiToken,
           },
@@ -564,7 +587,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     selectedWorkspace.id,
     selectedWorkspace.jira?.enabled,
     selectedWorkspace.jira?.baseUrl,
-    selectedWorkspace.jira?.projectKey,
+    selectedWorkspace.jira?.importScope,
+    JSON.stringify(selectedWorkspace.jira?.projectKeys ?? []),
     selectedWorkspace.jira?.email,
     selectedWorkspace.jira?.apiToken,
     syncWorkspaceFromJira,
@@ -588,7 +612,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ? {
             enabled: true,
             baseUrl: input.jiraConnection.baseUrl.trim(),
-            projectKey: input.jiraConnection.projectKey.trim(),
+            projectKeys: normalizeProjectKeys(input.jiraConnection.projectKeys),
+            importScope: input.jiraConnection.importScope ?? "selected",
             email: input.jiraConnection.email.trim(),
             apiToken: input.jiraConnection.apiToken,
             lastSyncStatus: "idle" as const,
@@ -619,7 +644,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           const result = await importJiraProjectData(
             {
               baseUrl: workspace.jira.baseUrl,
-              projectKey: workspace.jira.projectKey,
+              projectKeys: normalizeProjectKeys(workspace.jira.projectKeys),
+              importScope: workspace.jira.importScope ?? "selected",
               email: workspace.jira.email,
               apiToken: workspace.jira.apiToken,
             },
@@ -703,6 +729,69 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [stories, selectedWorkspaceId],
   );
 
+  const workspaceProjects = useMemo<WorkspaceProject[]>(() => {
+    const staticIds = getProjectIdsForWorkspace(selectedWorkspaceId);
+    const staticByName = new Map<string, string>();
+    const staticProjects: WorkspaceProject[] = staticIds.map((id) => {
+      const meta = PROJECT_SEARCH_META[id];
+      const name = meta?.name ?? id;
+      staticByName.set(name, id);
+      return {
+        id,
+        name,
+        description: meta?.description ?? "Projekt",
+        storyCount: 0,
+        workspaceId: selectedWorkspaceId,
+      };
+    });
+
+    const syntheticByName = new Map<string, string>();
+    const storyCountById = new Map<string, number>();
+    for (const story of storiesInWorkspace) {
+      const projectName = story.project?.trim() || "Unbenanntes Projekt";
+      let id = staticByName.get(projectName);
+      if (!id) {
+        id = syntheticByName.get(projectName);
+      }
+      if (!id) {
+        const base = `JIRA-${sanitizeWorkspaceIdPart(projectName).toUpperCase()}`;
+        let candidate = base;
+        let idx = 2;
+        while (
+          staticProjects.some((p) => p.id === candidate) ||
+          Array.from(syntheticByName.values()).includes(candidate)
+        ) {
+          candidate = `${base}-${idx}`;
+          idx += 1;
+        }
+        id = candidate;
+        syntheticByName.set(projectName, id);
+      }
+      storyCountById.set(id, (storyCountById.get(id) ?? 0) + 1);
+    }
+
+    const dynamicProjects: WorkspaceProject[] = Array.from(
+      syntheticByName.entries(),
+    ).map(([name, id]) => ({
+      id,
+      name,
+      description: "Aus Jira importiertes Projekt",
+      storyCount: storyCountById.get(id) ?? 0,
+      workspaceId: selectedWorkspaceId,
+    }));
+
+    const all = [...staticProjects, ...dynamicProjects].map((p) => ({
+      ...p,
+      storyCount: storyCountById.get(p.id) ?? p.storyCount,
+    }));
+    return all
+      .filter((p) => p.storyCount > 0 || staticIds.includes(p.id))
+      .sort(
+        (a, b) =>
+          b.storyCount - a.storyCount || a.name.localeCompare(b.name),
+      );
+  }, [selectedWorkspaceId, storiesInWorkspace]);
+
   const notificationsInWorkspace = useMemo(
     () =>
       notifications.filter(
@@ -784,6 +873,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const addStories = useCallback((newStories: Story[]) => {
+    if (newStories.length === 0) return;
+    setStories((prev) => {
+      const byKey = new Map(prev.map((story) => [keyByWorkspaceAndId(story), story]));
+      for (const story of newStories) {
+        byKey.set(keyByWorkspaceAndId(story), story);
+      }
+      return Array.from(byKey.values());
+    });
+  }, []);
+
   const setStoryAction = useCallback((storyId: string, action: StoryAction) => {
     setStoryActions((prev) => {
       if (action === null) {
@@ -822,7 +922,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     stories,
     storiesInWorkspace,
     relations,
+    workspaceProjects,
     updateStories,
+    addStories,
     createWorkspace,
     syncWorkspaceFromJira,
     workspaceSyncStateById,

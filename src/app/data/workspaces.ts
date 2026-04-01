@@ -21,7 +21,13 @@ export interface Workspace {
 export interface JiraConnectionConfig {
   enabled: boolean;
   baseUrl: string;
-  projectKey: string;
+  /**
+   * Legacy field (single project) for backward compatibility.
+   * New code should use `projectKeys`.
+   */
+  projectKey?: string;
+  projectKeys: string[];
+  importScope?: "selected" | "all";
   email: string;
   apiToken: string;
   lastSyncAt?: string;
@@ -473,10 +479,14 @@ function isJiraConfig(
 ): value is JiraConnectionConfig {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
+  const hasProjectKey = typeof v.projectKey === "string";
+  const hasProjectKeys =
+    Array.isArray(v.projectKeys) &&
+    v.projectKeys.every((k) => typeof k === "string");
   return (
     typeof v.enabled === "boolean" &&
     typeof v.baseUrl === "string" &&
-    typeof v.projectKey === "string" &&
+    (hasProjectKey || hasProjectKeys) &&
     typeof v.email === "string" &&
     typeof v.apiToken === "string"
   );
@@ -496,10 +506,29 @@ function sanitizeWorkspaceCandidate(value: unknown): Workspace | null {
     ws.logoSrc = v.logoSrc;
   }
   if (isJiraConfig(v.jira)) {
+    const legacyKey =
+      typeof v.jira.projectKey === "string" ? v.jira.projectKey.trim() : "";
+    const parsedProjectKeys = Array.isArray(v.jira.projectKeys)
+      ? v.jira.projectKeys
+          .filter((x): x is string => typeof x === "string")
+          .map((x) => x.trim())
+          .filter(Boolean)
+      : [];
+    const projectKeys =
+      parsedProjectKeys.length > 0
+        ? parsedProjectKeys
+        : legacyKey
+          ? [legacyKey]
+          : [];
     ws.jira = {
       enabled: v.jira.enabled,
       baseUrl: v.jira.baseUrl,
-      projectKey: v.jira.projectKey,
+      projectKey: legacyKey || undefined,
+      projectKeys,
+      importScope:
+        v.jira.importScope === "all" || v.jira.importScope === "selected"
+          ? v.jira.importScope
+          : "selected",
       email: v.jira.email,
       apiToken: v.jira.apiToken,
       lastSyncAt: v.jira.lastSyncAt,
