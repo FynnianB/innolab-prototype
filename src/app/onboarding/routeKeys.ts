@@ -16,7 +16,7 @@ export function getOnboardingKey(pathname: string): OnboardingRouteKey | null {
   const p = pathname.replace(/\/+$/, "") || "/";
   if (p === "/settings" || p === "/help") return null;
   if (p === "/") return "route:dashboard";
-  if (p === "/guidelines") return "route:guidelines";
+  if (p === "/compliance-check" || p === "/guidelines") return "route:guidelines";
   if (p === "/stories") return "route:stories";
   if (p === "/story-generator") return "route:story-generator";
   return null;

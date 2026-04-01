@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/layout/Layout";
 import { Dashboard } from "./pages/Dashboard";
 import { StoryGenerator } from "./pages/StoryGenerator";
+import { LegacyGuidelinesRouteRedirect } from "./components/LegacyGuidelinesRouteRedirect";
 import { GuidelinesChecker } from "./pages/GuidelinesChecker";
 import { LegacyComplianceRouteRedirect } from "./components/LegacyComplianceRouteRedirect";
 import { RuleManagement } from "./pages/RuleManagement";
@@ -21,7 +22,8 @@ export const router = createBrowserRouter(
     children: [
       { index: true, Component: Dashboard },
       { path: "story-generator", Component: StoryGenerator },
-      { path: "guidelines", Component: GuidelinesChecker },
+      { path: "compliance-check", Component: GuidelinesChecker },
+      { path: "guidelines", Component: LegacyGuidelinesRouteRedirect },
       { path: "compliance", Component: LegacyComplianceRouteRedirect },
       { path: "rules", Component: RuleManagement },
       { path: "projects/:projectId?", Component: Projects },

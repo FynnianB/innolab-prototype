@@ -227,7 +227,7 @@ function ruleScope(rule: Rule): "workspace" | "project" {
   return rule.scope ?? "workspace";
 }
 
-/** Nur gesetzt, wenn in Guidelines ein einzelnes Projekt gewählt ist — dann werden fremde Projektregeln ausgeblendet. */
+/** Nur gesetzt, wenn im Compliance Check ein einzelnes Projekt gewählt ist — dann werden fremde Projektregeln ausgeblendet. */
 export type GuidelinesRulesEvalScope = { kind: "project"; projectId: string };
 
 export function RuleManagementContent({
@@ -236,7 +236,7 @@ export function RuleManagementContent({
   guidelinesEvalScope,
 }: {
   embedded?: boolean;
-  /** In Guidelines eingebettet: Filter „Geltungsbereich“ ausblenden (entspricht globalem Bereich oben). */
+  /** Im Compliance Check eingebettet: Filter „Geltungsbereich“ ausblenden (entspricht globalem Bereich oben). */
   hideGeltungsbereich?: boolean;
   /** Einzelprojekt gewählt → nur Workspace-Regeln plus Regeln dieses Projekts (Gesamter Workspace: alle Regeln). */
   guidelinesEvalScope?: GuidelinesRulesEvalScope;
@@ -339,7 +339,7 @@ export function RuleManagementContent({
               <h1 className="text-[#1e1e2e]">Regel-Management</h1>
             )}
             <p className="text-[14px] text-muted-foreground mt-1">
-              Verwalten Sie Regeln und Vorgaben (Guidelines) für{" "}
+              Verwalten Sie Regeln und Vorgaben für{" "}
               <span style={{ fontWeight: 500 }}>{selectedWorkspace.name}</span>
               {" — "}
               workspace-weit oder projektspezifisch.{" "}
@@ -632,7 +632,7 @@ export function RuleManagementContent({
                 </p>
                 <p className="text-[13px] text-muted-foreground max-w-md mx-auto">
                   Legen Sie eine neue Regel an oder importieren Sie ein Regelset für die
-                  Guidelines-Prüfung an.
+                  Compliance-Prüfung an.
                 </p>
                 <Button
                   className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 text-[13px] mt-2"
@@ -673,7 +673,7 @@ export function RuleManagementContent({
                       „{rulePendingDelete.name}“
                     </span>{" "}
                     ({rulePendingDelete.id}) wird dauerhaft aus dem Katalog für
-                    diesen Workspace entfernt. Die Guidelines-Prüfung bezieht sie
+                    diesen Workspace entfernt. Der Compliance Check bezieht sie
                     bei künftigen Läufen nicht mehr ein.
                   </>
                 ) : null}

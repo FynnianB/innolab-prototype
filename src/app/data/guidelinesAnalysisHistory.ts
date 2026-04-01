@@ -1,5 +1,5 @@
 /**
- * Demo: abgeschlossene Guidelines-/Dokumentprüfungen (keine Persistenz).
+ * Demo: abgeschlossene Compliance-/Dokumentprüfungen (keine Persistenz).
  */
 
 import { guidelinesDemoFileLabelFromSeed } from "./guidelinesCheckDemo";
@@ -20,7 +20,7 @@ export interface GuidelinesAnalysisRun {
   finishedAt: string;
   status: GuidelinesAnalysisStatus;
   findingCounts: GuidelinesAnalysisFindingCounts;
-  /** Optional: Guidelines-Quote 0–100 */
+  /** Optional: Compliance-Quote 0–100 */
   quote?: number;
 }
 

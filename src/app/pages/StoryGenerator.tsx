@@ -2366,7 +2366,10 @@ export function StoryGenerator() {
       <div className="h-full flex flex-col">
         {/* Results Header */}
         <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-b border-border bg-white flex-shrink-0">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between mb-3 min-w-0">
+          <div
+            className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between mb-3 min-w-0"
+            data-tour="storygen-results-header"
+          >
             <div className="flex flex-col sm:flex-row sm:items-start gap-3 min-w-0">
               <Button
                 variant="ghost"
@@ -2449,10 +2452,7 @@ export function StoryGenerator() {
         {/* Content */}
         <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
           {/* Main: Stories */}
-          <div
-            className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6"
-            data-tour="storygen-results-stories"
-          >
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 min-w-0">
               <h3 className="text-[#1e1e2e]">Prüfen & Auswählen</h3>
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-white min-w-0 w-full sm:w-auto">

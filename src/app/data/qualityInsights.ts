@@ -1,6 +1,6 @@
 /**
- * Aggregierte Demo-Daten zu Guidelines-Checks und Dokumentenprüfungen pro Projekt.
- * Dient Guidelines-Übersicht (Workspace/Projekt) und der Dashboard-Kurzübersicht.
+ * Aggregierte Demo-Daten zu Compliance-Checks und Dokumentenprüfungen pro Projekt.
+ * Dient der Compliance-Übersicht (Workspace/Projekt) und der Dashboard-Kurzübersicht.
  */
 
 import { getProjectIdsForWorkspace } from "./workspaces";

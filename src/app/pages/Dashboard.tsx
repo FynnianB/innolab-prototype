@@ -28,6 +28,7 @@ import {
   PROTOTYPE_USER_ROLE,
 } from "../data/workspaces";
 import { aggregateWorkspaceQualityInsights } from "../data/qualityInsights";
+import { COMPLIANCE_CHECK_PATH } from "../paths";
 
 const kpiCards = [
   {
@@ -49,7 +50,7 @@ const kpiCards = [
     bgColor: "#fef3c7",
   },
   {
-    title: "Guidelines-Quote",
+    title: "Compliance-Quote",
     value: "94%",
     change: "+3% Verbesserung",
     trend: "up",
@@ -98,7 +99,7 @@ const recentActivity: {
   { icon: FileWarning, text: "Consent-Modell Datenraum — offene rechtliche Review-Punkte", project: "VW Datenraum", time: "vor 2 Std.", color: "#f59e0b", workspaceId: "ws-vw" },
   { icon: ShieldCheck, text: "OTA-Signatur-Pipeline für Pilotflotte freigegeben", project: "Mercedes OTA", time: "vor 3 Std.", color: "#10b981", workspaceId: "ws-mercedes" },
   { icon: CheckCircle2, text: "MMI Voice-Regressionstest Sprint grün", project: "AUDI Infotainment", time: "vor 5 Std.", color: "#10b981", workspaceId: "ws-audi" },
-  { icon: Activity, text: "Neuer Regelkatalog für Guidelines importiert", project: "Global", time: "vor 6 Std.", color: "#8b5cf6", workspaceId: null },
+  { icon: Activity, text: "Neuer Regelkatalog für den Compliance Check importiert", project: "Global", time: "vor 6 Std.", color: "#8b5cf6", workspaceId: null },
   { icon: FileWarning, text: "Telemetrie-Latenz Track-Tag über Schwelle (Alert)", project: "Porsche Motorsport", time: "vor 1 Std.", color: "#f59e0b", workspaceId: "ws-porsche" },
 ];
 
@@ -236,7 +237,7 @@ export function Dashboard() {
                     <span>Projekt</span>
                     <span>Status</span>
                     <span className="text-center">Stories</span>
-                    <span>Guidelines-Quote</span>
+                    <span>Compliance-Quote</span>
                     <span className="text-right">Aktualisiert</span>
                   </div>
                   {displayedRecentProjects.length === 0 ? (
@@ -400,15 +401,15 @@ export function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Qualität: Kurzüberblick → Guidelines */}
+            {/* Qualität: Kurzüberblick → Compliance Check */}
             <Card className="border border-border bg-white min-w-0">
               <CardHeader className="pb-2">
                 <CardTitle className="text-[16px]" style={{ fontWeight: 600 }}>
-                  Qualität & Guidelines
+                  Qualität & Compliance
                 </CardTitle>
                 <p className="text-[12px] text-muted-foreground font-normal mt-1 leading-snug">
                   Kurzüberblick für diesen Workspace. Charts, Projektvergleich und Prüfungen finden
-                  Sie unter Guidelines.
+                  Sie im Compliance Check.
                 </p>
               </CardHeader>
               <CardContent className="px-3 sm:px-4 pb-4 min-w-0 space-y-4">
@@ -427,7 +428,7 @@ export function Dashboard() {
                         </p>
                       </div>
                       <div className="rounded-lg border border-border bg-[#fafbfc] px-2 py-2.5">
-                        <p className="text-[11px] text-muted-foreground">Guideline-Befunde</p>
+                        <p className="text-[11px] text-muted-foreground">Compliance-Befunde</p>
                         <p className="text-[18px] text-[#1e1e2e] tabular-nums" style={{ fontWeight: 600 }}>
                           {workspaceQuality.totalGuidelineFindings}
                         </p>
@@ -480,9 +481,9 @@ export function Dashboard() {
                     <Button
                       type="button"
                       className="w-full sm:w-auto bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 text-[13px]"
-                      onClick={() => navigate("/guidelines?tab=overview")}
+                      onClick={() => navigate(`${COMPLIANCE_CHECK_PATH}?tab=overview`)}
                     >
-                      Zur Guidelines-Analyse
+                      Zum Compliance Check
                       <ArrowRight className="w-4 h-4" />
                     </Button>
                   </>

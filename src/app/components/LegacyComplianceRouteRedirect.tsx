@@ -1,6 +1,8 @@
 import { Navigate } from "react-router";
 
-/** Alte URL `/compliance` → `/guidelines`. */
+import { COMPLIANCE_CHECK_PATH } from "../paths";
+
+/** Alte URL `/compliance` → `/compliance-check`. */
 export function LegacyComplianceRouteRedirect() {
-  return <Navigate to="/guidelines" replace />;
+  return <Navigate to={COMPLIANCE_CHECK_PATH} replace />;
 }

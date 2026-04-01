@@ -11,6 +11,7 @@ import {
   getProjectIdsForWorkspace,
   PROJECT_SEARCH_META,
 } from "../../data/workspaces";
+import { COMPLIANCE_CHECK_PATH } from "../../paths";
 import type { GuidelinesScopeMode } from "./GuidelinesScopeBar";
 
 interface GuidelinesOverviewTabProps {
@@ -54,7 +55,9 @@ export function GuidelinesOverviewTab({
         />
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" className="text-[13px]" asChild>
-            <Link to={`/guidelines?tab=check&project=${encodeURIComponent(scopeProjectId)}`}>
+            <Link
+              to={`${COMPLIANCE_CHECK_PATH}?tab=check&project=${encodeURIComponent(scopeProjectId)}`}
+            >
               Zu Dokumente prüfen
             </Link>
           </Button>
@@ -82,7 +85,7 @@ export function GuidelinesOverviewTab({
           topProblems={aggregate.topProblems}
           subtitle={`${aggregate.projectCount} Projekt${
             aggregate.projectCount === 1 ? "" : "e"
-          } mit Auswertung · ${aggregate.totalGuidelineFindings} Guideline-Befunde · ${aggregate.totalDocIssues} Doc-Issues`}
+          } mit Auswertung · ${aggregate.totalGuidelineFindings} Compliance-Befunde · ${aggregate.totalDocIssues} Doc-Issues`}
           showCategoryCharts
         />
       )}
@@ -142,7 +145,7 @@ export function GuidelinesOverviewTab({
 
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" size="sm" className="text-[13px]" asChild>
-          <Link to="/guidelines?tab=check">Zu Dokumente prüfen</Link>
+          <Link to={`${COMPLIANCE_CHECK_PATH}?tab=check`}>Zu Dokumente prüfen</Link>
         </Button>
       </div>
     </div>

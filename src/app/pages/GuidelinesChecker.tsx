@@ -221,7 +221,7 @@ export function GuidelinesChecker() {
     <TooltipProvider>
       <div className="p-8 max-w-[1200px] mx-auto pb-16">
         <div className="mb-6" data-tour="guidelines-intro">
-          <h1 className="text-[#1e1e2e]">Guidelines</h1>
+          <h1 className="text-[#1e1e2e]">Compliance Check</h1>
           <p className="text-[14px] text-muted-foreground mt-1 max-w-[720px]">
             Regeln verwalten, den Workspace und einzelne Projekte auswerten sowie
             Dokumente gegen den Regelkatalog prüfen — im Kontext von{" "}
@@ -326,7 +326,7 @@ export function GuidelinesChecker() {
                         });
                       }}
                     >
-                      Guidelines-Analyse starten
+                      Compliance-Check starten
                     </Button>
                   </div>
                 </div>
@@ -346,7 +346,7 @@ export function GuidelinesChecker() {
             <div className="space-y-4" data-tour="guidelines-document-list">
               {listProjects.length === 0 && (
                 <p className="text-[14px] text-muted-foreground rounded-lg border border-dashed border-border bg-muted/30 px-4 py-8 text-center">
-                  Für diesen Workspace sind keine Demo-Dokumente für die Guidelines-Prüfung
+                  Für diesen Workspace sind keine Demo-Dokumente für den Compliance Check
                   hinterlegt.
                 </p>
               )}
@@ -439,7 +439,7 @@ export function GuidelinesChecker() {
                       In dieser Sitzung „hochgeladen“
                     </h4>
                     <p className="text-[12px] text-muted-foreground">
-                      Erscheint nach „Guidelines-Analyse starten“; Klick öffnet erneut die Prüfung.
+                      Erscheint nach „Compliance-Check starten“; Klick öffnet erneut die Prüfung.
                     </p>
                   </div>
                   {sessionUploadedDocs.map((entry) => {

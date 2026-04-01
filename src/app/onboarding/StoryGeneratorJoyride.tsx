@@ -97,12 +97,14 @@ function buildTourSteps(
         target: sel("storygen-generating-panel"),
         title: "Story-Generierung",
         content:
-          "Hier werden Anforderungen in **Story-Kandidaten** überführt: Extraktion, Strukturierung, Plausibilität und Feinschliff – analog zu einer Pipeline in der Produktivumgebung.\n\n" +
-          "Danach sehen Sie die **Liste der generierten Stories** und können sie wie in einem Review-Meeting durchgehen.",
-        placement: "bottom",
+          "Die KI wandelt Ihre **bereinigten Anforderungen** in Story-Entwürfe um: Struktur, Formulierung und erste Plausibilitätsprüfung laufen wie in einer echten Pipeline.\n\n" +
+          "Die Fortschrittsliste in der Karte zeigt die einzelnen Phasen. **Kein Scrollen nötig** – sobald die Erzeugung fertig ist, wechselt die Ansicht automatisch zur **Story-Liste**.",
+        placement: "center",
         disableBeacon: true,
+        spotlightPadding: 12,
         data: {
           hidePrimary: true,
+          widePanel: true,
           actionHint: "Warten Sie, bis die **generierten Stories** automatisch angezeigt werden.",
         },
       },
@@ -110,16 +112,21 @@ function buildTourSteps(
     6: {
       phase: "results",
       step: {
-        target: sel("storygen-results-stories"),
+        target: sel("storygen-results-header"),
         title: "Stories prüfen",
         content:
-          "Jede Karte ist ein **Entwurf**: Sie können ihn übernehmen, ablehnen oder im Editor anpassen (Formulierung, Akzeptanz, Aufwand).\n\n" +
-          `Nutzen Sie die Suche, um gezielt nach IDs oder Stichworten zu filtern. Über die Kopfzeile stehen außerdem **Export** und **${exportShortName}-Export** bereit, bevor Sie in den Abgleich mit dem bestehenden Backlog gehen.\n\n` +
-          `Der Button in der Kachel führt zum **${compareStepLabel}** wie in der Toolbar.`,
-        placement: "top",
+          "**Kopfzeile:** Hier finden Sie **Export**, **" +
+          exportShortName +
+          "-Export** und **Weiter zum " +
+          compareStepLabel +
+          "** – dieselbe Aktion wie der violette Button in der Tour-Kachel.\n\n" +
+          "**Darunter (scrollbar):** Jede Karte ist ein **Entwurf** – übernehmen, ablehnen oder im Editor anpassen. Mit der **Suche** filtern Sie nach ID oder Stichwort.",
+        placement: "bottom",
         disableBeacon: true,
+        spotlightPadding: 10,
         data: {
           hidePrimary: true,
+          widePanel: true,
         },
       },
     },
@@ -145,13 +152,18 @@ function buildTourSteps(
         target: sel("storygen-save-panel"),
         title: "Speichern & Abschluss",
         content:
-          "Wählen Sie ein **Zielprojekt** im Workspace; die Zusammenfassung zeigt, wie viele Stories übernommen wurden und wie viele abgelehnt.\n\n" +
-          "Unter **Integrationen** können Sie z. B. eine Confluence-Synchronisation vormerken (Demo). Der große Speichern-Button schreibt die übernommenen Stories ins Projekt und schließt den Durchlauf.\n\n" +
-          "In der Tour wählt der Kachel-Button bei Bedarf automatisch ein Demo-Projekt – wie der gleichnamige Button auf der Seite.",
-        placement: "top",
+          "**Ablauf in der Ansicht darunter (gleicher Screen):**\n\n" +
+          "1. **Zielprojekt** im Workspace wählen.\n" +
+          "2. **Zusammenfassung** prüfen (übernommen / abgelehnt / Dok.-Korrekturen).\n" +
+          "3. Optional **Integrationen** (z. B. Confluence-Demo) vormerken.\n" +
+          "4. Mit **Speichern** die übernommenen Stories ins Projekt schreiben.\n\n" +
+          "Der **Button in der Tour-Kachel** entspricht dem großen Speichern-Button und wählt bei Bedarf automatisch ein Demo-Projekt.",
+        placement: "center",
         disableBeacon: true,
+        spotlightPadding: 8,
         data: {
           hidePrimary: true,
+          widePanel: true,
         },
       },
     },

@@ -61,7 +61,7 @@ interface GuidelinesJoyrideProps {
 }
 
 /**
- * Rundgang /guidelines: Scope-Leiste, dann die drei Tab-Buttons. Tab-Inhalt wechselt per „Weiter“
+ * Rundgang /compliance-check: Scope-Leiste, dann die drei Tab-Buttons. Tab-Inhalt wechselt per „Weiter“
  * (asynchron, damit react-joyride den Schrittwechsel nicht unterbricht — kein flushSync).
  */
 export function GuidelinesJoyride({ setActiveTab }: GuidelinesJoyrideProps) {

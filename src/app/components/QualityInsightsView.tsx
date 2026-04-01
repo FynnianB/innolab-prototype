@@ -11,6 +11,7 @@ import {
   DOC_REVIEW_TYPE_META,
   GUIDELINE_CATEGORY_META,
 } from "../data/qualityInsights";
+import { COMPLIANCE_CHECK_PATH } from "../paths";
 
 const GUIDELINE_ORDER: GuidelineCategoryId[] = [
   "dsgvo",
@@ -52,7 +53,7 @@ export interface QualityInsightsViewProps {
   compact?: boolean;
   /** Wenn false: keine Balkendiagramme je Kategorie/Typ (schmale Spalte) */
   showCategoryCharts?: boolean;
-  /** Deep-Link zu Guidelines „Dokumente prüfen“ für dieses Projekt */
+  /** Deep-Link zu „Dokumente prüfen“ im Compliance Check für dieses Projekt */
   guidelinesCheckProjectId?: string;
 }
 
@@ -106,8 +107,8 @@ export function QualityInsightsView({
 }: QualityInsightsViewProps) {
   const guidelinesCheckTo =
     guidelinesCheckProjectId != null && guidelinesCheckProjectId !== ""
-      ? `/guidelines?tab=check&scope=project&project=${encodeURIComponent(guidelinesCheckProjectId)}`
-      : "/guidelines?tab=check";
+      ? `${COMPLIANCE_CHECK_PATH}?tab=check&scope=project&project=${encodeURIComponent(guidelinesCheckProjectId)}`
+      : `${COMPLIANCE_CHECK_PATH}?tab=check`;
   const gMax = maxCount(GUIDELINE_ORDER.map((k) => guidelinesByCategory[k]));
   const dMax = maxCount(DOC_ORDER.map((k) => docReviewByType[k]));
   const totalG =
@@ -163,7 +164,7 @@ export function QualityInsightsView({
                   Häufigste Themen
                 </CardTitle>
                 <p className="text-[11px] text-muted-foreground font-normal mt-0.5">
-                  Guideline-Kategorien und Dokumentenprüfungen nach Häufigkeit
+                  Compliance-Kategorien und Dokumentenprüfungen nach Häufigkeit
                 </p>
               </div>
             </div>
@@ -193,7 +194,7 @@ export function QualityInsightsView({
                       {row.label}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      {row.source === "guidelines" ? "Guideline-Check" : "Dokumentenprüfung"}
+                      {row.source === "guidelines" ? "Compliance-Check" : "Dokumentenprüfung"}
                     </p>
                   </div>
                   <span
@@ -219,7 +220,7 @@ export function QualityInsightsView({
                   Schweregrade
                 </CardTitle>
                 <p className="text-[11px] text-muted-foreground font-normal mt-0.5">
-                  {totalG} Guideline-Befunde gesamt
+                  {totalG} Compliance-Befunde gesamt
                 </p>
               </div>
             </div>
@@ -272,7 +273,7 @@ export function QualityInsightsView({
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#4f46e5]" />
                 <CardTitle className="text-[14px]" style={{ fontWeight: 600 }}>
-                  Guideline-Checks nach Kategorie
+                  Compliance nach Kategorie
                 </CardTitle>
               </div>
             </CardHeader>
@@ -326,7 +327,7 @@ export function QualityInsightsView({
           <Button variant="outline" size="sm" className="text-[13px] gap-2" asChild>
             <Link to={guidelinesCheckTo}>
               <ShieldCheck className="w-4 h-4" />
-              Guidelines prüfen
+              Im Compliance Check prüfen
             </Link>
           </Button>
           <Button variant="outline" size="sm" className="text-[13px] gap-2" asChild>

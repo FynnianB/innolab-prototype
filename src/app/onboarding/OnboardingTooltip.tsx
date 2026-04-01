@@ -6,6 +6,8 @@ import { renderTourInline, TourMarkdown } from "./tourMarkdown";
  */
 type StepData = {
   hidePrimary?: boolean;
+  /** Breitere Karte (längere Tour-Texte, z. B. Story-Generator). */
+  widePanel?: boolean;
   /** Statt „Weiter“: konkrete UI-Aktion beschreiben (Markdown-light: **fett**). */
   actionHint?: string;
   /** Wenn Joyride nur ein Step übergibt, Fortschritt trotzdem korrekt anzeigen. */
@@ -37,7 +39,11 @@ export function OnboardingTooltip(props: TooltipRenderProps) {
   return (
     <div
       {...tooltipProps}
-      className="max-w-[min(100vw-1.25rem,22rem)] outline-none"
+      className={
+        data.widePanel
+          ? "max-w-[min(100vw-1.25rem,28rem)] outline-none"
+          : "max-w-[min(100vw-1.25rem,22rem)] outline-none"
+      }
       style={{ zIndex: 10060 }}
     >
       <div className="overflow-hidden rounded-2xl bg-white shadow-[0_4px_24px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/90">

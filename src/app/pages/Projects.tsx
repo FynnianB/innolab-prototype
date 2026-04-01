@@ -42,6 +42,7 @@ import {
 } from "../components/SearchEasterEgg";
 import { TooltipProvider } from "../components/ui/tooltip";
 import { useAppContext } from "../context/AppContext";
+import { COMPLIANCE_CHECK_PATH } from "../paths";
 import {
   ALL_TEAM_ROSTER_INITIALS,
   PROJECT_LOGO_BY_ID,
@@ -358,8 +359,8 @@ const PROJECT_SORT_OPTIONS = [
   { value: "name-asc" as const, label: "Name A → Z" },
   { value: "name-desc" as const, label: "Name Z → A" },
   { value: "starred-first" as const, label: "Favoriten zuerst" },
-  { value: "guidelines-quote-desc" as const, label: "Guidelines-Quote (höchste zuerst)" },
-  { value: "guidelines-quote-asc" as const, label: "Guidelines-Quote (niedrigste zuerst)" },
+  { value: "guidelines-quote-desc" as const, label: "Compliance-Quote (höchste zuerst)" },
+  { value: "guidelines-quote-asc" as const, label: "Compliance-Quote (niedrigste zuerst)" },
   { value: "stories-desc" as const, label: "Meiste Stories zuerst" },
   { value: "stories-asc" as const, label: "Wenigste Stories zuerst" },
   { value: "id-asc" as const, label: "Projekt-ID (aufsteigend)" },
@@ -538,12 +539,12 @@ export function Projects() {
                 className="text-[13px] gap-2"
                 onClick={() =>
                   navigate(
-                    `/guidelines?tab=overview&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
+                    `${COMPLIANCE_CHECK_PATH}?tab=overview&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
                   )
                 }
               >
                 <ShieldCheck className="w-4 h-4" />
-                Guidelines
+                Compliance Check
               </Button>
             </div>
           </div>
@@ -579,13 +580,13 @@ export function Projects() {
               className="border border-border bg-white cursor-pointer hover:border-[#4f46e5]/30 hover:shadow-sm transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5]/25"
               onClick={() =>
                 navigate(
-                  `/guidelines?tab=overview&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
+                  `${COMPLIANCE_CHECK_PATH}?tab=overview&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
                 )
               }
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ")
                   navigate(
-                    `/guidelines?tab=overview&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
+                    `${COMPLIANCE_CHECK_PATH}?tab=overview&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
                   );
               }}
             >
@@ -597,9 +598,9 @@ export function Projects() {
                   <p className="text-[22px]" style={{ fontWeight: 600, color: getScoreColor(selectedProject.guidelinesQuote) }}>
                     {selectedProject.guidelinesQuote}%
                   </p>
-                  <p className="text-[12px] text-muted-foreground">Guidelines-Quote</p>
+                  <p className="text-[12px] text-muted-foreground">Compliance-Quote</p>
                   <p className="text-[11px] text-[#4f46e5] mt-0.5" style={{ fontWeight: 500 }}>
-                    Zur Analyse in Guidelines
+                    Zum Compliance Check
                   </p>
                 </div>
               </CardContent>
@@ -699,7 +700,7 @@ export function Projects() {
                     </div>
                   </div>
                   <div className="flex justify-between items-center text-[13px] gap-2">
-                    <span className="text-muted-foreground shrink-0">Guidelines-Quote</span>
+                    <span className="text-muted-foreground shrink-0">Compliance-Quote</span>
                     <div className="flex items-center gap-2 min-w-0">
                       <Progress value={selectedProject.guidelinesQuote} className="h-1.5 w-24 shrink" />
                       <span
@@ -715,11 +716,11 @@ export function Projects() {
                         className="text-[12px] h-8 px-2 text-[#4f46e5] shrink-0"
                         onClick={() =>
                           navigate(
-                            `/guidelines?tab=overview&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
+                            `${COMPLIANCE_CHECK_PATH}?tab=overview&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
                           )
                         }
                       >
-                        Guidelines
+                        Compliance Check
                       </Button>
                     </div>
                   </div>
@@ -1171,9 +1172,9 @@ export function Projects() {
                   </button>
                 )}
 
-                {/* Guidelines-Quote */}
+                {/* Compliance-Quote */}
                 <div className="flex items-center gap-3 mb-3">
-                  <span className="text-[11px] text-muted-foreground" style={{ fontWeight: 500 }}>Guidelines-Quote</span>
+                  <span className="text-[11px] text-muted-foreground" style={{ fontWeight: 500 }}>Compliance-Quote</span>
                   <Progress value={project.guidelinesQuote} className="h-1.5 flex-1" />
                   <span
                     className="text-[12px]"

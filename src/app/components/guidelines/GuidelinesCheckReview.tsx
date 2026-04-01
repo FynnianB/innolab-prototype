@@ -35,6 +35,7 @@ import {
   splitDocumentDisplayLabel,
   type IssueCategory,
 } from "../../data/guidelinesCheckDemo";
+import { COMPLIANCE_CHECK_PATH } from "../../paths";
 import type { GuidelinesCheckState } from "./useGuidelinesCheckState";
 
 export interface GuidelinesCheckReviewProps {
@@ -215,7 +216,7 @@ export function GuidelinesCheckReview({
                 </div>
                 <div className="min-w-0">
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">
-                    Guidelines-Prüfung
+                    Compliance-Prüfung
                   </p>
                   <h2 className="text-[#1e1e2e] text-lg truncate" style={{ fontWeight: 600 }}>
                     {documentTitle}
@@ -252,7 +253,7 @@ export function GuidelinesCheckReview({
                   <span className="absolute inset-0 flex items-center justify-center text-[13px]" style={{ fontWeight: 700 }}>{totalScore}</span>
                 </div>
                 <div>
-                  <p className="text-[12px] text-muted-foreground">Guidelines-Quote</p>
+                  <p className="text-[12px] text-muted-foreground">Compliance-Quote</p>
                   <p className="text-[14px] text-[#1e1e2e]" style={{ fontWeight: 600 }}>
                     {totalScore >= 80 ? "Gut" : totalScore >= 60 ? "Verbesserungsbedarf" : "Kritisch"}
                   </p>
@@ -274,7 +275,7 @@ export function GuidelinesCheckReview({
                 onClick={() =>
                   onNavigateToRules
                     ? onNavigateToRules()
-                    : navigate("/guidelines?tab=rules")
+                    : navigate(`${COMPLIANCE_CHECK_PATH}?tab=rules`)
                 }
               >
                 <BookOpen className="w-4 h-4" />
@@ -604,7 +605,7 @@ export function GuidelinesCheckReview({
                     </p>
                     <p className="text-[12px] text-muted-foreground mt-1">
                       {activeIssues.length === 0
-                        ? "Das Dokument entspricht den definierten Guidelines."
+                        ? "Das Dokument entspricht den definierten Vorgaben."
                         : "Passen Sie die Filter an, um weitere Probleme zu sehen."}
                     </p>
                   </div>

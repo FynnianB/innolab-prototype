@@ -464,7 +464,7 @@ function buildProjectStatusResponse(
   let summary = `**Projekt: ${projName}**\n\n`;
   summary += `**${matched.length} Stories:** ${statusLine}\n`;
   if (withGuidelinesScores.length > 0)
-    summary += `**Durchschn. Guidelines-Quote:** ${avgGuidelinesQuote}%`;
+    summary += `**Durchschn. Compliance-Quote:** ${avgGuidelinesQuote}%`;
 
   return {
     messages: [

@@ -14,6 +14,7 @@ import {
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { ENTERPRISE } from "../../data/enterprise";
+import { COMPLIANCE_CHECK_PATH } from "../../paths";
 import { hasCustomerJourneyNavCookie } from "../../onboarding/navTourConfig";
 import { useOnboardingReset } from "../../onboarding/OnboardingResetContext";
 import {
@@ -28,7 +29,7 @@ import { cn } from "../ui/utils";
 const baseNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Sparkles, label: "Story-Generator", path: "/story-generator" },
-  { icon: ShieldCheck, label: "Guidelines", path: "/guidelines" },
+  { icon: ShieldCheck, label: "Compliance Check", path: COMPLIANCE_CHECK_PATH },
   { icon: ClipboardList, label: "Story-Abhängigkeiten", path: "/stories" },
   { icon: FolderOpen, label: "Projekte", path: "/projects" },
 ];

@@ -461,7 +461,7 @@ function StoryView({
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-[15px] text-slate-900" style={{ fontWeight: 600 }}>
-                    Story-Guidelines
+                    Story-Compliance
                   </h3>
                   <span className="text-[22px] text-emerald-500" style={{ fontWeight: 700 }}>
                     {story.guidelinesScore}%

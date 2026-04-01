@@ -59,8 +59,8 @@ function buildScopeConfig(ts: TicketSystemDefinition) {
       itemCount: 7,
     },
     guidelines: {
-      label: "Guidelines-Bericht",
-      description: "Ergebnisse der Guidelines-Prüfung mit Regelverweisen",
+      label: "Compliance-Bericht",
+      description: "Ergebnisse der Compliance-Prüfung mit Regelverweisen",
       itemCount: 12,
     },
     tickets: {
@@ -70,7 +70,7 @@ function buildScopeConfig(ts: TicketSystemDefinition) {
     },
     all: {
       label: "Vollständiger Export",
-      description: `Alle Daten inkl. Stories, Guidelines-Prüfung und ${ts.name}-Bezügen`,
+      description: `Alle Daten inkl. Stories, Compliance-Prüfung und ${ts.name}-Bezügen`,
       itemCount: 34,
     },
   } as const;

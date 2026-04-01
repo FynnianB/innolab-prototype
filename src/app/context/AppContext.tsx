@@ -158,7 +158,7 @@ const defaultNotifications: Notification[] = [
   },
   {
     id: "N-005",
-    text: "Neuer Regelkatalog für Guidelines importiert",
+    text: "Neuer Regelkatalog für den Compliance Check importiert",
     project: "Global",
     time: "vor 5 Std.",
     read: true,
