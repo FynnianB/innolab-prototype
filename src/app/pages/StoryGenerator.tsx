@@ -40,8 +40,9 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { ALL_DEMO_PROJECT_OPTIONS } from "../data/workspaces";
+import { listProjectsForSearchInWorkspace } from "../data/workspaces";
 import { StoryLink } from "../components/StoryLink";
+import { GermanUserStoryFormulaLine } from "../components/UserStoryFormulaText";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import {
@@ -106,8 +107,8 @@ interface UserStory {
 interface JiraTicket {
   key: string;
   summary: string;
-  type: "Story" | "Epic" | "Bug" | "Task";
-  status: "To Do" | "In Progress" | "Done" | "In Review";
+  type: "User Story" | "Epic" | "Fehler" | "Aufgabe";
+  status: "Offen" | "In Bearbeitung" | "Erledigt" | "In Prüfung";
   assignee: string;
   sprint: string;
   storyPoints: number;
@@ -228,7 +229,7 @@ const initialStories: UserStory[] = [
     acceptance: [
       "Forecast pro Teilenummer und Werk mit täglicher Aktualisierung aus ERP-Quelle",
       "Abweichung >10% ggü. Vormonat wird als Ampel im Dashboard markiert",
-      "Export CSV/XLSX für Stakeholder-Reviews mit festem Spaltenlayout",
+      "Export als CSV/XLSX für Stakeholder-Reviews mit festem Spaltenlayout",
       "Berechtigungen nach Rolle (nur eigenes Programmfahrzeug)",
     ],
     effort: "Mittel",
@@ -242,7 +243,7 @@ const initialStories: UserStory[] = [
     benefit: "Abnahmen und Logistik-Stopps rechtzeitig koordiniert werden können",
     acceptance: [
       "Statusmodell mind. 5 Zustände, Übergänge mit Zeitstempel und Akteur",
-      "Webhook/Event an abonnierende Teams bei Statuswechsel „freigegeben“",
+      "Webhook bzw. Ereignis an abonnierende Teams bei Statuswechsel „freigegeben“",
       "Verknüpfung zur Teilestückliste des Versuchsfahrzeugs",
       "SLA-Hinweis wenn Status >48h unverändert in „QS“",
     ],
@@ -272,8 +273,8 @@ const initialStories: UserStory[] = [
     benefit: "Schäden und Verzögerungen minimiert werden",
     acceptance: [
       "Geofence pro Transportauftrag konfigurierbar (Radius oder Polygon)",
-      "Alert an Monitoring-Console und optional SMS an Bereitschaft",
-      "False-Positive-Rate im Pilot dokumentiert (<5% Ziel)",
+      "Alarm an Monitoring-Konsole und optional SMS an die Bereitschaft",
+      "Anteil falscher Alarme im Pilot dokumentiert (<5 % Ziel)",
       "DSGVO-konforme Aufbewahrungsfrist für Positionsdaten definiert",
     ],
     effort: "Mittel",
@@ -301,10 +302,10 @@ const initialStories: UserStory[] = [
     goal: "einheitliche Event-Schemas und Breaking-Change-Regeln bereitzustellen",
     benefit: "Marken und Partner stabil anbinden können",
     acceptance: [
-      "AsyncAPI/JSON-Schema in Git mit semver für Schemas",
-      "Deprecation-Zeitraum mind. 90 Tage für Major-Änderungen",
-      "Consumer-Registry mit Kontakt und SLA",
-      "Monitoring: Dead-Letter-Quote und Lag pro Topic",
+      "AsyncAPI-/JSON-Schema in Git mit semantischer Versionierung für Schemas",
+      "Mindestens 90 Tage Vorlauf vor größeren, nicht abwärtskompatiblen Änderungen",
+      "Verzeichnis der Consumer mit Kontakt und SLA",
+      "Monitoring: Anteil fehlgeschlagener Nachrichten (Dead Letter) und Verzögerung pro Topic",
     ],
     effort: "Mittel",
     priority: "Hoch",
@@ -314,54 +315,54 @@ const initialStories: UserStory[] = [
 const mockJiraTickets: JiraTicket[] = [
   {
     key: "PROJ-601",
-    summary: "Backend: SAP Analytics Cloud Pipeline Stabilität",
-    type: "Story",
-    status: "In Progress",
+    summary: "Backend: Stabilität der Pipeline für SAP Analytics Cloud",
+    type: "User Story",
+    status: "In Bearbeitung",
     assignee: "A. Hoffmann",
-    sprint: "Sprint Ops-4",
+    sprint: "Sprint Betrieb-4",
     storyPoints: 3,
   },
   {
     key: "PROJ-602",
-    summary: "Backend: Forecast Pipeline Stabilität",
-    type: "Task",
-    status: "To Do",
+    summary: "Backend: Stabilität der Forecast-Pipeline",
+    type: "Aufgabe",
+    status: "Offen",
     assignee: "P. Richter",
     sprint: "Backlog",
     storyPoints: 5,
   },
   {
     key: "PROJ-603",
-    summary: "Backend: IoT Pipeline Stabilität",
-    type: "Story",
-    status: "In Review",
+    summary: "Backend: Stabilität der IoT-Pipeline",
+    type: "User Story",
+    status: "In Prüfung",
     assignee: "K. Fischer",
-    sprint: "Sprint Ops-4",
+    sprint: "Sprint Betrieb-4",
     storyPoints: 3,
   },
   {
     key: "PROJ-604",
-    summary: "Backend: GPS Pipeline Stabilität",
-    type: "Bug",
-    status: "In Progress",
+    summary: "Backend: Stabilität der GPS-Pipeline",
+    type: "Fehler",
+    status: "In Bearbeitung",
     assignee: "A. Hoffmann",
-    sprint: "Sprint Ops-4",
+    sprint: "Sprint Betrieb-4",
     storyPoints: 5,
   },
   {
     key: "PROJ-607",
-    summary: "Backend: Gaia-X Pipeline Stabilität",
-    type: "Task",
-    status: "To Do",
+    summary: "Backend: Stabilität der Gaia-X-Pipeline",
+    type: "Aufgabe",
+    status: "Offen",
     assignee: "A. Hoffmann",
-    sprint: "Sprint Ops-4",
+    sprint: "Sprint Betrieb-4",
     storyPoints: 3,
   },
   {
     key: "PROJ-608",
-    summary: "Backend: Datensouveränität Pipeline Stabilität",
-    type: "Story",
-    status: "In Review",
+    summary: "Backend: Stabilität der Pipeline für Datensouveränität",
+    type: "User Story",
+    status: "In Prüfung",
     assignee: "P. Richter",
     sprint: "Backlog",
     storyPoints: 5,
@@ -378,7 +379,7 @@ const initialJiraMatches: JiraMatch[] = [
     description:
       "SG-001 (Forecast) benötigt stabile SAC-Datenlieferung und Monitoring aus PROJ-601.",
     recommendation:
-      "Runbooks und Alert-Schwellen in PROJ-601 vor Abnahme des Forecast-Dashboards abstimmen.",
+      "Betriebshandbücher und Schwellenwerte für Alarme in PROJ-601 vor Abnahme des Forecast-Dashboards abstimmen.",
     status: "pending",
   },
   {
@@ -388,8 +389,9 @@ const initialJiraMatches: JiraMatch[] = [
     type: "overlap",
     severity: "minor",
     description:
-      "Versuchsteil-Status (SG-002) und Forecast-Pipeline (PROJ-602) teilen Teile-Master-Events.",
-    recommendation: "Event-Namen und Versionierung zwischen beiden Teams synchronisieren.",
+      "Versuchsteil-Status (SG-002) und Forecast-Pipeline (PROJ-602) nutzen dieselben Teilestamm-Ereignisse.",
+    recommendation:
+      "Ereignisnamen und Versionierung zwischen beiden Teams synchronisieren.",
     status: "pending",
   },
   {
@@ -400,7 +402,8 @@ const initialJiraMatches: JiraMatch[] = [
     severity: "major",
     description:
       "Händler-ETA (SG-003) hängt an zuverlässigen IoT-Meilensteinen aus PROJ-603.",
-    recommendation: "End-to-End-Latenz IoT→API in PROJ-603 messen und dokumentieren.",
+    recommendation:
+      "End-to-End-Latenz von IoT zur API in PROJ-603 messen und dokumentieren.",
     status: "pending",
   },
   {
@@ -411,7 +414,8 @@ const initialJiraMatches: JiraMatch[] = [
     severity: "critical",
     description:
       "Geofence-Alerts (SG-004) benötigen GPS-Stream-Qualität und Alerting aus PROJ-604.",
-    recommendation: "False-Positive-Handling und Eskalationspfad mit Operations klären.",
+    recommendation:
+      "Umgang mit Fehlalarmen und Eskalationspfad mit dem Betrieb klären.",
     status: "pending",
   },
   {
@@ -422,7 +426,8 @@ const initialJiraMatches: JiraMatch[] = [
     severity: "major",
     description:
       "Consent pro Use Case (SG-005) und Gaia-X-Pipeline (PROJ-607) müssen Policy- und Audit-Anforderungen gemeinsam erfüllen.",
-    recommendation: "Security & Legal Review vor Pilotfreigabe terminieren.",
+    recommendation:
+      "Sicherheits- und Rechtsprüfung vor Pilotfreigabe terminieren.",
     status: "pending",
   },
   {
@@ -433,12 +438,11 @@ const initialJiraMatches: JiraMatch[] = [
     severity: "major",
     description:
       "PROJ-608 (Datensouveränität) hat noch kein explizites Gegenstück in den aktuellen Generator-Story-Entwürfen.",
-    recommendation: "Mit Datenraum-Product-Owner klären, ob separates Epic nötig ist.",
+    recommendation:
+      "Mit dem Datenraum-Produktverantwortlichen klären, ob ein separates Epic nötig ist.",
     status: "pending",
   },
 ];
-
-const availableProjects = ALL_DEMO_PROJECT_OPTIONS;
 
 const docAnalyzeSteps = [
   { label: "Dokumente parsen" },
@@ -518,10 +522,24 @@ export function StoryGenerator() {
   const location = useLocation();
   const { revision } = useOnboardingReset();
   const prevOnboardingRevisionRef = useRef<number | null>(null);
-  const { setShowExportDialog, setExportScope, ticketSystem } = useAppContext();
+  const {
+    setShowExportDialog,
+    setExportScope,
+    ticketSystem,
+    selectedWorkspaceId,
+  } = useAppContext();
+
+  const projectsInWorkspace = useMemo(
+    () =>
+      listProjectsForSearchInWorkspace(selectedWorkspaceId).map(
+        ({ id, name }) => ({ id, name }),
+      ),
+    [selectedWorkspaceId],
+  );
+
   const workflowSteps = useMemo(
     () => [
-      { label: "Upload", shortLabel: "Upload" },
+      { label: "Hochladen", shortLabel: "Hochladen" },
       { label: "Dokumentenprüfung", shortLabel: "Dok.-Prüfung" },
       { label: "Story-Generierung", shortLabel: "Generierung" },
       {
@@ -545,6 +563,12 @@ export function StoryGenerator() {
   );
   const [docFixDialog, setDocFixDialog] = useState<DocIssue | null>(null);
   const [selectedProject, setSelectedProject] = useState<string>("");
+  useEffect(() => {
+    if (!selectedProject) return;
+    if (!projectsInWorkspace.some((p) => p.id === selectedProject)) {
+      setSelectedProject("");
+    }
+  }, [projectsInWorkspace, selectedProject]);
   const [searchQuery, setSearchQuery] = useState("");
   const [jiraMatches, setJiraMatches] =
     useState<JiraMatch[]>(initialJiraMatches);
@@ -759,14 +783,14 @@ export function StoryGenerator() {
   };
 
   const tourCompleteSaveDemo = useCallback(() => {
-    const id = selectedProject || availableProjects[0]?.id;
+    const id = selectedProject || projectsInWorkspace[0]?.id;
     if (!id) return;
     if (!selectedProject) setSelectedProject(id);
     setSaveSuccess(true);
     setTimeout(() => {
       navigate("/");
     }, 2000);
-  }, [selectedProject, availableProjects, navigate]);
+  }, [selectedProject, projectsInWorkspace, navigate]);
 
   const tourHandlers = useMemo(
     () => ({
@@ -854,10 +878,10 @@ export function StoryGenerator() {
       <>
       <div className="p-4 sm:p-6 xl:p-8 max-w-[1000px] mx-auto">
         <div className="mb-6">
-          <h1 className="text-[#1e1e2e]">AI Story Generator</h1>
+          <h1 className="text-[#1e1e2e]">Story-Generator (KI)</h1>
           <p className="text-[14px] text-muted-foreground mt-1">
             Laden Sie Ihre Dokumente hoch und lassen Sie die KI automatisch User
-            Stories generieren.
+            Stories erzeugen.
           </p>
         </div>
 
@@ -876,7 +900,7 @@ export function StoryGenerator() {
             onClick={startDocAnalysis}
           >
             <Sparkles className="w-4 h-4" />
-            Story Generator starten
+            Generator starten
           </Button>
         </div>
 
@@ -903,7 +927,7 @@ export function StoryGenerator() {
                 Dateien hierher ziehen
               </p>
               <p className="text-[13px] text-muted-foreground mb-4">
-                PDF, DOCX, TXT, Markdown, MP3/WAV (Aufnahmen) - Max. 50MB pro
+                PDF, DOCX, TXT, Markdown, MP3/WAV (Aufnahmen) – max. 50 MB pro
                 Datei
               </p>
               <Button
@@ -1195,7 +1219,7 @@ export function StoryGenerator() {
                   data-tour="storygen-generate-stories-btn"
                 >
                   <Sparkles className="w-4 h-4" />
-                  User Stories generieren
+                  User Stories erzeugen
                 </Button>
               </div>
             </div>
@@ -1338,7 +1362,7 @@ export function StoryGenerator() {
                         </p>
                         <p className="text-[12px] text-[#475569]">
                           {fixedCount} behoben, {dismissedCount} ignoriert. Sie
-                          können jetzt User Stories generieren.
+                          können Sie nun User Stories erzeugen.
                         </p>
                       </div>
                     </div>
@@ -1376,7 +1400,7 @@ export function StoryGenerator() {
                   disabled={pendingDocIssues === 0}
                   onClick={handleDocFixAllPending}
                 >
-                  <Wand2 className="w-3 h-3" /> Alle Auto-Fixen
+                  <Wand2 className="w-3 h-3" /> Alle automatisch beheben
                 </Button>
                 <Button
                   variant="outline"
@@ -1490,7 +1514,7 @@ export function StoryGenerator() {
                                   className="text-[11px] h-6 bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-1 px-2"
                                   onClick={() => setDocFixDialog(issue)}
                                 >
-                                  <Wand2 className="w-3 h-3" /> Auto-Fix
+                                  <Wand2 className="w-3 h-3" /> Automatisch beheben
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -1526,7 +1550,7 @@ export function StoryGenerator() {
                   Dokumentbereinigung
                 </DialogTitle>
                 <DialogDescription>
-                  Die KI hat einen Korrekturvorschlag generiert. Prüfen Sie die
+                  Die KI hat einen Korrekturvorschlag erstellt. Prüfen Sie die
                   Änderung.
                 </DialogDescription>
               </DialogHeader>
@@ -1640,10 +1664,10 @@ export function StoryGenerator() {
               <Loader2 className="w-7 h-7 text-[#4f46e5] animate-spin" />
             </div>
             <h2 className="text-[#1e1e2e] mb-2">
-              User Stories werden generiert...
+              User Stories werden erzeugt…
             </h2>
             <p className="text-[14px] text-muted-foreground mb-2">
-              Die KI generiert User Stories basierend auf den bereinigten
+              Die KI erzeugt User Stories auf Basis der bereinigten
               Dokumenten.
             </p>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#d1fae5]/50 border border-[#10b981]/20 mb-6">
@@ -1693,10 +1717,10 @@ export function StoryGenerator() {
   // ==============================
   if (phase === "jira-compare") {
     const jiraStatusConfig: Record<string, { color: string; bg: string }> = {
-      "To Do": { color: "#64748b", bg: "#f1f5f9" },
-      "In Progress": { color: "#4f46e5", bg: "#f1f0ff" },
-      "In Review": { color: "#f59e0b", bg: "#fef3c7" },
-      Done: { color: "#10b981", bg: "#d1fae5" },
+      Offen: { color: "#64748b", bg: "#f1f5f9" },
+      "In Bearbeitung": { color: "#4f46e5", bg: "#f1f0ff" },
+      "In Prüfung": { color: "#f59e0b", bg: "#fef3c7" },
+      Erledigt: { color: "#10b981", bg: "#d1fae5" },
     };
 
     return (
@@ -1810,7 +1834,7 @@ export function StoryGenerator() {
                       <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
                         <span>{ticket.type}</span>
                         <span>{ticket.assignee}</span>
-                        <span>{ticket.storyPoints} SP</span>
+                        <span>{ticket.storyPoints} AP</span>
                       </div>
                     </div>
                   );
@@ -2081,7 +2105,7 @@ export function StoryGenerator() {
   // ==============================
   if (phase === "save") {
     const projectName =
-      availableProjects.find((p) => p.id === selectedProject)?.name || "";
+      projectsInWorkspace.find((p) => p.id === selectedProject)?.name || "";
     const storiesToSave = stories.filter(
       (s) => storyActions[s.id] !== "rejected",
     );
@@ -2154,7 +2178,7 @@ export function StoryGenerator() {
                   className="w-full px-4 py-3 rounded-lg border border-border bg-white text-[14px] outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10 transition-all"
                 >
                   <option value="">Projekt wählen...</option>
-                  {availableProjects.map((p) => (
+                  {projectsInWorkspace.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
@@ -2276,7 +2300,7 @@ export function StoryGenerator() {
                         variant="secondary"
                         className="text-[9px] px-1 bg-[#0052cc]/10 text-[#0052cc]"
                       >
-                        Auto-Sync
+                        Auto-Synchronisation
                       </Badge>
                     </p>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -2434,7 +2458,7 @@ export function StoryGenerator() {
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-white min-w-0 w-full sm:w-auto">
                 <Search className="w-4 h-4 text-muted-foreground shrink-0" />
                 <input
-                  placeholder="Stories durchsuchen..."
+                  placeholder="Storys durchsuchen…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="bg-transparent outline-none text-[13px] min-w-0 flex-1 sm:w-[160px] sm:flex-initial placeholder:text-muted-foreground"
@@ -2542,7 +2566,7 @@ export function StoryGenerator() {
                                     className="text-[11px] text-muted-foreground mb-1 block"
                                     style={{ fontWeight: 600 }}
                                   >
-                                    Ziel (Goal)
+                                    Ziel
                                   </label>
                                   <textarea
                                     value={editForm.goal}
@@ -2560,7 +2584,7 @@ export function StoryGenerator() {
                                     className="text-[11px] text-muted-foreground mb-1 block"
                                     style={{ fontWeight: 600 }}
                                   >
-                                    Nutzen (Benefit)
+                                    Nutzen
                                   </label>
                                   <textarea
                                     value={editForm.benefit}
@@ -2593,21 +2617,12 @@ export function StoryGenerator() {
                                 </div>
                               </div>
                             ) : (
-                              <p className="text-[13px] text-[#475569] leading-relaxed">
-                                Als{" "}
-                                <span style={{ fontWeight: 500 }}>
-                                  {story.role}
-                                </span>{" "}
-                                möchte ich{" "}
-                                <span style={{ fontWeight: 500 }}>
-                                  {story.goal}
-                                </span>
-                                , damit{" "}
-                                <span style={{ fontWeight: 500 }}>
-                                  {story.benefit}
-                                </span>
-                                .
-                              </p>
+                              <GermanUserStoryFormulaLine
+                                role={story.role}
+                                goal={story.goal}
+                                benefit={story.benefit}
+                                className="text-[13px] leading-relaxed"
+                              />
                             )}
                           </div>
                         </div>
@@ -2884,9 +2899,8 @@ export function StoryGenerator() {
               {ticketSystem.exportAutomateTitle}
             </DialogTitle>
             <DialogDescription>
-              Stories direkt als {ticketSystem.exportSuccessNoun} erstellen – kein
-              Copy-Paste
-              erforderlich.
+              Stories direkt als {ticketSystem.exportSuccessNoun} anlegen – ohne
+              manuelles Kopieren und Einfügen.
             </DialogDescription>
           </DialogHeader>
 
@@ -2960,10 +2974,10 @@ export function StoryGenerator() {
                       className="text-[13px] text-[#1e1e2e]"
                       style={{ fontWeight: 500 }}
                     >
-                      Epic automatisch erstellen
+                      Epic automatisch anlegen
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      Gruppiert generierte Stories unter einem neuen Epic
+                      Fasst die erzeugten User Stories unter einem neuen Epic zusammen
                     </p>
                   </div>
                 </label>
@@ -2987,7 +3001,7 @@ export function StoryGenerator() {
                       Automatische Zuweisung
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      Basierend auf Skill-Matching und aktuellem Workload
+                      Basierend auf Kompetenzabgleich und aktueller Auslastung
                     </p>
                   </div>
                 </label>
@@ -3013,7 +3027,7 @@ export function StoryGenerator() {
                         variant="secondary"
                         className="text-[9px] px-1 bg-[#0052cc]/10 text-[#0052cc]"
                       >
-                        Auto-Sync
+                        Auto-Synchronisation
                       </Badge>
                     </p>
                     <p className="text-[11px] text-muted-foreground">
@@ -3055,7 +3069,7 @@ export function StoryGenerator() {
                 Tickets werden erstellt...
               </p>
               <p className="text-[12px] text-muted-foreground mb-4">
-                Duplikat-Check, Story-Erstellung, Verlinkung
+                Duplikatprüfung, Anlage der Storys, Verlinkung
               </p>
               <Progress value={jiraExportProgress} className="h-2 mb-3" />
               <p className="text-[11px] text-muted-foreground">

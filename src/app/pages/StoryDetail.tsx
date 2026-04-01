@@ -23,6 +23,7 @@ import {
   Lightbulb,
   ChevronRight,
 } from "lucide-react";
+import { UserStoryFormulaText } from "../components/UserStoryFormulaText";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
@@ -396,7 +397,7 @@ function StoryView({
 
           {/* Description */}
           <p className="text-[14px] text-slate-600 leading-relaxed mb-5">
-            {story.description}
+            <UserStoryFormulaText text={story.description} />
           </p>
 
           {/* Jira-specific meta */}

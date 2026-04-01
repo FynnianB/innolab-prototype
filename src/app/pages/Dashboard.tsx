@@ -24,6 +24,7 @@ import {
   getProjectIdsForWorkspace,
   PROJECT_LOGO_BY_ID,
   PROJECT_WORKSPACE,
+  PROTOTYPE_USER_DISPLAY_NAME,
   PROTOTYPE_USER_ROLE,
 } from "../data/workspaces";
 import { aggregateWorkspaceQualityInsights } from "../data/qualityInsights";
@@ -120,7 +121,7 @@ export function Dashboard() {
     [selectedWorkspaceId],
   );
 
-  /** Projekte, in deren Team Ihre Kennung (SM / Dr. Sarah Müller) geführt wird. */
+  /** Projekte, in deren Team Ihre Kennung (PO / Sarah Müller) geführt wird. */
   const displayedRecentProjects = useMemo(
     () =>
       dashboardRecentProjects.filter((p) =>
@@ -176,7 +177,7 @@ export function Dashboard() {
         {/* Header */}
         <div className="mb-6 sm:mb-8 min-w-0">
           <h1 className="text-[#1e1e2e] text-xl sm:text-2xl">
-            Willkommen zurück, Dr. Sarah Müller
+            Willkommen zurück, {PROTOTYPE_USER_DISPLAY_NAME}
           </h1>
           <p className="text-[13px] text-slate-500 mt-0.5">
             {PROTOTYPE_USER_ROLE} · Demo-Persona für diese Oberfläche
@@ -215,7 +216,7 @@ export function Dashboard() {
                     Ihre Projekte
                   </CardTitle>
                   <p className="text-[12px] text-muted-foreground font-normal mt-1 leading-snug">
-                    Nur Projekte, in deren Team Sie (SM) sind — alle Projekte unter{" "}
+                    Nur Projekte, in deren Team Sie (PO) sind — alle Projekte unter{" "}
                     <span className="text-[#475569]" style={{ fontWeight: 500 }}>Projekte</span>.
                   </p>
                 </div>

@@ -12,7 +12,7 @@ function navOverviewContent(): string {
   return (
     "Oben links sehen Sie Mandant und Produkt. Über das Hauptmenü wechseln Sie den Arbeitsbereich – jeweils mit eigenem Fokus:\n\n" +
     "Dashboard · Kennzahlen, Trends und Schnellzugriff auf Ihre Projekte im Workspace.\n\n" +
-    "Story Generator · Dokumente und Notizen hochladen, die KI prüft und bereinigt, dann User Stories erzeugen, mit Jira abgleichen und speichern.\n\n" +
+    "Story-Generator · Dokumente und Notizen hochladen, die KI prüft und bereinigt, dann User Stories erzeugen, mit dem Backlog abgleichen und speichern.\n\n" +
     "Guidelines · Dokumente gegen Regelwerke (z. B. DSGVO, Hausstandards) prüfen; Befunde bearbeiten und exportieren.\n\n" +
     "Story-Abhängigkeiten · Vorgänge filtern, Beziehungen (Duplikate, Blocker, verwandte Tickets) einsehen und Vorschläge bewerten.\n\n" +
     "Projekte · Projekte im Workspace listen, Teams und Versionen in der Detailansicht pflegen." +
@@ -109,11 +109,11 @@ export function getGuidelinesSteps(): Step[] {
       disableBeacon: true,
     },
     {
-      target: sel("guidelines-project-list"),
-      title: "Projekt wählen",
+      target: sel("guidelines-document-list"),
+      title: "Dokument öffnen",
       content:
-        "Jede Karte steht für ein prüfbares Dokument bzw. Paket im Workspace. Wählen Sie eines aus, um ins Review zu wechseln.\n\n" +
-        "Dort lesen Sie den Volltext, sehen markierte Fundstellen, filtern und blättern Seiten, und bearbeiten Sie Befunde in der Seitenleiste – inkl. Export der Ergebnisse oder Vorschläge zur Korrektur, je nach Demo-Stand.",
+        "Jede Karte ist ein hinterlegtes Lastenheft; das Projekt ist der Zuordnungskontext. Klicken Sie eine Karte, um die Guidelines-Prüfung zu starten.\n\n" +
+        "Oben simulieren Sie mit „Hochladen“ eine Datei ohne Dateidialog (wechselnde Demo-Dateinamen); nach dem Start erscheint der Eintrag in der Liste. Darunter sehen Sie den Analyse-Verlauf. Im Review lesen Sie den Demo-Text und die Befunde.",
       placement: "top",
       disableBeacon: true,
     },

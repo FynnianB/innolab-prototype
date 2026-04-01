@@ -19,6 +19,8 @@ import { getTicketSystem } from "../../data/ticketSystems";
 import {
   listProjectsForSearchInWorkspace,
   PROJECT_LOGO_BY_ID,
+  PROTOTYPE_USER_DISPLAY_NAME,
+  PROTOTYPE_USER_INITIALS,
   PROTOTYPE_USER_ROLE,
   resolveWorkspaceTicketSystemId,
 } from "../../data/workspaces";
@@ -408,7 +410,7 @@ export function Topbar() {
           >
             <div className="text-right mr-0 sm:mr-1 min-w-0 hidden md:block">
               <p className="text-[13px] truncate" style={{ fontWeight: 500 }}>
-                Dr. Sarah Müller
+                {PROTOTYPE_USER_DISPLAY_NAME}
               </p>
               <p className="text-[11px] text-muted-foreground -mt-0.5 truncate">
                 {PROTOTYPE_USER_ROLE}
@@ -416,7 +418,7 @@ export function Topbar() {
             </div>
             <Avatar className="h-8 w-8 flex-shrink-0">
               <AvatarFallback className="bg-[#4f46e5] text-white text-[12px]">
-                SM
+                {PROTOTYPE_USER_INITIALS}
               </AvatarFallback>
             </Avatar>
           </button>

@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -13,7 +14,7 @@ import { createPortal } from "react-dom";
 export type SearchEasterEggKind =
   | "hsv"
   | "fireworks"
-  | "bvbTire"
+  | "bvbRifle"
   | "schalke"
   | "thumbUp";
 
@@ -26,7 +27,7 @@ export type SearchEasterEggSpec = {
 export const SEARCH_EASTER_EGG_SPECS: Record<string, SearchEasterEggSpec> = {
   Fynnian: { kind: "hsv", caption: "Nur der HSV! ⚽" },
   Robert: { kind: "fireworks", caption: "Feuer frei! 🎆" },
-  Louis: { kind: "bvbTire", caption: "" },
+  Louis: { kind: "bvbRifle", caption: "" },
   Golo: { kind: "schalke", caption: "Glück auf! ⛏️" },
   Inesa: { kind: "thumbUp", caption: "Daumen hoch! 👍" },
 };
@@ -521,8 +522,20 @@ function SchalkeEasterMark({ className }: { className?: string }) {
   );
 }
 
-/** Stilisierte Fan-Hommage (Schwarz/Gelb), kein offizielles Vereinslogo */
-function BvbEasterMark({ className }: { className?: string }) {
+/**
+ * BVB-Wappen (Vereinsfarben Schwarz/Gelb, Schriftzug wie üblich am Wappen),
+ * mit Cartoon-Augen; bei eyesDead werden die Augen zu X.
+ */
+function BvbEasterMarkWithEyes({
+  className,
+  eyesDead = false,
+}: {
+  className?: string;
+  eyesDead?: boolean;
+}) {
+  const eyeY = 31;
+  const eyeLx = 36;
+  const eyeRx = 64;
   return (
     <svg
       className={className}
@@ -530,21 +543,61 @@ function BvbEasterMark({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
     >
-      <circle cx="50" cy="50" r="48" fill="#0a0a0a" />
-      <path
-        d="M50 12 L88 50 L50 88 L12 50 Z"
-        fill="#fde100"
-        stroke="#0a0a0a"
-        strokeWidth="3"
+      <circle cx="50" cy="50" r="48" fill="#fde100" />
+      <circle cx="50" cy="50" r="43.5" fill="#0a0a0a" />
+      <circle
+        cx="50"
+        cy="50"
+        r="41"
+        fill="none"
+        stroke="#fde100"
+        strokeWidth="1.1"
+        opacity="0.4"
       />
-      <path d="M50 28 L72 50 L50 72 L28 50 Z" fill="#0a0a0a" />
-      <circle cx="50" cy="50" r="9" fill="#fde100" />
+      <text
+        x="50"
+        y="54"
+        textAnchor="middle"
+        fill="#fde100"
+        fontSize="18"
+        fontWeight="800"
+        fontFamily="system-ui, -apple-system, Arial Black, Helvetica, sans-serif"
+      >
+        BVB
+      </text>
+      <text
+        x="50"
+        y="69"
+        textAnchor="middle"
+        fill="#fde100"
+        fontSize="10"
+        fontWeight="800"
+        fontFamily="system-ui, -apple-system, Arial Black, Helvetica, sans-serif"
+      >
+        09
+      </text>
+      <g style={{ opacity: eyesDead ? 0 : 1, transition: "opacity 0.07s ease-out" }}>
+        <circle cx={eyeLx} cy={eyeY} r="5.5" fill="#fefefe" />
+        <circle cx={eyeRx} cy={eyeY} r="5.5" fill="#fefefe" />
+        <circle cx={eyeLx + 1.2} cy={eyeY + 0.6} r="2.7" fill="#0a0a0a" />
+        <circle cx={eyeRx + 1.2} cy={eyeY + 0.6} r="2.7" fill="#0a0a0a" />
+      </g>
+      <g style={{ opacity: eyesDead ? 1 : 0, transition: "opacity 0.07s ease-out" }}>
+        <g stroke="#fde100" strokeWidth="2.2" strokeLinecap="round">
+          <line x1={eyeLx - 4} y1={eyeY - 4} x2={eyeLx + 4} y2={eyeY + 4} />
+          <line x1={eyeLx + 4} y1={eyeY - 4} x2={eyeLx - 4} y2={eyeY + 4} />
+          <line x1={eyeRx - 4} y1={eyeY - 4} x2={eyeRx + 4} y2={eyeY + 4} />
+          <line x1={eyeRx + 4} y1={eyeY - 4} x2={eyeRx - 4} y2={eyeY + 4} />
+        </g>
+      </g>
     </svg>
   );
 }
 
-function TireMark({ className }: { className?: string }) {
-  const treads = Array.from({ length: 18 }, (_, i) => i);
+/** Taktisches Fadenkreuz, rot (stilisiert) */
+function ScopeCrosshair({ className }: { className?: string }) {
+  const gid = useId().replace(/:/g, "");
+  const filterId = `louis-ch-glow-${gid}`;
   return (
     <svg
       className={className}
@@ -553,64 +606,331 @@ function TireMark({ className }: { className?: string }) {
       aria-hidden
     >
       <defs>
-        <radialGradient id="louis-tire-tread" cx="35%" cy="35%" r="65%">
-          <stop offset="0%" stopColor="#3d3d3d" />
-          <stop offset="100%" stopColor="#0d0d0d" />
-        </radialGradient>
+        <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="0" stdDeviation="1" floodColor="#f87171" floodOpacity="0.9" />
+        </filter>
       </defs>
-      <circle cx="50" cy="50" r="48" fill="url(#louis-tire-tread)" />
-      {treads.map((i) => (
-        <rect
-          key={i}
-          x="47"
-          y="3"
-          width="6"
-          height="14"
-          rx="1.5"
-          fill="#141414"
-          transform={`rotate(${i * 20} 50 50)`}
-        />
-      ))}
-      <circle
-        cx="50"
-        cy="50"
-        r="26"
-        fill="#52525b"
-        stroke="#3f3f46"
-        strokeWidth="5"
-      />
-      <circle cx="50" cy="50" r="12" fill="#27272a" />
+      <g
+        stroke="#ef4444"
+        strokeWidth="1.35"
+        fill="none"
+        strokeLinecap="round"
+        filter={`url(#${filterId})`}
+      >
+        <path d="M10 28 L10 10 L28 10" />
+        <path d="M72 10 L90 10 L90 28" />
+        <path d="M90 72 L90 90 L72 90" />
+        <path d="M28 90 L10 90 L10 72" />
+        <line x1="50" y1="14" x2="50" y2="38" />
+        <line x1="50" y1="62" x2="50" y2="86" />
+        <line x1="14" y1="50" x2="38" y2="50" />
+        <line x1="62" y1="50" x2="86" y2="50" />
+        <circle cx="50" cy="50" r="14" strokeOpacity="0.6" />
+        <circle cx="50" cy="50" r="2.2" fill="#fecaca" stroke="none" />
+      </g>
     </svg>
   );
 }
 
-type BvbTireStage = "wait" | "fall" | "roll";
+/**
+ * Jagdbüchse, Seitenansicht: schlanker Lauf (links), Vorderschaft, Metallgehäuse,
+ * Kugelspannhebel, Abzug, Pistolengriff + Holzkolben (rechts unten). Klar lesbar, stilisiert.
+ */
+function HuntingRifleSilhouette({ className }: { className?: string }) {
+  const gid = useId().replace(/:/g, "");
+  const wood = `louis-hunt-wood-${gid}`;
+  const metal = `louis-hunt-metal-${gid}`;
+  return (
+    <svg className={className} viewBox="0 0 400 132" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <defs>
+        <linearGradient id={wood} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#6b5344" />
+          <stop offset="50%" stopColor="#4a3728" />
+          <stop offset="100%" stopColor="#3d2a1f" />
+        </linearGradient>
+        <linearGradient id={metal} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#9ca3af" />
+          <stop offset="100%" stopColor="#4b5563" />
+        </linearGradient>
+      </defs>
+      {/* Schlanker Lauf — liegt auf einer Linie (y≈64), zeigt nach links */}
+      <rect x="4" y="60" width="248" height="9" rx="1.5" fill={`url(#${metal})`} />
+      <rect x="0" y="57" width="14" height="15" rx="2" fill="#d1d5db" />
+      <path d="M 4 60 L 10 54 L 10 75 L 4 69 Z" fill="#e5e7eb" opacity="0.9" />
+      {/* Kimme (klein) */}
+      <rect x="38" y="54" width="3" height="8" rx="0.5" fill="#374151" />
+      {/* Vorderschaft Holz unter dem Lauf */}
+      <path
+        d="M 72 69 L 210 69 L 208 84 L 78 88 Z"
+        fill={`url(#${wood})`}
+        stroke="#2d221a"
+        strokeWidth="0.8"
+      />
+      {/* Gehäuse / Kammer */}
+      <rect x="208" y="48" width="88" height="36" rx="4" fill="#52525b" stroke="#374151" strokeWidth="1" />
+      <rect x="218" y="42" width="52" height="10" rx="2" fill="#374151" />
+      {/* Verschlusshebel (Bolt) */}
+      <circle cx="244" cy="38" r="8" fill="#cbd5e1" stroke="#64748b" strokeWidth="1.2" />
+      <rect x="242" y="28" width="4" height="12" rx="1" fill="#94a3b8" />
+      {/* Abzugsbügel */}
+      <path
+        d="M 232 84 Q 228 102 246 104 L 252 90 L 238 84 Z"
+        fill="none"
+        stroke="#292524"
+        strokeWidth="3.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Pistolengriff + Kolben */}
+      <path
+        d="M 286 76 L 312 80 L 382 118 L 398 128 L 392 132 L 352 130 L 292 94 Z"
+        fill={`url(#${wood})`}
+        stroke="#2d221a"
+        strokeWidth="1"
+      />
+      <path
+        d="M 294 82 Q 340 100 378 124"
+        fill="none"
+        stroke="#2a1f17"
+        strokeWidth="1.5"
+        opacity="0.6"
+      />
+      {/* Schaftbacke */}
+      <ellipse cx="372" cy="124" rx="22" ry="7" fill="#3d2a1f" opacity="0.85" />
+    </svg>
+  );
+}
 
-function LouisBvbTireScene({
+/** Starkes Mündungsfeuer + Stern, am linken Laufende (FPS) */
+function LouisMuzzleBurst({ active }: { active: boolean }) {
+  if (!active) return null;
+  return (
+    <div
+      className="pointer-events-none absolute left-0 top-[53.5%] z-20 -translate-x-[38%] -translate-y-1/2"
+      style={{ width: 160, height: 160 }}
+      aria-hidden
+    >
+      <motion.div
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{
+          width: 130,
+          height: 130,
+          background:
+            "radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(254,240,138,0.95) 18%, rgba(251,191,36,0.75) 38%, rgba(234,88,12,0.45) 58%, transparent 72%)",
+          mixBlendMode: "screen",
+          filter: "blur(0.8px)",
+        }}
+        initial={{ scale: 0.15, opacity: 0 }}
+        animate={{ scale: [0.2, 1.45, 1.05], opacity: [0, 1, 0.95, 0] }}
+        transition={{ duration: 0.28, times: [0, 0.12, 0.45, 1], ease: "easeOut" }}
+      />
+      <motion.svg
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 overflow-visible"
+        width="200"
+        height="200"
+        viewBox="0 0 100 100"
+        initial={{ opacity: 0, rotate: 0 }}
+        animate={{ opacity: [0, 1, 0.85, 0], rotate: [0, 18, 8] }}
+        transition={{ duration: 0.26, times: [0, 0.1, 0.4, 1] }}
+      >
+        {[0, 45, 90, 135].map((deg) => (
+          <line
+            key={deg}
+            x1="50"
+            y1="50"
+            x2="50"
+            y2="12"
+            stroke="rgba(255,248,220,0.95)"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            transform={`rotate(${deg} 50 50)`}
+          />
+        ))}
+        <line x1="50" y1="50" x2="50" y2="18" stroke="rgba(251,191,36,0.9)" strokeWidth="2" strokeLinecap="round" />
+      </motion.svg>
+    </div>
+  );
+}
+
+/** Cartoon-„Blut“: kleine Kleckse + Tropfen (nicht realistisch) */
+function LouisBloodLayer({ active }: { active: boolean }) {
+  if (!active) return null;
+  return (
+    <div
+      className="pointer-events-none fixed left-1/2 top-[40%] z-[100003] -translate-x-1/2"
+      aria-hidden
+    >
+      <div className="relative h-40 w-48">
+        <motion.div
+          className="absolute left-1/2 top-0 h-6 w-6 -translate-x-1/2 rounded-full bg-red-600/90 blur-[1px]"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: [0, 1.4, 1], opacity: [0, 1, 0.85] }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+        />
+        <motion.div
+          className="absolute left-[42%] top-2 h-16 w-3 origin-top rounded-full bg-red-700/80"
+          initial={{ scaleY: 0, opacity: 0 }}
+          animate={{ scaleY: 1, opacity: [0, 0.9, 0.75] }}
+          transition={{ delay: 0.08, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        />
+        <motion.div
+          className="absolute right-[28%] top-3 h-12 w-2.5 origin-top rounded-full bg-red-600/75"
+          initial={{ scaleY: 0, opacity: 0 }}
+          animate={{ scaleY: 1, opacity: [0, 0.85, 0.65] }}
+          transition={{ delay: 0.12, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        />
+        <motion.div
+          className="absolute left-[20%] top-4 h-8 w-10 rounded-full bg-red-500/50 blur-sm"
+          initial={{ scale: 0, x: 0, y: 0 }}
+          animate={{ scale: 1, x: [-4, 2], y: [0, 14] }}
+          transition={{ delay: 0.05, duration: 0.55, ease: "easeOut" }}
+        />
+        <motion.div
+          className="absolute right-[15%] top-5 h-6 w-8 rounded-full bg-red-600/45 blur-sm"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1, x: [0, -6], y: [0, 18] }}
+          transition={{ delay: 0.1, duration: 0.6, ease: "easeOut" }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** Geschossstrahl: dick, mit Glow, über der Waffe (hoher z-index) */
+function LouisBulletTracer({ active }: { active: boolean }) {
+  const gid = useId().replace(/:/g, "");
+  const gradId = `louis-tracer-grad-${gid}`;
+  const glowFilter = `louis-tracer-glow-${gid}`;
+  if (!active) return null;
+  return (
+    <svg
+      className="pointer-events-none fixed inset-0 z-[100008] h-full w-full"
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id={gradId} gradientUnits="userSpaceOnUse" x1="94" y1="97" x2="50" y2="50">
+          <stop offset="0%" stopColor="rgba(255,255,255,1)" />
+          <stop offset="25%" stopColor="rgba(254,249,195,0.98)" />
+          <stop offset="55%" stopColor="rgba(251,191,36,0.85)" />
+          <stop offset="100%" stopColor="rgba(251,191,36,0)" />
+        </linearGradient>
+        <filter id={glowFilter} x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="1.8" result="b" />
+          <feMerge>
+            <feMergeNode in="b" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <motion.path
+        d="M 94 97 L 50 50"
+        fill="none"
+        stroke="rgba(251,191,36,0.55)"
+        strokeWidth="5.5"
+        strokeLinecap="round"
+        filter={`url(#${glowFilter})`}
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: [0, 0.95, 0.85, 0] }}
+        transition={{ duration: 0.32, times: [0, 0.14, 0.55, 1], ease: "easeOut" }}
+      />
+      <motion.path
+        d="M 94 97 L 50 50"
+        fill="none"
+        stroke={`url(#${gradId})`}
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: [0, 1, 0.92, 0] }}
+        transition={{ duration: 0.32, times: [0, 0.12, 0.52, 1], ease: "easeOut" }}
+      />
+    </svg>
+  );
+}
+
+/**
+ * Drehwinkel: Lauf liegt in der SVG waagerecht nach links; von unten rechts zur Bildmitte muss die
+ * Mündung nach oben links zeigen. Vorzeichen hängt mit transform-origin + CSS-Koordinaten zusammen —
+ * positiver Winkel kippt die Mündung hier sichtbar nach oben zur Mitte.
+ */
+function useLouisRifleAimDegrees(): number {
+  const [deg, setDeg] = useState(28);
+  useEffect(() => {
+    const update = () => {
+      const w = Math.max(1, window.innerWidth);
+      const h = window.innerHeight;
+      const tiltUpDeg = (Math.atan(h / w) * 180) / Math.PI;
+      setDeg(tiltUpDeg + 4);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+  return deg;
+}
+
+/** Kurzer Bildaufheller beim Schuss */
+function LouisShotScreenFlash({ active }: { active: boolean }) {
+  if (!active) return null;
+  return (
+    <motion.div
+      className="pointer-events-none fixed inset-0 z-[100007]"
+      style={{
+        background:
+          "radial-gradient(ellipse 85% 70% at 50% 42%, rgba(255,252,240,0.5) 0%, rgba(255,230,150,0.12) 35%, transparent 65%)",
+      }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: [0, 0.85, 0] }}
+      transition={{ duration: 0.22, times: [0, 0.2, 1], ease: "easeOut" }}
+      aria-hidden
+    />
+  );
+}
+
+function LouisBvbRifleScene({
   reduced,
   launchY,
 }: {
   reduced: boolean;
   launchY: number;
 }) {
-  const [stage, setStage] = useState<BvbTireStage>("wait");
-  const [logoSquashed, setLogoSquashed] = useState(false);
+  const [showCrosshair, setShowCrosshair] = useState(false);
+  const [showRifle, setShowRifle] = useState(false);
+  const [shot, setShot] = useState(false);
+  const [muzzleFlash, setMuzzleFlash] = useState(false);
+  const [showTracer, setShowTracer] = useState(false);
+  const [showSchalke, setShowSchalke] = useState(false);
+  const [screenFlash, setScreenFlash] = useState(false);
+  const aimDeg = useLouisRifleAimDegrees();
 
   useEffect(() => {
     if (reduced) return;
-    const tFall = window.setTimeout(() => setStage("fall"), 2000);
-    return () => window.clearTimeout(tFall);
+    const tCross = window.setTimeout(() => setShowCrosshair(true), 2000);
+    const tRifle = window.setTimeout(() => setShowRifle(true), 2600);
+    const tShot = window.setTimeout(() => {
+      setShowTracer(true);
+      setMuzzleFlash(true);
+      setScreenFlash(true);
+      setShot(true);
+    }, 3300);
+    const tFlashOff = window.setTimeout(() => setMuzzleFlash(false), 3650);
+    const tScreenOff = window.setTimeout(() => setScreenFlash(false), 3580);
+    const tTracerOff = window.setTimeout(() => setShowTracer(false), 3850);
+    const tSchalke = window.setTimeout(() => setShowSchalke(true), 4080);
+    return () => {
+      window.clearTimeout(tCross);
+      window.clearTimeout(tRifle);
+      window.clearTimeout(tShot);
+      window.clearTimeout(tFlashOff);
+      window.clearTimeout(tScreenOff);
+      window.clearTimeout(tTracerOff);
+      window.clearTimeout(tSchalke);
+    };
   }, [reduced]);
 
-  useEffect(() => {
-    if (reduced || stage !== "fall") return;
-    const tSquash = window.setTimeout(() => setLogoSquashed(true), 380);
-    const tRoll = window.setTimeout(() => setStage("roll"), 540);
-    return () => {
-      window.clearTimeout(tSquash);
-      window.clearTimeout(tRoll);
-    };
-  }, [reduced, stage]);
+  const logoClass =
+    "block w-[min(52vw,220px)] h-auto max-h-[40vh] aspect-square select-none";
 
   if (reduced) {
     return (
@@ -620,109 +940,177 @@ function LouisBvbTireScene({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.25 }}
       >
-        <BvbEasterMark className="block w-[min(52vw,220px)] h-auto max-h-[40vh] aspect-square select-none" />
+        <BvbEasterMarkWithEyes className={logoClass} />
       </motion.div>
     );
   }
 
-  const logoCrushed = logoSquashed || stage === "roll";
-
   return (
-    <div className="relative z-[1] flex min-h-[min(44vh,320px)] w-[min(92vw,420px)] items-center justify-center overflow-visible">
-      <motion.div
-        className="relative z-[1] drop-shadow-[0_24px_48px_rgba(0,0,0,0.5)]"
-        initial={{
-          y: launchY,
-          scale: 0.2,
-          rotate: -14,
-          opacity: 1,
-        }}
-        animate={
-          logoCrushed
-            ? {
-                y: 0,
-                scaleX: 1.38,
-                scaleY: 0.1,
-                rotate: 5,
-                opacity: 0.38,
-                filter: "blur(1.5px)",
-              }
-            : {
-                y: 0,
-                scale: 1,
-                rotate: 0,
+    <>
+      <div className="relative z-[1] flex min-h-[min(44vh,320px)] w-[min(92vw,420px)] items-center justify-center overflow-visible">
+        <div className="relative flex aspect-square w-[min(52vw,220px)] max-h-[40vh] max-w-[min(52vw,220px)] items-center justify-center">
+          {!showSchalke ? (
+            <motion.div
+              className="relative z-[1] inline-block drop-shadow-[0_24px_48px_rgba(0,0,0,0.5)]"
+              initial={{
+                y: launchY,
+                scale: 0.2,
+                rotate: -14,
                 opacity: 1,
-                filter: "blur(0px)",
+              }}
+              animate={
+                shot
+                  ? {
+                      y: [0, -14, 6, 22],
+                      x: [0, 10, -6, 0],
+                      scaleX: [1, 1.08, 1.22, 1.38],
+                      scaleY: [1, 0.72, 0.28, 0.06],
+                      rotate: [0, -8, 12, -24],
+                      opacity: [1, 1, 0.55, 0],
+                      filter: ["blur(0px)", "blur(0px)", "blur(1.5px)", "blur(4px)"],
+                    }
+                  : {
+                      y: 0,
+                      scale: 1,
+                      rotate: 0,
+                      opacity: 1,
+                      filter: "blur(0px)",
+                    }
               }
-        }
-        transition={
-          logoCrushed
-            ? { type: "spring", stiffness: 520, damping: 26, mass: 0.4 }
-            : {
-                type: "spring",
-                stiffness: 200,
-                damping: 16,
-                mass: 0.88,
+              transition={
+                shot
+                  ? {
+                      duration: 0.62,
+                      times: [0, 0.15, 0.45, 1],
+                      ease: [0.33, 0, 0.2, 1],
+                    }
+                  : {
+                      type: "spring",
+                      stiffness: 200,
+                      damping: 16,
+                      mass: 0.88,
+                    }
               }
-        }
-      >
-        <motion.div
-          animate={
-            logoCrushed
-              ? {}
-              : {
-                  y: [0, -6, 0, -4, 0],
-                  rotate: [0, 1.2, -1, 0.6, 0],
+            >
+              <motion.div
+                className="relative"
+                animate={
+                  shot
+                    ? {}
+                    : {
+                        y: [0, -6, 0, -4, 0],
+                        rotate: [0, 1.2, -1, 0.6, 0],
+                      }
                 }
-          }
-          transition={{
-            duration: 2.8,
-            delay: 0.65,
-            repeat: logoCrushed ? 0 : Infinity,
-            ease: "easeInOut",
-          }}
-        >
-          <BvbEasterMark className="block w-[min(52vw,220px)] h-auto max-h-[40vh] aspect-square select-none" />
-        </motion.div>
-      </motion.div>
+                transition={{
+                  duration: 2.8,
+                  delay: 0.65,
+                  repeat: shot ? 0 : Infinity,
+                  ease: "easeInOut",
+                }}
+              >
+                <BvbEasterMarkWithEyes className={logoClass} eyesDead={shot} />
+                {showCrosshair ? (
+                  <div className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center">
+                    <motion.div
+                      className="flex h-full w-full items-center justify-center"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{
+                        opacity: 1,
+                        scale: shot ? 1 : [1, 1.035, 1],
+                      }}
+                      transition={{
+                        opacity: { duration: 0.35, ease: "easeOut" },
+                        scale: shot
+                          ? { duration: 0 }
+                          : { duration: 1.4, repeat: Infinity, ease: "easeInOut" },
+                      }}
+                    >
+                      <ScopeCrosshair className="h-[88%] w-[88%] max-h-[min(36vh,200px)] max-w-[min(36vh,200px)]" />
+                    </motion.div>
+                  </div>
+                ) : null}
+              </motion.div>
+            </motion.div>
+          ) : null}
+          <AnimatePresence>
+            {showSchalke ? (
+              <motion.div
+                key="louis-schalke-finale"
+                className="absolute inset-0 z-[3] flex items-center justify-center"
+                initial={{ opacity: 0, scale: 0.78, y: 36 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, y: 12 }}
+                transition={{ type: "spring", stiffness: 280, damping: 24, mass: 0.9 }}
+              >
+                <SchalkeEasterMark className={logoClass} />
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      <LouisShotScreenFlash active={screenFlash} />
+      <LouisBulletTracer active={showTracer} />
+      <LouisBloodLayer active={shot && !showSchalke} />
 
       <motion.div
-        className="pointer-events-none absolute left-1/2 top-1/2 z-[3] h-[min(26vw,112px)] w-[min(26vw,112px)] -translate-x-1/2 -translate-y-1/2"
+        className="pointer-events-none fixed z-[100005] w-[min(78vmin,440px)] max-w-[95vw]"
+        style={{
+          bottom: "max(0.75rem, env(safe-area-inset-bottom, 0px))",
+          right: "max(0.35rem, env(safe-area-inset-right, 0px))",
+          transformOrigin: "88% 92%",
+        }}
         initial={false}
         animate={
-          stage === "wait"
+          showSchalke
             ? {
-                y: "-125vh",
-                x: 0,
-                rotate: 0,
+                x: "min(52vw, 280px)",
+                y: "min(58vh, 520px)",
+                rotate: aimDeg + 14,
                 opacity: 0,
+                transition: { duration: 0.42, ease: [0.4, 0, 0.2, 1] },
               }
-            : stage === "fall"
-              ? {
-                  y: 0,
-                  x: 0,
-                  rotate: 220,
-                  opacity: 1,
-                  transition: {
-                    duration: 0.52,
-                    ease: [0.52, 0, 0.74, 1],
-                  },
-                }
+            : showRifle
+              ? shot
+                ? {
+                    x: [0, 18, 5, 0],
+                    y: [0, 12, 3, 0],
+                    rotate: [aimDeg, aimDeg + 5, aimDeg - 2, aimDeg],
+                    opacity: 1,
+                    transition: {
+                      x: { duration: 0.24, times: [0, 0.35, 0.72, 1] },
+                      y: { duration: 0.24, times: [0, 0.35, 0.72, 1] },
+                      rotate: { duration: 0.24, times: [0, 0.35, 0.72, 1] },
+                    },
+                  }
+                : {
+                    x: 0,
+                    y: 0,
+                    rotate: aimDeg,
+                    opacity: 1,
+                    transition: {
+                      type: "spring",
+                      stiffness: 280,
+                      damping: 26,
+                      mass: 0.85,
+                    },
+                  }
               : {
-                  y: 8,
-                  x: 230,
-                  rotate: 220 + 520,
-                  opacity: 1,
-                  transition: {
-                    duration: 1.05,
-                    ease: "linear",
-                  },
+                  x: "min(58vw, 320px)",
+                  y: "min(52vh, 480px)",
+                  rotate: aimDeg + 9,
+                  opacity: 0,
+                  transition: { duration: 0 },
                 }
         }
       >
-        <TireMark className="h-full w-full drop-shadow-[0_18px_28px_rgba(0,0,0,0.65)]" />
+        <div className="relative drop-shadow-[0_20px_44px_rgba(0,0,0,0.72)]">
+          <HuntingRifleSilhouette className="h-auto w-full" />
+          <LouisMuzzleBurst active={muzzleFlash} />
+        </div>
       </motion.div>
-    </div>
+    </>
   );
 }
 
@@ -966,8 +1354,8 @@ export function SearchEasterEgg({
           );
         case "thumbUp":
           return <ThumbFlyIn reduced={reduced} launchY={launchY} />;
-        case "bvbTire":
-          return <LouisBvbTireScene reduced={reduced} launchY={launchY} />;
+        case "bvbRifle":
+          return <LouisBvbRifleScene reduced={reduced} launchY={launchY} />;
         case "fireworks":
           return null;
         default:

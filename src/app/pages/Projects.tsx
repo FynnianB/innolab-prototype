@@ -555,7 +555,11 @@ export function Projects() {
                 <Sparkles className="w-4 h-4" />
                 Stories generieren
               </Button>
-              <Button variant="outline" size="sm" className="text-[13px] gap-2" onClick={() => navigate("/guidelines")}>
+              <Button variant="outline" size="sm" className="text-[13px] gap-2" onClick={() =>
+                navigate(
+                  `/guidelines?tab=check&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
+                )
+              }>
                 <ShieldCheck className="w-4 h-4" />
                 Guidelines prüfen
               </Button>
@@ -748,7 +752,11 @@ export function Projects() {
                       variant="outline"
                       size="sm"
                       className="text-[13px] gap-2"
-                      onClick={() => navigate("/guidelines")}
+                      onClick={() =>
+                navigate(
+                  `/guidelines?tab=check&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
+                )
+              }
                     >
                       <ShieldCheck className="w-4 h-4" />
                       Guidelines prüfen
@@ -772,6 +780,7 @@ export function Projects() {
                   topProblems={projectQualityTop}
                   lastAnalyzed={projectQualityInsights.lastAnalyzed}
                   showActionLinks
+                  guidelinesCheckProjectId={selectedProject.id}
                 />
               )}
             </div>

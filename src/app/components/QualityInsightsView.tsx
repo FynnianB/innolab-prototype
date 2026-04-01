@@ -52,6 +52,8 @@ export interface QualityInsightsViewProps {
   compact?: boolean;
   /** Wenn false: keine Balkendiagramme je Kategorie/Typ (schmale Spalte) */
   showCategoryCharts?: boolean;
+  /** Deep-Link zu Guidelines „Dokumente prüfen“ für dieses Projekt */
+  guidelinesCheckProjectId?: string;
 }
 
 function maxCount(values: number[]): number {
@@ -100,7 +102,12 @@ export function QualityInsightsView({
   showActionLinks,
   compact,
   showCategoryCharts = true,
+  guidelinesCheckProjectId,
 }: QualityInsightsViewProps) {
+  const guidelinesCheckTo =
+    guidelinesCheckProjectId != null && guidelinesCheckProjectId !== ""
+      ? `/guidelines?tab=check&scope=project&project=${encodeURIComponent(guidelinesCheckProjectId)}`
+      : "/guidelines?tab=check";
   const gMax = maxCount(GUIDELINE_ORDER.map((k) => guidelinesByCategory[k]));
   const dMax = maxCount(DOC_ORDER.map((k) => docReviewByType[k]));
   const totalG =
@@ -317,7 +324,7 @@ export function QualityInsightsView({
       {showActionLinks ? (
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" className="text-[13px] gap-2" asChild>
-            <Link to="/guidelines">
+            <Link to={guidelinesCheckTo}>
               <ShieldCheck className="w-4 h-4" />
               Guidelines prüfen
             </Link>

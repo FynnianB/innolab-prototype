@@ -27,7 +27,7 @@ import { cn } from "../ui/utils";
 
 const baseNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: Sparkles, label: "Story Generator", path: "/story-generator" },
+  { icon: Sparkles, label: "Story-Generator", path: "/story-generator" },
   { icon: ShieldCheck, label: "Guidelines", path: "/guidelines" },
   { icon: ClipboardList, label: "Story-Abhängigkeiten", path: "/stories" },
   { icon: FolderOpen, label: "Projekte", path: "/projects" },

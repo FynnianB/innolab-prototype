@@ -130,14 +130,17 @@ export const PROJECT_WORKSPACE: Record<string, string> = {
   "P-503": "ws-porsche",
 };
 
-export const PROTOTYPE_USER_INITIALS = "SM";
+export const PROTOTYPE_USER_INITIALS = "PO";
+
+/** Anzeigename ohne Titel (Begrüßung, Topbar). */
+export const PROTOTYPE_USER_DISPLAY_NAME = "Sarah Müller";
 
 /**
  * Funktionale Rolle pro Kennung im Demo-Roster (Projektteam, Tooltips).
- * SM = eingeloggte Prototyp-Persona — muss mit Topbar & Dashboard übereinstimmen.
+ * PO = eingeloggte Prototyp-Persona — muss mit Topbar & Dashboard übereinstimmen.
  */
 export const TEAM_MEMBER_ROLE_BY_INITIALS: Record<string, string> = {
-  SM: "Requirements Lead",
+  PO: "Product Owner",
   TK: "Solution Architect",
   AH: "Software Engineer",
   JR: "Product Owner",
@@ -151,28 +154,28 @@ export const TEAM_MEMBER_ROLE_BY_INITIALS: Record<string, string> = {
 };
 
 export const PROTOTYPE_USER_ROLE =
-  TEAM_MEMBER_ROLE_BY_INITIALS[PROTOTYPE_USER_INITIALS] ?? "Requirements Lead";
+  TEAM_MEMBER_ROLE_BY_INITIALS[PROTOTYPE_USER_INITIALS] ?? "Product Owner";
 
 export const PROJECT_TEAM_BY_ID: Record<string, string[]> = {
-  "P-101": ["SM", "MK", "SR", "LB", "TH"],
-  "P-102": ["SM", "MK", "SR"],
-  "P-103": ["SM", "LB", "TH"],
-  "P-201": ["SM", "MK", "AH"],
-  "P-202": ["SM", "SR", "TH"],
+  "P-101": ["PO", "MK", "SR", "LB", "TH"],
+  "P-102": ["PO", "MK", "SR"],
+  "P-103": ["PO", "LB", "TH"],
+  "P-201": ["PO", "MK", "AH"],
+  "P-202": ["PO", "SR", "TH"],
   "P-203": ["LB", "MK"],
-  "P-301": ["SM", "SR", "BW"],
-  "P-302": ["SM", "MK", "TH"],
+  "P-301": ["PO", "SR", "BW"],
+  "P-302": ["PO", "MK", "TH"],
   "P-303": ["JR", "LB"],
-  "P-401": ["SM", "MK", "SR", "LB"],
-  "P-402": ["SM", "AH"],
+  "P-401": ["PO", "MK", "SR", "LB"],
+  "P-402": ["PO", "AH"],
   "P-403": ["TH", "BW"],
-  "P-501": ["SM", "MK", "SR"],
-  "P-502": ["SM", "LB", "JR"],
+  "P-501": ["PO", "MK", "SR"],
+  "P-502": ["PO", "LB", "JR"],
   "P-503": ["MK", "TH"],
 };
 
 export const TEAM_MEMBER_LABELS: Record<string, string> = {
-  SM: "Dr. Sarah Müller (Sie)",
+  PO: "Sarah Müller (Sie)",
   TK: "Thomas König",
   AH: "Anna Hoffmann",
   JR: "Jonas Richter",

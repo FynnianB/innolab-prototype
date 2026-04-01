@@ -27,6 +27,7 @@ import {
 } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { StoryLink } from "../components/StoryLink";
+import { UserStoryFormulaText } from "../components/UserStoryFormulaText";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import {
@@ -436,7 +437,7 @@ function IssueDetailPane({
               {story.title}
             </h2>
             <p className="text-[13px] text-slate-600 leading-relaxed">
-              {story.description}
+              <UserStoryFormulaText text={story.description} />
             </p>
             <Button
               variant="outline"

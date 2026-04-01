@@ -4,7 +4,7 @@ import { getItemTitle } from "../../data/stories";
 
 const routeLabels: Record<string, string> = {
   "": "Dashboard",
-  "story-generator": "Story Generator",
+  "story-generator": "Story-Generator",
   guidelines: "Guidelines",
   stories: "Story-Abhängigkeiten",
   "story-analysis": "Story-Abhängigkeiten",

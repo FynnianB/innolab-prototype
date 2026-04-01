@@ -107,7 +107,7 @@ interface AppState {
     scope: "stories" | "guidelines" | "tickets" | "all",
   ) => void;
 
-  /** Projekt-IDs im aktuellen Workspace, in deren Team Ihre Kennung (SM) geführt wird. */
+  /** Projekt-IDs im aktuellen Workspace, in deren Team Ihre Kennung (PO) geführt wird. */
   myProjectIdsInWorkspace: string[];
   getEffectiveProjectTeam: (projectId: string) => string[];
   addMemberToProjectTeam: (projectId: string, memberInitials: string) => void;

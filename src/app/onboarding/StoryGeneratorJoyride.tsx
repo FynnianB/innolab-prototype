@@ -30,11 +30,11 @@ function buildTourSteps(
       phase: "upload",
       step: {
         target: sel("storygen-workflow"),
-        title: "Rundgang: Story Generator",
+        title: "Rundgang: Story-Generator",
         content:
           `Auf dieser Seite bündeln Sie **Quellen** (Dateien, optional Confluence/Audio, Freitext) und starten eine Kette aus Analyse → Review → Story-Erzeugung → **${compareStepLabel}** → Speichern.\n\n` +
           "In der Tour sind **Demo-Dateien** bereits eingebunden, damit Sie den kompletten Ablauf ohne eigenes Material durchspielen können.\n\n" +
-          "Der Button unten in der Kachel löst dieselbe Aktion aus wie **Story Generator starten** in der Leiste.",
+          "Der Button unten in der Kachel löst dieselbe Aktion aus wie **Generator starten** in der Leiste.",
         placement: "bottom",
         disableBeacon: true,
         data: {
@@ -65,7 +65,7 @@ function buildTourSteps(
         title: "Befunde klären",
         content:
           "Links sehen Sie die **analysierten Quellen** und eine Kurzstatistik; rechts die **konkreten Befunde** mit Schwere und Fundstelle.\n\n" +
-          "Pro Eintrag können Sie z. B. einen **Auto-Fix** prüfen, einzeln **ignorieren** oder per Dialog entscheiden. **Alle ignorieren** schließt alle offenen Punkte auf einmal – sinnvoll für einen schnellen Demo-Durchlauf.\n\n" +
+          "Pro Eintrag können Sie z. B. eine **automatische Korrektur** prüfen, einzeln **ignorieren** oder per Dialog entscheiden. **Alle ignorieren** schließt alle offenen Punkte auf einmal – sinnvoll für einen schnellen Demo-Durchlauf.\n\n" +
           "Erst wenn kein Befund mehr offen ist, wird die Story-Generierung freigegeben.",
         placement: "bottom",
         disableBeacon: true,
@@ -83,7 +83,7 @@ function buildTourSteps(
         content:
           "Jetzt wendet die KI die **bereinigten Fakten** aus den Dokumenten an und erzeugt daraus User-Story-Entwürfe (inkl. späterer Qualitäts- und Konsistenzprüfung in der nächsten Phase).\n\n" +
           "Ohne vorherige Klärung der Dokument-Befunde wäre die Ausgabe unsicher – deshalb ist dieser Schritt bewusst erst jetzt möglich.\n\n" +
-          "Der Button in der Kachel entspricht **User Stories generieren** oben rechts.",
+          "Der Button in der Kachel entspricht **User Stories erzeugen** oben rechts.",
         placement: "bottom",
         disableBeacon: true,
         data: {
@@ -183,7 +183,7 @@ function tutorialCardCtaForStep(
   | undefined {
   switch (tourIdx) {
     case 1:
-      return { label: "Story Generator starten", onClick: h.startDocAnalysis };
+      return { label: "Generator starten", onClick: h.startDocAnalysis };
     case 3:
       return {
         label: "Alle ignorieren",
@@ -192,7 +192,7 @@ function tutorialCardCtaForStep(
       };
     case 4:
       return {
-        label: "User Stories generieren",
+        label: "User Stories erzeugen",
         onClick: h.startStoryGeneration,
         disabled: !opts.allResolved,
       };
