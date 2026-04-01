@@ -17,7 +17,7 @@ function navOverviewContent(): string {
     "Story-Abhängigkeiten · Verknüpfungen zwischen Stories\n" +
     "Projekte · Teams und Archiv" +
     cj +
-    "\n\nDarunter: Einstellungen und Hilfe & Support."
+    "\n\nDarunter: Einstellungen und Hilfe & Support (setzt die Tour dieser Seite zurück und startet sie neu, sofern hier eine Tour vorgesehen ist)."
   );
 }
 

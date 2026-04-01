@@ -44,13 +44,16 @@ const bottomItems: Array<{
   label: string;
   path: string;
   resetOnboarding?: boolean;
+  /** Nur die Tour dieser Seite zurücksetzen, ohne Navigation — neu starten, falls hier eine Tour existiert. */
+  stayOnCurrentPage?: boolean;
 }> = [
   { icon: Settings, label: "Einstellungen", path: "/settings" },
   {
     icon: HelpCircle,
     label: "Hilfe & Support",
-    path: "/",
+    path: "/help",
     resetOnboarding: true,
+    stayOnCurrentPage: true,
   },
 ];
 
@@ -68,7 +71,7 @@ export function Sidebar({
   const effectiveCollapsed = isLgUp && collapsed;
   const location = useLocation();
   const navigate = useNavigate();
-  const { resetAllTours } = useOnboardingReset();
+  const { resetTourForCurrentRoute } = useOnboardingReset();
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
@@ -79,11 +82,16 @@ export function Sidebar({
     ? [...baseNavItems, customerJourneyItem]
     : baseNavItems;
 
-  const go = (path: string, options?: { resetOnboarding?: boolean }) => {
+  const go = (
+    path: string,
+    options?: { resetOnboarding?: boolean; stayOnCurrentPage?: boolean },
+  ) => {
     if (options?.resetOnboarding) {
-      resetAllTours();
+      resetTourForCurrentRoute();
     }
-    navigate(path);
+    if (!options?.stayOnCurrentPage) {
+      navigate(path);
+    }
     onMobileOpenChange?.(false);
   };
 
@@ -196,6 +204,7 @@ export function Sidebar({
                 onClick={() =>
                   go(item.path, {
                     resetOnboarding: Boolean(item.resetOnboarding),
+                    stayOnCurrentPage: Boolean(item.stayOnCurrentPage),
                   })
                 }
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] text-[#475569] hover:bg-[#f1f5f9] transition-colors ${
