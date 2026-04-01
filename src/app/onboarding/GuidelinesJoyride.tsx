@@ -19,17 +19,28 @@ const GUIDELINES_TAB_STEPS: Step[] = [
     title: "Auswertungsbereich",
     content:
       "Hier wählen Sie **Gesamter Workspace** oder ein **konkretes Projekt** (Auswahl rechts im Feld). Die Einstellung gilt für alle Tabs in dieser Ansicht.\n\n" +
-      "Mit **Weiter** folgt der erste Eintrag in der Tab-Navigation: **Übersicht & Analyse**.",
+      "Mit **Weiter** folgt der erste Tab: **Dokumente prüfen**.",
     placement: "bottom",
     disableBeacon: true,
     spotlightPadding: 10,
   },
   {
-    target: sel("guidelines-nav-overview"),
-    title: "Übersicht & Analyse",
+    target: sel("guidelines-nav-check"),
+    title: "Dokumente prüfen",
     content:
-      "Dieser Tab zeigt **aggregierte Kennzahlen** und den **Projektvergleich** für den gewählten Auswertungsbereich.\n\n" +
-      "**Weiter** springt zum nächsten Navigationspunkt (**Regelwerk**) und wechselt dorthin.",
+      "**Simulierter Upload**, die Liste der Demo-Lastenhefte und unten die Tabelle **Analyse-Verlauf** — alles in diesem Bereich.\n\n" +
+      "Eine Karte startet die Review; **Zurück zu Dokumente prüfen** holt Sie hierher zurück.\n\n" +
+      "**Weiter** springt zu **Analyse**.",
+    placement: "bottom",
+    disableBeacon: true,
+    spotlightPadding: 6,
+  },
+  {
+    target: sel("guidelines-nav-overview"),
+    title: "Analyse",
+    content:
+      "Hier sehen Sie **aggregierte Kennzahlen** und den **Projektvergleich** für den gewählten Auswertungsbereich.\n\n" +
+      "**Weiter** wechselt zum Tab **Regelwerk**.",
     placement: "bottom",
     disableBeacon: true,
     spotlightPadding: 6,
@@ -38,18 +49,7 @@ const GUIDELINES_TAB_STEPS: Step[] = [
     target: sel("guidelines-nav-rules"),
     title: "Regelwerk",
     content:
-      "Hier pflegen Sie den **Regelkatalog**. Bei Projektauswahl oben werden fremde Projektregeln ausgeblendet; im **gesamten Workspace** sehen Sie alle Regeln.\n\n" +
-      "**Weiter** wechselt zum letzten Tab in der Leiste.",
-    placement: "bottom",
-    disableBeacon: true,
-    spotlightPadding: 6,
-  },
-  {
-    target: sel("guidelines-nav-check"),
-    title: "Dokumente prüfen",
-    content:
-      "**Simulierter Upload**, die Liste der Demo-Lastenhefte und unten die Tabelle **Analyse-Verlauf** — alles in diesem Bereich.\n\n" +
-      "Eine Karte startet die Review; **Zurück zu Dokumente prüfen** holt Sie hierher zurück.",
+      "Hier pflegen Sie den **Regelkatalog**. Bei Projektauswahl oben werden fremde Projektregeln ausgeblendet; im **gesamten Workspace** sehen Sie alle Regeln.",
     placement: "bottom",
     disableBeacon: true,
     spotlightPadding: 6,
@@ -79,7 +79,7 @@ export function GuidelinesJoyride({ setActiveTab }: GuidelinesJoyrideProps) {
       return;
     }
     setRun(false);
-    setActiveTabRef.current("overview");
+    setActiveTabRef.current("check");
     const t = window.setTimeout(() => setRun(true), 320);
     return () => window.clearTimeout(t);
   }, [completed, steps.length, revision]);
@@ -89,9 +89,9 @@ export function GuidelinesJoyride({ setActiveTab }: GuidelinesJoyrideProps) {
 
     if (type === EVENTS.STEP_AFTER && typeof index === "number") {
       const tabAfterStep: Partial<Record<number, GuidelinesMainTab>> = {
-        0: "overview",
-        1: "rules",
-        2: "check",
+        0: "check",
+        1: "overview",
+        2: "rules",
       };
       const next = tabAfterStep[index];
       if (next) {

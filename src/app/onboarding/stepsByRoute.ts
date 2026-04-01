@@ -13,7 +13,7 @@ function navOverviewContent(): string {
     "Oben links sehen Sie Mandant und Produkt. Über das Hauptmenü wechseln Sie den Arbeitsbereich – jeweils mit eigenem Fokus:\n\n" +
     "Dashboard · Kennzahlen, Trends und Schnellzugriff auf Ihre Projekte im Workspace.\n\n" +
     "Story-Generator · Dokumente und Notizen hochladen, die KI prüft und bereinigt, dann User Stories erzeugen, mit dem Backlog abgleichen und speichern.\n\n" +
-    "Compliance Check · Auswertungsbereich, Übersicht & Analyse, Regelwerk sowie Dokumente prüfen inkl. Verlauf; Befunde bearbeiten und exportieren.\n\n" +
+    "Compliance Check · Auswertungsbereich, Dokumente prüfen, Analyse sowie Regelwerk inkl. Verlauf; Befunde bearbeiten und exportieren.\n\n" +
     "Story-Abhängigkeiten · Vorgänge filtern; Ticket-Links und erkannte Vorschläge getrennt einsehen, Vorschläge übernehmen oder ignorieren.\n\n" +
     "Projekte · Projekte im Workspace listen, Teams und Versionen in der Detailansicht pflegen." +
     cj +

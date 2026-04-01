@@ -40,7 +40,7 @@ import { GuidelinesCheckReview } from "../components/guidelines/GuidelinesCheckR
 import { useGuidelinesCheckState } from "../components/guidelines/useGuidelinesCheckState";
 import { GuidelinesJoyride } from "../onboarding/GuidelinesJoyride";
 
-const VALID_TABS: GuidelinesMainTab[] = ["overview", "rules", "check"];
+const VALID_TABS: GuidelinesMainTab[] = ["check", "overview", "rules"];
 
 type SessionUploadedGuidelineDoc = {
   id: string;
@@ -53,7 +53,7 @@ function parseTab(raw: string | null): GuidelinesMainTab {
   if (raw && VALID_TABS.includes(raw as GuidelinesMainTab)) {
     return raw as GuidelinesMainTab;
   }
-  return "overview";
+  return "check";
 }
 
 export function GuidelinesChecker() {

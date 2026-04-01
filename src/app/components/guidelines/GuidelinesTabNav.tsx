@@ -1,9 +1,9 @@
 export type GuidelinesMainTab = "overview" | "rules" | "check";
 
 const TABS: { key: GuidelinesMainTab; label: string }[] = [
-  { key: "overview", label: "Übersicht & Analyse" },
-  { key: "rules", label: "Regelwerk" },
   { key: "check", label: "Dokumente prüfen" },
+  { key: "overview", label: "Analyse" },
+  { key: "rules", label: "Regelwerk" },
 ];
 
 interface GuidelinesTabNavProps {
@@ -19,11 +19,11 @@ export function GuidelinesTabNav({ activeTab, onTabChange }: GuidelinesTabNavPro
           key={tab.key}
           type="button"
           data-tour={
-            tab.key === "overview"
-              ? "guidelines-nav-overview"
-              : tab.key === "rules"
-                ? "guidelines-nav-rules"
-                : "guidelines-nav-check"
+            tab.key === "check"
+              ? "guidelines-nav-check"
+              : tab.key === "overview"
+                ? "guidelines-nav-overview"
+                : "guidelines-nav-rules"
           }
           onClick={() => onTabChange(tab.key)}
           className={`px-4 py-2.5 text-[13px] border-b-2 transition-colors whitespace-nowrap shrink-0 ${
