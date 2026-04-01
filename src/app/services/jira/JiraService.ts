@@ -67,6 +67,18 @@ interface JiraSearchResponse {
   isLast?: boolean;
 }
 
+interface JiraCreateIssueResponse {
+  id?: string;
+  key?: string;
+}
+
+export interface JiraIssueMeta {
+  key: string;
+  updated?: string;
+  projectKey?: string;
+  projectName?: string;
+}
+
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.trim().replace(/\/+$/, "");
 }
@@ -199,6 +211,60 @@ function mapRelationType(label: string | undefined): TicketRelation["type"] {
   if (n.includes("block")) return "blocks";
   if (n.includes("depend")) return "depends_on";
   return "related_to";
+}
+
+function mapLocalTypeToJiraIssueType(type: Story["type"]): string {
+  if (type === "Epic") return "Epic";
+  if (type === "Bug") return "Bug";
+  if (type === "Task") return "Task";
+  return "Story";
+}
+
+function mapLocalPriorityToJiraPriority(
+  priority: Story["priority"],
+): "High" | "Medium" | "Low" {
+  if (priority === "Hoch") return "High";
+  if (priority === "Niedrig") return "Low";
+  return "Medium";
+}
+
+function textToAdf(text: string): unknown {
+  const lines = text
+    .split(/\r?\n/g)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) {
+    return {
+      type: "doc",
+      version: 1,
+      content: [],
+    };
+  }
+  return {
+    type: "doc",
+    version: 1,
+    content: lines.map((line) => ({
+      type: "paragraph",
+      content: [{ type: "text", text: line }],
+    })),
+  };
+}
+
+function looksLikeJiraProjectKey(value: string | undefined): boolean {
+  if (!value) return false;
+  return /^[A-Z][A-Z0-9_]{1,31}$/.test(value.trim().toUpperCase());
+}
+
+export function resolveStoryProjectKey(
+  story: Story,
+  config: JiraConnectionInput,
+): string | undefined {
+  const explicit = story.jiraProjectKey?.trim();
+  if (explicit) return explicit;
+  const projectAsKey = story.project?.trim().toUpperCase();
+  if (looksLikeJiraProjectKey(projectAsKey)) return projectAsKey;
+  const firstConfigured = config.projectKeys.find((k) => k.trim());
+  return firstConfigured?.trim();
 }
 
 function sanitizeIdPart(part: string): string {
@@ -365,6 +431,9 @@ function mapIssuesToStories(
       assignee: fields?.assignee?.displayName || undefined,
       sprint: extractSprint(fields),
       storyPoints,
+      jiraIssueKey: key,
+      jiraProjectKey: fields?.project?.key?.trim() || undefined,
+      jiraUpdatedAt: fields?.updated,
     };
 
     stories.push(mapped);
@@ -477,4 +546,140 @@ export async function importJiraProjectData(
     touchedIssueIds: stories.map((s) => s.id),
     isIncremental,
   };
+}
+
+async function parseProxyResponseJson<T>(
+  response: Response,
+  defaultErrorPrefix: string,
+): Promise<T> {
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `${defaultErrorPrefix} (${response.status}): ${text || response.statusText}`,
+    );
+  }
+  if (response.status === 204) {
+    return {} as T;
+  }
+  return (await response.json()) as T;
+}
+
+export async function fetchJiraIssueMeta(
+  config: JiraConnectionInput,
+  issueKey: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<JiraIssueMeta | null> {
+  const baseUrl = normalizeBaseUrl(config.baseUrl);
+  const email = config.email.trim();
+  const apiToken = config.apiToken.trim();
+  const key = issueKey.trim();
+  if (!baseUrl || !email || !apiToken || !key) return null;
+
+  const response = await fetch(`/api/jira/issue/${encodeURIComponent(key)}?fields=updated,project`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      baseUrl,
+      email,
+      apiToken,
+      request: {},
+    }),
+    signal: options.signal,
+  });
+
+  const data = await parseProxyResponseJson<JiraIssue>(response, "Jira Issue-Meta Fehler");
+  if (!data.key) return null;
+  return {
+    key: data.key,
+    updated: data.fields?.updated,
+    projectKey: data.fields?.project?.key?.trim(),
+    projectName: data.fields?.project?.name?.trim(),
+  };
+}
+
+export async function createJiraIssue(
+  config: JiraConnectionInput,
+  story: Story,
+  projectKey: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<{ issueKey: string }> {
+  const baseUrl = normalizeBaseUrl(config.baseUrl);
+  const email = config.email.trim();
+  const apiToken = config.apiToken.trim();
+  const resolvedProjectKey = projectKey.trim();
+
+  const response = await fetch("/api/jira/issue", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      baseUrl,
+      email,
+      apiToken,
+      request: {
+        fields: {
+          project: { key: resolvedProjectKey },
+          issuetype: { name: mapLocalTypeToJiraIssueType(story.type) },
+          summary: story.title,
+          description: textToAdf(story.description),
+          labels: story.tags ?? [],
+          priority: { name: mapLocalPriorityToJiraPriority(story.priority) },
+        },
+      },
+    }),
+    signal: options.signal,
+  });
+
+  const data = await parseProxyResponseJson<JiraCreateIssueResponse>(
+    response,
+    "Jira Create-Issue Fehler",
+  );
+  const createdKey = data.key?.trim();
+  if (!createdKey) {
+    throw new Error("Jira Create-Issue Fehler: keine Issue-Key-Antwort erhalten.");
+  }
+  return { issueKey: createdKey };
+}
+
+export async function updateJiraIssue(
+  config: JiraConnectionInput,
+  issueKey: string,
+  story: Story,
+  options: { signal?: AbortSignal } = {},
+): Promise<void> {
+  const baseUrl = normalizeBaseUrl(config.baseUrl);
+  const email = config.email.trim();
+  const apiToken = config.apiToken.trim();
+  const key = issueKey.trim();
+
+  const response = await fetch(`/api/jira/issue/${encodeURIComponent(key)}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      baseUrl,
+      email,
+      apiToken,
+      request: {
+        fields: {
+          summary: story.title,
+          description: textToAdf(story.description),
+          labels: story.tags ?? [],
+          priority: { name: mapLocalPriorityToJiraPriority(story.priority) },
+        },
+      },
+    }),
+    signal: options.signal,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Jira Update-Issue Fehler (${response.status}): ${text || response.statusText}`,
+    );
+  }
 }

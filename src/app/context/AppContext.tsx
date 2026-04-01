@@ -43,7 +43,11 @@ import {
   type TicketSystemId,
 } from "../data/ticketSystems";
 import {
+  createJiraIssue,
+  fetchJiraIssueMeta,
   importJiraProjectData,
+  resolveStoryProjectKey,
+  updateJiraIssue,
   type JiraConnectionInput,
 } from "../services/jira/JiraService";
 
@@ -77,6 +81,15 @@ interface StoryUpdate {
   [key: string]: unknown;
 }
 
+export interface JiraSyncLink {
+  workspaceId: string;
+  localStoryId: string;
+  jiraIssueKey: string;
+  lastSyncedAt: string;
+  lastKnownLocalHash: string;
+  lastKnownJiraUpdatedAt?: string;
+}
+
 export interface CreateWorkspaceInput {
   name: string;
   logoSrc?: string;
@@ -96,12 +109,36 @@ export interface WorkspaceSyncState {
   lastImportedCount?: number;
 }
 
+export interface WorkspacePushState {
+  isPushing: boolean;
+  lastPushAt?: string;
+  lastError?: string;
+  createdCount?: number;
+  updatedCount?: number;
+  skippedCount?: number;
+  conflictCount?: number;
+  failedCount?: number;
+}
+
+export interface WorkspacePushResult {
+  createdCount: number;
+  updatedCount: number;
+  skippedCount: number;
+  conflictCount: number;
+  failedCount: number;
+}
+
+export interface PushWorkspaceOptions {
+  onProgress?: (message: string) => void;
+}
+
 export interface WorkspaceProject {
   id: string;
   name: string;
   description: string;
   storyCount: number;
   workspaceId: string;
+  jiraProjectKey?: string;
 }
 
 interface AppState {
@@ -135,6 +172,11 @@ interface AppState {
   ) => Promise<Workspace>;
   syncWorkspaceFromJira: (workspaceId: string) => Promise<void>;
   workspaceSyncStateById: Record<string, WorkspaceSyncState>;
+  pushWorkspaceToJira: (
+    workspaceId: string,
+    options?: PushWorkspaceOptions,
+  ) => Promise<WorkspacePushResult>;
+  workspacePushStateById: Record<string, WorkspacePushState>;
 
   storyActions: Record<string, StoryAction>;
   setStoryAction: (storyId: string, action: StoryAction) => void;
@@ -247,6 +289,93 @@ function keyByWorkspaceAndId(story: Story): string {
   return `${story.workspaceId ?? "__legacy__"}::${story.id}`;
 }
 
+function keyByWorkspaceAndStoryId(workspaceId: string, storyId: string): string {
+  return `${workspaceId}::${storyId}`;
+}
+
+const JIRA_SYNC_LINKS_STORAGE_KEY = "reqwise.jiraSyncLinks.v1";
+
+function readJiraSyncLinks(): Record<string, JiraSyncLink> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(JIRA_SYNC_LINKS_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return {};
+    const out: Record<string, JiraSyncLink> = {};
+    for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+      if (!v || typeof v !== "object") continue;
+      const r = v as Record<string, unknown>;
+      if (
+        typeof r.workspaceId !== "string" ||
+        typeof r.localStoryId !== "string" ||
+        typeof r.jiraIssueKey !== "string" ||
+        typeof r.lastSyncedAt !== "string" ||
+        typeof r.lastKnownLocalHash !== "string"
+      ) {
+        continue;
+      }
+      out[k] = {
+        workspaceId: r.workspaceId,
+        localStoryId: r.localStoryId,
+        jiraIssueKey: r.jiraIssueKey,
+        lastSyncedAt: r.lastSyncedAt,
+        lastKnownLocalHash: r.lastKnownLocalHash,
+        lastKnownJiraUpdatedAt:
+          typeof r.lastKnownJiraUpdatedAt === "string"
+            ? r.lastKnownJiraUpdatedAt
+            : undefined,
+      };
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function persistJiraSyncLinks(map: Record<string, JiraSyncLink>): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(JIRA_SYNC_LINKS_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    /* ignore */
+  }
+}
+
+function simpleHash(input: string): string {
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function storySyncHash(story: Story): string {
+  const canonical = {
+    title: story.title ?? "",
+    description: story.description ?? "",
+    type: story.type ?? "Story",
+    status: story.status ?? "To Do",
+    priority: story.priority ?? "Mittel",
+    effort: story.effort ?? "Mittel",
+    project: story.project ?? "",
+    tags: [...(story.tags ?? [])].sort(),
+    role: story.role ?? "",
+    goal: story.goal ?? "",
+    benefit: story.benefit ?? "",
+    acceptance: [...(story.acceptance ?? [])],
+    assignee: story.assignee ?? "",
+    sprint: story.sprint ?? "",
+    storyPoints:
+      typeof story.storyPoints === "number" && Number.isFinite(story.storyPoints)
+        ? story.storyPoints
+        : null,
+    jiraProjectKey: story.jiraProjectKey ?? "",
+  };
+  return simpleHash(JSON.stringify(canonical));
+}
+
 function sanitizeWorkspaceIdPart(value: string): string {
   return value.replace(/[^A-Za-z0-9_-]/g, "_");
 }
@@ -314,6 +443,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [workspaceSyncStateById, setWorkspaceSyncStateById] = useState<
     Record<string, WorkspaceSyncState>
   >({});
+  const [workspacePushStateById, setWorkspacePushStateById] = useState<
+    Record<string, WorkspacePushState>
+  >({});
+  const [jiraSyncLinksById, setJiraSyncLinksById] = useState<
+    Record<string, JiraSyncLink>
+  >(() => readJiraSyncLinks());
 
   const [projectTeamOverrides, setProjectTeamOverrides] = useState<
     Record<string, string[]>
@@ -321,10 +456,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const syncingWorkspaceIdsRef = useRef(new Set<string>());
   const storiesRef = useRef(stories);
+  const jiraSyncLinksRef = useRef(jiraSyncLinksById);
 
   useEffect(() => {
     storiesRef.current = stories;
   }, [stories]);
+
+  useEffect(() => {
+    jiraSyncLinksRef.current = jiraSyncLinksById;
+  }, [jiraSyncLinksById]);
+
+  useEffect(() => {
+    persistJiraSyncLinks(jiraSyncLinksById);
+  }, [jiraSyncLinksById]);
 
   useEffect(() => {
     if (isValidWorkspaceId(selectedWorkspaceId, workspaces)) return;
@@ -438,6 +582,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const upsertJiraSyncLinks = useCallback(
+    (
+      workspaceId: string,
+      storiesToLink: Story[],
+      nowIso: string,
+      fallbackIssueKey?: (story: Story) => string | undefined,
+    ) => {
+      if (storiesToLink.length === 0) return;
+      setJiraSyncLinksById((prev) => {
+        const next = { ...prev };
+        let changed = false;
+        for (const story of storiesToLink) {
+          const localStoryId = story.id;
+          const jiraIssueKey =
+            story.jiraIssueKey?.trim() ||
+            fallbackIssueKey?.(story)?.trim() ||
+            (story.source === "jira-import" ? story.id : "");
+          if (!jiraIssueKey) continue;
+          const key = keyByWorkspaceAndStoryId(workspaceId, localStoryId);
+          const prevLink = prev[key];
+          const nextLink: JiraSyncLink = {
+            workspaceId,
+            localStoryId,
+            jiraIssueKey,
+            lastSyncedAt: nowIso,
+            lastKnownLocalHash: storySyncHash(story),
+            lastKnownJiraUpdatedAt: story.jiraUpdatedAt ?? prevLink?.lastKnownJiraUpdatedAt,
+          };
+          if (JSON.stringify(prevLink) !== JSON.stringify(nextLink)) {
+            next[key] = nextLink;
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    },
+    [],
+  );
+
   const syncWorkspaceFromJiraInternal = useCallback(
     async (workspaceId: string, workspaceOverride?: Workspace) => {
       const workspace = workspaceOverride ?? getWorkspaceById(workspaceId, workspaces);
@@ -487,6 +670,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           (s) => !existingInWorkspace.has(s.id),
         ).length;
 
+        const storiesForLinkUpdate: Story[] = [];
+        const syncLinksSnapshot = jiraSyncLinksRef.current;
         setStories((prev) => {
           const incomingMap = new Map(
             result.stories.map((s) => [keyByWorkspaceAndId(s), s]),
@@ -497,15 +682,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
             const incoming = incomingMap.get(key);
             if (!incoming) return s;
             incomingMap.delete(key);
-            return { ...s, ...incoming };
+
+            const linkKey = keyByWorkspaceAndStoryId(workspaceId, s.id);
+            const link = syncLinksSnapshot[linkKey];
+            const localChangedSinceLastSync = link
+              ? storySyncHash(s) !== link.lastKnownLocalHash
+              : false;
+            const remoteChangedSinceLastSync =
+              Boolean(link) &&
+              isValidIsoDate(incoming.jiraUpdatedAt) &&
+              isValidIsoDate(link?.lastSyncedAt) &&
+              new Date(incoming.jiraUpdatedAt as string).getTime() >
+                new Date(link?.lastSyncedAt as string).getTime();
+
+            if (localChangedSinceLastSync && remoteChangedSinceLastSync) {
+              // Konfliktregel: lokal gewinnt
+              return s;
+            }
+
+            const mergedStory = {
+              ...s,
+              ...incoming,
+              jiraIssueKey: incoming.jiraIssueKey || s.jiraIssueKey || incoming.id,
+            };
+            storiesForLinkUpdate.push(mergedStory);
+            return mergedStory;
           });
 
           for (const story of incomingMap.values()) {
-            merged.push(story);
+            const nextStory = {
+              ...story,
+              jiraIssueKey: story.jiraIssueKey || story.id,
+            };
+            merged.push(nextStory);
+            storiesForLinkUpdate.push(nextStory);
           }
 
           return merged;
         });
+        upsertJiraSyncLinks(workspaceId, storiesForLinkUpdate, syncStartedAtIso);
 
         const jiraPrefix = `JR-${sanitizeWorkspaceIdPart(workspaceId)}-`;
         setRelations((prev) => {
@@ -570,7 +785,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         syncingWorkspaceIdsRef.current.delete(workspaceId);
       }
     },
-    [updateCustomWorkspace, workspaces],
+    [updateCustomWorkspace, upsertJiraSyncLinks, workspaces],
   );
 
   const syncWorkspaceFromJira = useCallback(
@@ -578,6 +793,206 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await syncWorkspaceFromJiraInternal(workspaceId);
     },
     [syncWorkspaceFromJiraInternal],
+  );
+
+  const pushWorkspaceToJira = useCallback(
+    async (
+      workspaceId: string,
+      options: PushWorkspaceOptions = {},
+    ): Promise<WorkspacePushResult> => {
+      const workspace = getWorkspaceById(workspaceId, workspaces);
+      if (!hasFilledJiraConnection(workspace) || !workspace?.jira) {
+        throw new Error("Workspace hat keine vollständige Jira-Verbindung.");
+      }
+
+      const nowIso = new Date().toISOString();
+      setWorkspacePushStateById((prev) => ({
+        ...prev,
+        [workspaceId]: {
+          ...(prev[workspaceId] ?? { isPushing: false }),
+          isPushing: true,
+          lastError: undefined,
+        },
+      }));
+
+      let createdCount = 0;
+      let updatedCount = 0;
+      let skippedCount = 0;
+      let conflictCount = 0;
+      let failedCount = 0;
+      const storyUpdates: StoryUpdate[] = [];
+      const storiesForLinkUpdate: Story[] = [];
+
+      try {
+        const workspaceStories = storiesRef.current.filter(
+          (s) => s.workspaceId === workspaceId,
+        );
+        const linksSnapshot = jiraSyncLinksRef.current;
+        options.onProgress?.(
+          `Jira-Export gestartet (${workspaceStories.length} Stories im Workspace).`,
+        );
+
+        for (const story of workspaceStories) {
+          const linkKey = keyByWorkspaceAndStoryId(workspaceId, story.id);
+          const link = linksSnapshot[linkKey];
+          const mappedIssueKey =
+            link?.jiraIssueKey?.trim() || story.jiraIssueKey?.trim() || "";
+          const localHash = storySyncHash(story);
+          const localChanged = link
+            ? localHash !== link.lastKnownLocalHash
+            : true;
+
+          if (!localChanged && mappedIssueKey) {
+            skippedCount += 1;
+            continue;
+          }
+
+          const pushLabel = `${story.id} (${story.title})`;
+
+          if (mappedIssueKey) {
+            let remoteMeta:
+              | Awaited<ReturnType<typeof fetchJiraIssueMeta>>
+              | null = null;
+            try {
+              remoteMeta = await fetchJiraIssueMeta(workspace.jira, mappedIssueKey);
+            } catch (error) {
+              const msg = error instanceof Error ? error.message : String(error);
+              if (!msg.includes("(404)")) {
+                failedCount += 1;
+                options.onProgress?.(
+                  `ERROR ${pushLabel}: Meta-Check fehlgeschlagen (${msg})`,
+                );
+                continue;
+              }
+            }
+
+            const remoteChangedSinceLastSync =
+              Boolean(link) &&
+              isValidIsoDate(remoteMeta?.updated) &&
+              isValidIsoDate(link?.lastSyncedAt) &&
+              new Date(remoteMeta?.updated as string).getTime() >
+                new Date(link?.lastSyncedAt as string).getTime();
+            if (remoteChangedSinceLastSync) {
+              conflictCount += 1;
+              options.onProgress?.(
+                `Konflikt ${pushLabel}: Jira wurde seit letztem Sync geändert, lokal gewinnt (overwrite).`,
+              );
+            }
+
+            try {
+              await updateJiraIssue(workspace.jira, mappedIssueKey, story);
+              updatedCount += 1;
+              options.onProgress?.(`Update ${pushLabel} -> ${mappedIssueKey}`);
+              storyUpdates.push({
+                id: story.id,
+                jiraIssueKey: mappedIssueKey,
+                jiraUpdatedAt: remoteMeta?.updated,
+                jiraProjectKey: remoteMeta?.projectKey || story.jiraProjectKey,
+              });
+              storiesForLinkUpdate.push({
+                ...story,
+                jiraIssueKey: mappedIssueKey,
+                jiraUpdatedAt: remoteMeta?.updated,
+                jiraProjectKey: remoteMeta?.projectKey || story.jiraProjectKey,
+              });
+              continue;
+            } catch (error) {
+              const msg = error instanceof Error ? error.message : String(error);
+              if (!msg.includes("(404)")) {
+                failedCount += 1;
+                options.onProgress?.(`ERROR ${pushLabel}: Update fehlgeschlagen (${msg})`);
+                continue;
+              }
+              options.onProgress?.(
+                `Hinweis ${pushLabel}: Jira-Issue ${mappedIssueKey} nicht gefunden, wird neu erstellt.`,
+              );
+            }
+          }
+
+          const projectKey = resolveStoryProjectKey(story, workspace.jira);
+          if (!projectKey) {
+            failedCount += 1;
+            options.onProgress?.(
+              `ERROR ${pushLabel}: Kein Jira-Projekt-Key ableitbar.`,
+            );
+            continue;
+          }
+
+          try {
+            const created = await createJiraIssue(workspace.jira, story, projectKey);
+            createdCount += 1;
+            options.onProgress?.(`Create ${pushLabel} -> ${created.issueKey}`);
+            storyUpdates.push({
+              id: story.id,
+              jiraIssueKey: created.issueKey,
+              jiraProjectKey: projectKey,
+            });
+            storiesForLinkUpdate.push({
+              ...story,
+              jiraIssueKey: created.issueKey,
+              jiraProjectKey: projectKey,
+            });
+          } catch (error) {
+            failedCount += 1;
+            const msg = error instanceof Error ? error.message : String(error);
+            options.onProgress?.(`ERROR ${pushLabel}: Create fehlgeschlagen (${msg})`);
+          }
+        }
+
+        if (storyUpdates.length > 0) {
+          setStories((prev) => {
+            const updateMap = new Map(storyUpdates.map((u) => [u.id, u]));
+            return prev.map((s) => {
+              const upd = updateMap.get(s.id);
+              return upd ? { ...s, ...upd } : s;
+            });
+          });
+        }
+        if (storiesForLinkUpdate.length > 0) {
+          upsertJiraSyncLinks(
+            workspaceId,
+            storiesForLinkUpdate,
+            nowIso,
+            (s) => s.jiraIssueKey || undefined,
+          );
+        }
+
+        const result: WorkspacePushResult = {
+          createdCount,
+          updatedCount,
+          skippedCount,
+          conflictCount,
+          failedCount,
+        };
+
+        setWorkspacePushStateById((prev) => ({
+          ...prev,
+          [workspaceId]: {
+            isPushing: false,
+            lastPushAt: nowIso,
+            createdCount,
+            updatedCount,
+            skippedCount,
+            conflictCount,
+            failedCount,
+            lastError: undefined,
+          },
+        }));
+        return result;
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : "Unbekannter Fehler";
+        setWorkspacePushStateById((prev) => ({
+          ...prev,
+          [workspaceId]: {
+            ...(prev[workspaceId] ?? { isPushing: false }),
+            isPushing: false,
+            lastError: msg,
+          },
+        }));
+        throw error;
+      }
+    },
+    [upsertJiraSyncLinks, workspaces],
   );
 
   useEffect(() => {
@@ -657,6 +1072,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             },
           );
 
+          const storiesForLinkUpdate: Story[] = [];
           setStories((prev) => {
             const incomingMap = new Map(
               result.stories.map((s) => [keyByWorkspaceAndId(s), s]),
@@ -667,15 +1083,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
               const incoming = incomingMap.get(key);
               if (!incoming) return s;
               incomingMap.delete(key);
-              return { ...s, ...incoming };
+              const mergedStory = {
+                ...s,
+                ...incoming,
+                jiraIssueKey: incoming.jiraIssueKey || s.jiraIssueKey || incoming.id,
+              };
+              storiesForLinkUpdate.push(mergedStory);
+              return mergedStory;
             });
 
             for (const story of incomingMap.values()) {
-              merged.push(story);
+              const nextStory = {
+                ...story,
+                jiraIssueKey: story.jiraIssueKey || story.id,
+              };
+              merged.push(nextStory);
+              storiesForLinkUpdate.push(nextStory);
             }
 
             return merged;
           });
+          upsertJiraSyncLinks(workspace.id, storiesForLinkUpdate, syncStartedAtIso);
 
           setRelations((prev) => {
             const merged = [...prev, ...result.relations];
@@ -721,7 +1149,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       return workspace;
     },
-    [customWorkspaces, persistCustom],
+    [customWorkspaces, persistCustom, upsertJiraSyncLinks],
   );
 
   const storiesInWorkspace = useMemo(
@@ -747,6 +1175,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const syntheticByName = new Map<string, string>();
     const storyCountById = new Map<string, number>();
+    const jiraProjectKeyById = new Map<string, string>();
     for (const story of storiesInWorkspace) {
       const projectName = story.project?.trim() || "Unbenanntes Projekt";
       let id = staticByName.get(projectName);
@@ -768,6 +1197,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         syntheticByName.set(projectName, id);
       }
       storyCountById.set(id, (storyCountById.get(id) ?? 0) + 1);
+      const pk = story.jiraProjectKey?.trim();
+      if (pk && !jiraProjectKeyById.has(id)) {
+        jiraProjectKeyById.set(id, pk);
+      }
     }
 
     const dynamicProjects: WorkspaceProject[] = Array.from(
@@ -778,11 +1211,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       description: "Aus Jira importiertes Projekt",
       storyCount: storyCountById.get(id) ?? 0,
       workspaceId: selectedWorkspaceId,
+      jiraProjectKey: jiraProjectKeyById.get(id),
     }));
 
     const all = [...staticProjects, ...dynamicProjects].map((p) => ({
       ...p,
       storyCount: storyCountById.get(p.id) ?? p.storyCount,
+      jiraProjectKey: jiraProjectKeyById.get(p.id) ?? p.jiraProjectKey,
     }));
     return all
       .filter((p) => p.storyCount > 0 || staticIds.includes(p.id))
@@ -928,6 +1363,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     createWorkspace,
     syncWorkspaceFromJira,
     workspaceSyncStateById,
+    pushWorkspaceToJira,
+    workspacePushStateById,
     storyActions,
     setStoryAction,
     resetStoryActions,

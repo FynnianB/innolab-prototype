@@ -792,6 +792,7 @@ export function StoryGenerator() {
         workspaceId: selectedWorkspaceId,
         tags: [],
         source: "ai-generated",
+        jiraProjectKey: selectedProjectMeta.jiraProjectKey,
         role: story.role,
         goal: story.goal,
         benefit: story.benefit,

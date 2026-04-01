@@ -141,6 +141,8 @@ export function Topbar() {
     createWorkspace,
     syncWorkspaceFromJira,
     workspaceSyncStateById,
+    pushWorkspaceToJira,
+    workspacePushStateById,
   } = useAppContext();
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -156,6 +158,12 @@ export function Topbar() {
   const [workspaceCreateMessage, setWorkspaceCreateMessage] =
     useState<string | null>(null);
   const [workspaceCreateLogs, setWorkspaceCreateLogs] = useState<string[]>([]);
+  const [showJiraExportDialog, setShowJiraExportDialog] = useState(false);
+  const [jiraExportPhase, setJiraExportPhase] = useState<
+    "idle" | "running" | "success" | "error"
+  >("idle");
+  const [jiraExportLogs, setJiraExportLogs] = useState<string[]>([]);
+  const [jiraExportMessage, setJiraExportMessage] = useState<string | null>(null);
   const [workspaceForm, setWorkspaceForm] = useState({
     name: "",
     logoSrc: "",
@@ -171,6 +179,10 @@ export function Topbar() {
 
   const appendWorkspaceLog = (line: string) => {
     setWorkspaceCreateLogs((prev) => [...prev, line]);
+  };
+
+  const appendJiraExportLog = (line: string) => {
+    setJiraExportLogs((prev) => [...prev, line]);
   };
 
   const formatErrorForDialog = (error: unknown): string => {
@@ -464,8 +476,38 @@ export function Topbar() {
     </div>
   );
 
+  const renderJiraExportLog = () => (
+    <div className="rounded-md border border-border bg-[#0b1021] text-[#dbeafe] px-3 py-2 text-[11px] max-h-[260px] overflow-auto whitespace-pre-wrap break-all font-mono">
+      {jiraExportLogs.length === 0
+        ? "Noch keine Log-Ausgaben."
+        : jiraExportLogs.join("\n")}
+    </div>
+  );
+
   const cancelWorkspaceCreation = () => {
     createAbortControllerRef.current?.abort();
+  };
+
+  const startJiraExport = async () => {
+    setShowJiraExportDialog(true);
+    setJiraExportPhase("running");
+    setJiraExportMessage(null);
+    setJiraExportLogs([]);
+    appendJiraExportLog(`Export gestartet (${new Date().toLocaleTimeString("de-DE")})`);
+    try {
+      const result = await pushWorkspaceToJira(selectedWorkspace.id, {
+        onProgress: (line) => appendJiraExportLog(line),
+      });
+      const summary = `Erstellt: ${result.createdCount}, Aktualisiert: ${result.updatedCount}, Übersprungen: ${result.skippedCount}, Konflikte (lokal gewinnt): ${result.conflictCount}, Fehler: ${result.failedCount}`;
+      appendJiraExportLog(summary);
+      setJiraExportMessage(summary);
+      setJiraExportPhase("success");
+    } catch (error) {
+      const msg = formatErrorForDialog(error);
+      appendJiraExportLog(`ERROR: ${msg}`);
+      setJiraExportMessage(msg);
+      setJiraExportPhase("error");
+    }
   };
 
   const headerActions = (
@@ -838,6 +880,7 @@ export function Topbar() {
           <DropdownMenuContent align="start" className="w-[260px]">
             {workspaces.map((ws) => {
               const sync = workspaceSyncStateById[ws.id];
+              const push = workspacePushStateById[ws.id];
               return (
                 <DropdownMenuItem
                   key={ws.id}
@@ -846,9 +889,9 @@ export function Topbar() {
                 >
                   <WorkspaceGlyph workspace={ws} sizeClass="w-6 h-6 mr-2" />
                   <span className="flex-1 truncate">{ws.name}</span>
-                  {sync?.isSyncing ? (
+                  {sync?.isSyncing || push?.isPushing ? (
                     <Loader2 className="w-3.5 h-3.5 text-[#4f46e5] animate-spin" />
-                  ) : sync?.lastError ? (
+                  ) : sync?.lastError || push?.lastError ? (
                     <AlertTriangle className="w-3.5 h-3.5 text-[#ef4444]" />
                   ) : ws.jira?.lastSyncStatus === "success" ? (
                     <CheckCircle2 className="w-3.5 h-3.5 text-[#10b981]" />
@@ -864,6 +907,16 @@ export function Topbar() {
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Jira aktualisieren
+              </DropdownMenuItem>
+            ) : null}
+            {selectedWorkspace.jira?.enabled ? (
+              <DropdownMenuItem
+                onClick={() => {
+                  void startJiraExport();
+                }}
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Änderungen nach Jira exportieren
               </DropdownMenuItem>
             ) : null}
             <DropdownMenuSeparator />
@@ -1158,6 +1211,95 @@ export function Topbar() {
               </Button>
             </DialogFooter>
           </>
+        )}
+      </DialogContent>
+    </Dialog>
+
+    <Dialog
+      open={showJiraExportDialog}
+      onOpenChange={(open) => {
+        const pushing = workspacePushStateById[selectedWorkspace.id]?.isPushing;
+        if (!open && pushing) return;
+        setShowJiraExportDialog(open);
+        if (!open) {
+          setJiraExportPhase("idle");
+          setJiraExportMessage(null);
+          setJiraExportLogs([]);
+        }
+      }}
+    >
+      <DialogContent className="sm:max-w-[620px]">
+        <DialogHeader>
+          <DialogTitle>Jira Export</DialogTitle>
+          <DialogDescription>
+            Inkrementeller Export für den aktuellen Workspace. Bei Konflikten gewinnt die lokale Version.
+          </DialogDescription>
+        </DialogHeader>
+
+        {jiraExportPhase === "running" ? (
+          <div className="py-4 space-y-4">
+            <div className="flex items-center gap-2 text-[13px] text-[#1e1e2e]">
+              <Loader2 className="w-4 h-4 animate-spin text-[#4f46e5]" />
+              Export läuft...
+            </div>
+            {renderJiraExportLog()}
+            <div className="text-[11px] text-muted-foreground">
+              Der Dialog bleibt offen. Schließen ist während des Exports deaktiviert.
+            </div>
+          </div>
+        ) : jiraExportPhase === "success" ? (
+          <div className="py-4 space-y-4">
+            <div className="flex items-center gap-2 text-[13px] text-[#065f46]">
+              <CheckCircle2 className="w-4 h-4 text-[#10b981]" />
+              Export abgeschlossen
+            </div>
+            {jiraExportMessage ? (
+              <div className="text-[12px] text-[#065f46] bg-[#ecfdf5] border border-[#bbf7d0] rounded-md px-3 py-2">
+                {jiraExportMessage}
+              </div>
+            ) : null}
+            {renderJiraExportLog()}
+            <DialogFooter>
+              <Button onClick={() => setShowJiraExportDialog(false)}>
+                Schließen
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : jiraExportPhase === "error" ? (
+          <div className="py-4 space-y-4">
+            <div className="flex items-center gap-2 text-[13px] text-[#7f1d1d]">
+              <AlertTriangle className="w-4 h-4 text-[#ef4444]" />
+              Export fehlgeschlagen
+            </div>
+            {jiraExportMessage ? (
+              <div className="text-[12px] text-[#7f1d1d] bg-[#fef2f2] border border-[#fecaca] rounded-md px-3 py-2 whitespace-pre-wrap break-all">
+                {jiraExportMessage}
+              </div>
+            ) : null}
+            {renderJiraExportLog()}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => void startJiraExport()}>
+                Erneut versuchen
+              </Button>
+              <Button onClick={() => setShowJiraExportDialog(false)}>
+                Schließen
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <div className="py-4 space-y-4">
+            <div className="text-[13px] text-[#1e1e2e]">
+              Starten Sie den Export für den aktuellen Workspace.
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowJiraExportDialog(false)}>
+                Abbrechen
+              </Button>
+              <Button onClick={() => void startJiraExport()}>
+                Export starten
+              </Button>
+            </DialogFooter>
+          </div>
         )}
       </DialogContent>
     </Dialog>

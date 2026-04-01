@@ -28,6 +28,11 @@ export interface Story {
   assignee?: string;
   sprint?: string;
   storyPoints?: number;
+
+  // Jira sync metadata (optional, only for connected workspaces)
+  jiraIssueKey?: string;
+  jiraProjectKey?: string;
+  jiraUpdatedAt?: string;
 }
 
 /** @deprecated Use Story instead */

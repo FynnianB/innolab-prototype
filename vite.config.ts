@@ -29,15 +29,56 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function jiraProxyMiddleware(): Connect.NextHandleFunction {
   return async (req, res, next) => {
-    if (req.url !== "/api/jira/search-jql") return next();
-    if (req.method !== "POST") {
-      res.statusCode = 405;
-      res.setHeader("Content-Type", "application/json");
-      res.end(JSON.stringify({ error: "Method not allowed" }));
-      return;
-    }
+    const incomingPath = typeof req.url === "string" ? req.url : "/";
+    const incomingUrl = new URL(incomingPath, "http://localhost");
+    const pathname = incomingUrl.pathname;
+    if (!pathname.startsWith("/api/jira/")) return next();
 
     try {
+      const route =
+        pathname === "/api/jira/search-jql"
+          ? { allowedMethod: "POST", jiraMethod: "POST", jiraPath: "/rest/api/3/search/jql" }
+          : pathname === "/api/jira/issue"
+            ? { allowedMethod: "POST", jiraMethod: "POST", jiraPath: "/rest/api/3/issue" }
+            : pathname.startsWith("/api/jira/issue/")
+              ? (() => {
+                  const issueKey = decodeURIComponent(
+                    pathname.slice("/api/jira/issue/".length),
+                  ).trim();
+                  if (!issueKey) return null;
+                  const suffix = incomingUrl.search || "";
+                  if (req.method === "POST") {
+                    return {
+                      allowedMethod: "POST",
+                      jiraMethod: "GET",
+                      jiraPath: `/rest/api/3/issue/${encodeURIComponent(issueKey)}${suffix}`,
+                    };
+                  }
+                  if (req.method === "PUT") {
+                    return {
+                      allowedMethod: "PUT",
+                      jiraMethod: "PUT",
+                      jiraPath: `/rest/api/3/issue/${encodeURIComponent(issueKey)}`,
+                    };
+                  }
+                  return null;
+                })()
+              : null;
+
+      if (!route) {
+        res.statusCode = 404;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: "Unknown Jira proxy endpoint" }));
+        return;
+      }
+
+      if (req.method !== route.allowedMethod) {
+        res.statusCode = 405;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: "Method not allowed" }));
+        return;
+      }
+
       const parsed = await readJsonBody(req);
       if (!isRecord(parsed)) {
         res.statusCode = 400;
@@ -51,7 +92,15 @@ function jiraProxyMiddleware(): Connect.NextHandleFunction {
       const apiToken = typeof parsed.apiToken === "string" ? parsed.apiToken : "";
       const requestBody = isRecord(parsed.request) ? parsed.request : null;
 
-      if (!baseUrl || !email || !apiToken || !requestBody) {
+      const requireRequestBody =
+        route.jiraMethod === "POST" || route.jiraMethod === "PUT";
+
+      if (
+        !baseUrl ||
+        !email ||
+        !apiToken ||
+        (requireRequestBody && !requestBody)
+      ) {
         res.statusCode = 400;
         res.setHeader("Content-Type", "application/json");
         res.end(
@@ -64,16 +113,19 @@ function jiraProxyMiddleware(): Connect.NextHandleFunction {
       }
 
       const auth = Buffer.from(`${email}:${apiToken}`).toString("base64");
-      const jiraUrl = `${normalizeBaseUrl(baseUrl)}/rest/api/3/search/jql`;
+      const jiraUrl = `${normalizeBaseUrl(baseUrl)}${route.jiraPath}`;
 
       const jiraResponse = await fetch(jiraUrl, {
-        method: "POST",
+        method: route.jiraMethod,
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
           Authorization: `Basic ${auth}`,
         },
-        body: JSON.stringify(requestBody),
+        body:
+          requireRequestBody && requestBody
+            ? JSON.stringify(requestBody)
+            : undefined,
       });
 
       const responseText = await jiraResponse.text();
