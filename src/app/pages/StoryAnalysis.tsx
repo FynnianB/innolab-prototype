@@ -48,6 +48,7 @@ import { useAppContext } from "../context/AppContext";
 import {
   allRelations,
   getRelationsForId,
+  getTicketRelationOrigin,
   type Story,
   type TicketRelation,
 } from "../data/stories";
@@ -196,38 +197,67 @@ function storyIdsTouchingRelationType(
 }
 
 /* ------------------------------------------------------------------ */
-/*  Relation Card (in focus mode)                                      */
+/*  Relation groups + Card                                              */
 /* ------------------------------------------------------------------ */
+
+function groupRelationsForStory(
+  rels: TicketRelation[],
+  storyId: string,
+  stories: Story[],
+): Record<string, { relation: TicketRelation; other: Story | undefined }[]> {
+  const groups: Record<
+    string,
+    { relation: TicketRelation; other: Story | undefined }[]
+  > = {
+    duplicates: [],
+    depends_on: [],
+    blocks: [],
+    related_to: [],
+  };
+  rels.forEach((r) => {
+    const otherId = r.sourceId === storyId ? r.targetId : r.sourceId;
+    const other = stories.find((s) => s.id === otherId);
+    const key = r.type in groups ? r.type : "related_to";
+    groups[key].push({ relation: r, other });
+  });
+  return groups;
+}
+
+function countGrouped(
+  g: Record<string, { relation: TicketRelation; other: Story | undefined }[]>,
+): number {
+  return Object.values(g).reduce((n, arr) => n + arr.length, 0);
+}
 
 function RelationCard({
   relation,
   otherStory,
-  confirmedIds,
-  dismissedIds,
+  variant,
+  ticketImportLabel,
   onConfirm,
   onDismiss,
 }: {
   relation: TicketRelation;
   otherStory: Story | undefined;
-  confirmedIds: Set<string>;
-  dismissedIds: Set<string>;
+  variant: "system" | "pending" | "accepted";
+  ticketImportLabel: string;
   onConfirm: (id: string) => void;
   onDismiss: (id: string) => void;
 }) {
   const cfg =
     relationTypeConfig[relation.type] || relationTypeConfig.related_to;
-  const isConfirmed = confirmedIds.has(relation.id);
-  const isDismissed = dismissedIds.has(relation.id);
+  const showConfidence = variant !== "system";
 
   return (
     <div
-      className={`border rounded-xl p-4 transition-all ${
-        isDismissed
-          ? "border-slate-100 bg-slate-50/50 opacity-60"
-          : isConfirmed
-            ? "border-green-200 bg-green-50/30"
-            : "border-slate-200 bg-white hover:border-indigo-200 hover:shadow-sm"
-      }`}
+      className={cn(
+        "border rounded-xl p-4 transition-all",
+        variant === "system" &&
+          "border-slate-200 bg-slate-50/90 border-l-[3px] border-l-slate-400",
+        variant === "accepted" && "border-green-200 bg-green-50/35",
+        variant === "pending" &&
+          "border-amber-200/90 bg-amber-50/25 hover:border-indigo-200 hover:shadow-sm",
+      )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
@@ -246,17 +276,31 @@ function RelationCard({
             >
               {cfg.label}
             </span>
-            {isConfirmed && (
-              <span className="text-[10px] text-green-600 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" /> Bestätigt
+            {variant === "system" ? (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200/90 text-slate-700 font-medium">
+                Ticket-System
               </span>
-            )}
-            {isDismissed && (
-              <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                <XCircle className="w-3 h-3" /> Verworfen
+            ) : variant === "pending" ? (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-medium flex items-center gap-1">
+                <Sparkles className="w-3 h-3" aria-hidden />
+                Vorschlag
+              </span>
+            ) : (
+              <span className="text-[10px] text-green-700 flex items-center gap-1 font-medium">
+                <CheckCircle2 className="w-3 h-3" /> Übernommen
               </span>
             )}
           </div>
+          {variant === "system" ? (
+            <p className="text-[11px] text-slate-500 mb-2 leading-snug">
+              Faktisch in {ticketImportLabel} hinterlegt — keine Prüfung nötig.
+            </p>
+          ) : variant === "pending" ? (
+            <p className="text-[11px] text-amber-900/80 mb-2 leading-snug">
+              Automatisch erkannt (Regeln/KI). Übernehmen, wenn die Beziehung
+              stimmt — ignorieren blendet den Vorschlag aus.
+            </p>
+          ) : null}
           {otherStory && (
             <p
               className="text-[13px] text-slate-800 mb-1"
@@ -268,55 +312,125 @@ function RelationCard({
           <p className="text-[12px] text-slate-500 leading-relaxed">
             {relation.description}
           </p>
-          <div className="flex items-center gap-3 mt-2">
-            <div className="flex items-center gap-1.5">
-              <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${relation.confidence}%`,
-                    backgroundColor:
-                      relation.confidence >= 85
-                        ? "#10b981"
-                        : relation.confidence >= 70
-                          ? "#f59e0b"
-                          : "#ef4444",
-                  }}
-                />
+          {showConfidence ? (
+            <div className="flex items-center gap-3 mt-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400 w-16 shrink-0">
+                  Konfidenz
+                </span>
+                <div className="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${relation.confidence}%`,
+                      backgroundColor:
+                        relation.confidence >= 85
+                          ? "#10b981"
+                          : relation.confidence >= 70
+                            ? "#f59e0b"
+                            : "#ef4444",
+                    }}
+                  />
+                </div>
+                <span className="text-[10px] text-slate-400 tabular-nums">
+                  {relation.confidence}%
+                </span>
               </div>
-              <span className="text-[10px] text-slate-400">
-                {relation.confidence}%
-              </span>
+              {otherStory && (
+                <span className="text-[10px] text-slate-400">
+                  {otherStory.project}
+                </span>
+              )}
             </div>
-            {otherStory && (
-              <span className="text-[10px] text-slate-400">
+          ) : (
+            otherStory && (
+              <p className="text-[10px] text-slate-400 mt-2">
                 {otherStory.project}
-              </span>
-            )}
-          </div>
+              </p>
+            )
+          )}
         </div>
       </div>
-      {!isConfirmed && !isDismissed && (
-        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
+      {variant === "pending" ? (
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-amber-100">
           <Button
             size="sm"
             variant="outline"
-            className="text-[11px] h-7 gap-1 text-green-600 border-green-200 hover:bg-green-50"
+            className="text-[11px] h-7 gap-1 text-green-700 border-green-200 hover:bg-green-50"
             onClick={() => onConfirm(relation.id)}
           >
-            <CheckCircle2 className="w-3 h-3" /> Bestätigen
+            <CheckCircle2 className="w-3 h-3" /> Übernehmen
           </Button>
           <Button
             size="sm"
             variant="outline"
-            className="text-[11px] h-7 gap-1 text-slate-400 hover:bg-slate-50"
+            className="text-[11px] h-7 gap-1 text-slate-500 hover:bg-slate-50"
             onClick={() => onDismiss(relation.id)}
           >
-            <XCircle className="w-3 h-3" /> Verwerfen
+            <XCircle className="w-3 h-3" /> Ignorieren
           </Button>
         </div>
-      )}
+      ) : null}
     </div>
+  );
+}
+
+function RelationTypeGroups({
+  grouped,
+  variant,
+  groupLabels,
+  ticketImportLabel,
+  onConfirm,
+  onDismiss,
+}: {
+  grouped: Record<string, { relation: TicketRelation; other: Story | undefined }[]>;
+  variant: "system" | "pending" | "accepted";
+  groupLabels: Record<string, string>;
+  ticketImportLabel: string;
+  onConfirm: (id: string) => void;
+  onDismiss: (id: string) => void;
+}) {
+  return (
+    <>
+      {Object.entries(grouped).map(([type, items]) => {
+        if (items.length === 0) return null;
+        const cfg =
+          relationTypeConfig[type] || relationTypeConfig.related_to;
+        return (
+          <div key={`${variant}-${type}`} className="mb-5 last:mb-0">
+            <div className="flex items-center gap-2 mb-2">
+              <cfg.icon
+                className="w-4 h-4"
+                style={{ color: cfg.color }}
+                aria-hidden
+              />
+              <h4
+                className="text-[13px] text-slate-800"
+                style={{ fontWeight: 600 }}
+              >
+                {groupLabels[type] || type}
+              </h4>
+              <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                {items.length}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {items.map(({ relation, other }) => (
+                <RelationCard
+                  key={relation.id}
+                  relation={relation}
+                  otherStory={other}
+                  variant={variant}
+                  ticketImportLabel={ticketImportLabel}
+                  onConfirm={onConfirm}
+                  onDismiss={onDismiss}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </>
   );
 }
 
@@ -347,24 +461,54 @@ function IssueDetailPane({
   const navigate = useNavigate();
   const relations = useMemo(() => getRelationsForId(story.id), [story.id]);
 
-  const grouped = useMemo(() => {
-    const groups: Record<
-      string,
-      { relation: TicketRelation; other: Story | undefined }[]
-    > = {
-      duplicates: [],
-      depends_on: [],
-      blocks: [],
-      related_to: [],
+  const {
+    systemRels,
+    pendingRels,
+    acceptedRels,
+    allSuggestionsIgnored,
+    hasSuggestionSource,
+  } = useMemo(() => {
+    const system: TicketRelation[] = [];
+    const pending: TicketRelation[] = [];
+    const accepted: TicketRelation[] = [];
+    const suggestionIds: string[] = [];
+    for (const r of relations) {
+      if (getTicketRelationOrigin(r) === "system") {
+        system.push(r);
+        continue;
+      }
+      suggestionIds.push(r.id);
+      if (dismissedIds.has(r.id)) continue;
+      if (confirmedIds.has(r.id)) accepted.push(r);
+      else pending.push(r);
+    }
+    const allIgnored =
+      suggestionIds.length > 0 &&
+      suggestionIds.every((id) => dismissedIds.has(id));
+    return {
+      systemRels: system,
+      pendingRels: pending,
+      acceptedRels: accepted,
+      allSuggestionsIgnored: allIgnored,
+      hasSuggestionSource: suggestionIds.length > 0,
     };
-    relations.forEach((r) => {
-      const otherId = r.sourceId === story.id ? r.targetId : r.sourceId;
-      const other = stories.find((s) => s.id === otherId);
-      const key = r.type in groups ? r.type : "related_to";
-      groups[key].push({ relation: r, other });
-    });
-    return groups;
-  }, [relations, story.id, stories]);
+  }, [relations, dismissedIds, confirmedIds]);
+
+  const groupedSystem = useMemo(
+    () => groupRelationsForStory(systemRels, story.id, stories),
+    [systemRels, story.id, stories],
+  );
+  const groupedPending = useMemo(
+    () => groupRelationsForStory(pendingRels, story.id, stories),
+    [pendingRels, story.id, stories],
+  );
+  const groupedAccepted = useMemo(
+    () => groupRelationsForStory(acceptedRels, story.id, stories),
+    [acceptedRels, story.id, stories],
+  );
+
+  const visibleRelationCount =
+    systemRels.length + pendingRels.length + acceptedRels.length;
 
   const sc = statusConfig[story.status] || statusConfig.Draft;
   const src =
@@ -464,7 +608,7 @@ function IssueDetailPane({
               </h3>
               {relations.length > 0 && (
                 <span className="text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                  {relations.length}
+                  {visibleRelationCount}
                 </span>
               )}
             </div>
@@ -473,49 +617,96 @@ function IssueDetailPane({
                 Keine Zusammenhänge für diesen Vorgang.
               </p>
             ) : (
-              <p className="text-[12px] text-slate-500 mb-3">
-                Duplikate, Abhängigkeiten und Beziehungen — bestätigen oder
-                verwerfen.
+              <p className="text-[12px] text-slate-600 mb-4 leading-relaxed">
+                <span className="font-medium text-slate-700">
+                  Ticket-System vs. Vorschlag:
+                </span>{" "}
+                Verknüpfungen aus {ticketImportLabel} sind faktisch im Backlog.
+                Weitere Einträge sind automatische Vorschläge (Regeln/KI) — nur
+                diese können Sie übernehmen oder ignorieren (ignorierte
+                Vorschläge erscheinen nicht mehr).
               </p>
             )}
-            {relations.length > 0 &&
-              Object.entries(grouped).map(([type, items]) => {
-                if (items.length === 0) return null;
-                const cfg =
-                  relationTypeConfig[type] || relationTypeConfig.related_to;
-                return (
-                  <div key={type} className="mb-5 last:mb-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <cfg.icon
-                        className="w-4 h-4"
-                        style={{ color: cfg.color }}
-                      />
+            {relations.length > 0 && (
+              <div className="space-y-8">
+                {countGrouped(groupedSystem) > 0 ? (
+                  <section aria-label="Verknüpfungen aus Ticket-System">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Link2 className="w-4 h-4 text-slate-600" aria-hidden />
                       <h4
-                        className="text-[13px] text-slate-800"
+                        className="text-[13px] text-slate-900"
                         style={{ fontWeight: 600 }}
                       >
-                        {groupLabels[type] || type}
+                        Aus dem Ticket-System
                       </h4>
-                      <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                        {items.length}
-                      </span>
                     </div>
-                    <div className="space-y-2">
-                      {items.map(({ relation, other }) => (
-                        <RelationCard
-                          key={relation.id}
-                          relation={relation}
-                          otherStory={other}
-                          confirmedIds={confirmedIds}
-                          dismissedIds={dismissedIds}
-                          onConfirm={onConfirm}
-                          onDismiss={onDismiss}
-                        />
-                      ))}
+                    <RelationTypeGroups
+                      grouped={groupedSystem}
+                      variant="system"
+                      groupLabels={groupLabels}
+                      ticketImportLabel={ticketImportLabel}
+                      onConfirm={onConfirm}
+                      onDismiss={onDismiss}
+                    />
+                  </section>
+                ) : null}
+
+                {hasSuggestionSource ? (
+                  <section aria-label="Vorschläge">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Sparkles
+                        className="w-4 h-4 text-amber-600"
+                        aria-hidden
+                      />
+                      <h4
+                        className="text-[13px] text-slate-900"
+                        style={{ fontWeight: 600 }}
+                      >
+                        Vorschläge zur Prüfung
+                      </h4>
                     </div>
-                  </div>
-                );
-              })}
+                    {allSuggestionsIgnored ? (
+                      <p className="text-[12px] text-slate-500 py-3 px-3 rounded-lg border border-dashed border-slate-200 bg-slate-50/70">
+                        Alle Vorschläge für diesen Vorgang wurden ignoriert.
+                      </p>
+                    ) : null}
+                    <RelationTypeGroups
+                      grouped={groupedPending}
+                      variant="pending"
+                      groupLabels={groupLabels}
+                      ticketImportLabel={ticketImportLabel}
+                      onConfirm={onConfirm}
+                      onDismiss={onDismiss}
+                    />
+                  </section>
+                ) : null}
+
+                {countGrouped(groupedAccepted) > 0 ? (
+                  <section aria-label="Übernommene Vorschläge">
+                    <div className="flex items-center gap-2 mb-3">
+                      <CheckCircle2
+                        className="w-4 h-4 text-green-600"
+                        aria-hidden
+                      />
+                      <h4
+                        className="text-[13px] text-slate-900"
+                        style={{ fontWeight: 600 }}
+                      >
+                        Von Ihnen übernommen
+                      </h4>
+                    </div>
+                    <RelationTypeGroups
+                      grouped={groupedAccepted}
+                      variant="accepted"
+                      groupLabels={groupLabels}
+                      ticketImportLabel={ticketImportLabel}
+                      onConfirm={onConfirm}
+                      onDismiss={onDismiss}
+                    />
+                  </section>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
       </div>

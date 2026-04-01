@@ -76,7 +76,10 @@ export function GuidelinesScopeBar({
     : PROJECT_SEARCH_META[value]?.name ?? value;
 
   return (
-    <div className="flex flex-col gap-2 border-b border-border py-3 px-1 sm:flex-row sm:items-center sm:justify-between">
+    <div
+      className="flex flex-col gap-2 border-b border-border py-3 px-1 sm:flex-row sm:items-center sm:justify-between"
+      data-tour="guidelines-scope-bar"
+    >
       <span
         className="shrink-0 text-[12px] text-muted-foreground"
         style={{ fontWeight: 500 }}

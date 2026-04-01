@@ -227,10 +227,8 @@ function ruleScope(rule: Rule): "workspace" | "project" {
   return rule.scope ?? "workspace";
 }
 
-/** Auswertungsbereich aus Guidelines (Scope-Bar): filtert projektspezifische Regeln. */
-export type GuidelinesRulesEvalScope =
-  | { kind: "workspace" }
-  | { kind: "project"; projectId: string };
+/** Nur gesetzt, wenn in Guidelines ein einzelnes Projekt gewählt ist — dann werden fremde Projektregeln ausgeblendet. */
+export type GuidelinesRulesEvalScope = { kind: "project"; projectId: string };
 
 export function RuleManagementContent({
   embedded = false,
@@ -240,7 +238,7 @@ export function RuleManagementContent({
   embedded?: boolean;
   /** In Guidelines eingebettet: Filter „Geltungsbereich“ ausblenden (entspricht globalem Bereich oben). */
   hideGeltungsbereich?: boolean;
-  /** Gesamter Workspace → keine projektspezifischen Regeln; Projekt → nur dieses + Workspace-Regeln. */
+  /** Einzelprojekt gewählt → nur Workspace-Regeln plus Regeln dieses Projekts (Gesamter Workspace: alle Regeln). */
   guidelinesEvalScope?: GuidelinesRulesEvalScope;
 }) {
   const { selectedWorkspaceId, selectedWorkspace } = useAppContext();
@@ -288,15 +286,12 @@ export function RuleManagementContent({
 
   const filteredRules = rules.filter((rule) => {
     const sc = ruleScope(rule);
-    if (guidelinesEvalScope) {
-      if (guidelinesEvalScope.kind === "workspace") {
-        if (sc === "project") return false;
-      } else if (
-        sc === "project" &&
-        rule.projectId !== guidelinesEvalScope.projectId
-      ) {
-        return false;
-      }
+    if (
+      guidelinesEvalScope &&
+      sc === "project" &&
+      rule.projectId !== guidelinesEvalScope.projectId
+    ) {
+      return false;
     }
     if (sc === "project" && rule.projectId && !workspaceProjectIdSet.has(rule.projectId)) {
       return false;

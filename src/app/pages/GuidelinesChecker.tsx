@@ -38,6 +38,7 @@ import { GuidelinesOverviewTab } from "../components/guidelines/GuidelinesOvervi
 import { GuidelinesHistoryPanel } from "../components/guidelines/GuidelinesHistoryPanel";
 import { GuidelinesCheckReview } from "../components/guidelines/GuidelinesCheckReview";
 import { useGuidelinesCheckState } from "../components/guidelines/useGuidelinesCheckState";
+import { GuidelinesJoyride } from "../onboarding/GuidelinesJoyride";
 
 const VALID_TABS: GuidelinesMainTab[] = ["overview", "rules", "check"];
 
@@ -129,9 +130,7 @@ export function GuidelinesChecker() {
       : scopeProjectId;
 
   const guidelinesRulesEvalScope = useMemo(() => {
-    if (scopeMode === "workspace" || scopeProjectId == null) {
-      return { kind: "workspace" as const };
-    }
+    if (scopeMode === "workspace" || scopeProjectId == null) return undefined;
     return { kind: "project" as const, projectId: scopeProjectId };
   }, [scopeMode, scopeProjectId]);
 
@@ -168,7 +167,7 @@ export function GuidelinesChecker() {
       }
       syncQuery({ tab });
     },
-    [syncQuery, check],
+    [syncQuery, check.phase, check.resetCheckFlow],
   );
 
   const setScopeFromSelect = useCallback(
@@ -533,6 +532,7 @@ export function GuidelinesChecker() {
           </div>
         )}
       </div>
+      <GuidelinesJoyride setActiveTab={setActiveTab} />
     </TooltipProvider>
   );
 }

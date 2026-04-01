@@ -13,8 +13,8 @@ function navOverviewContent(): string {
     "Oben links sehen Sie Mandant und Produkt. Über das Hauptmenü wechseln Sie den Arbeitsbereich – jeweils mit eigenem Fokus:\n\n" +
     "Dashboard · Kennzahlen, Trends und Schnellzugriff auf Ihre Projekte im Workspace.\n\n" +
     "Story-Generator · Dokumente und Notizen hochladen, die KI prüft und bereinigt, dann User Stories erzeugen, mit dem Backlog abgleichen und speichern.\n\n" +
-    "Guidelines · Dokumente gegen Regelwerke (z. B. DSGVO, Hausstandards) prüfen; Befunde bearbeiten und exportieren.\n\n" +
-    "Story-Abhängigkeiten · Vorgänge filtern, Beziehungen (Duplikate, Blocker, verwandte Tickets) einsehen und Vorschläge bewerten.\n\n" +
+    "Guidelines · Auswertungsbereich, Übersicht & Analyse, Regelwerk sowie Dokumente prüfen inkl. Verlauf; Befunde bearbeiten und exportieren.\n\n" +
+    "Story-Abhängigkeiten · Vorgänge filtern; Ticket-Links und erkannte Vorschläge getrennt einsehen, Vorschläge übernehmen oder ignorieren.\n\n" +
     "Projekte · Projekte im Workspace listen, Teams und Versionen in der Detailansicht pflegen." +
     cj +
     "\n\nUnten: Einstellungen sowie Hilfe & Support – dort können Sie die Tour der aktuellen Seite zurücksetzen und neu starten."
@@ -93,42 +93,6 @@ export function getDashboardSteps(includeMobileMenuStep: boolean): Step[] {
   return [nav, ...tail];
 }
 
-/**
- * Guidelines: nur Projekt-Auswahl (gleiche DOM-Struktur wie beim ersten Besuch).
- * Nach Klick auf ein Projekt: Review-UI ohne neue Tour — Hinweise im letzten Schritt.
- */
-export function getGuidelinesSteps(): Step[] {
-  return [
-    {
-      target: sel("guidelines-intro"),
-      title: "Guidelines",
-      content:
-        "Hier prüfen Sie Anforderungs- und Lastenheft-Dokumente automatisch gegen Ihren Regelkatalog (Guidelines), z. B. Datenschutz, Formulierungen und interne Standards.\n\n" +
-        "Ziel: Risiken und Lücken sichtbar machen, bevor sie in Jira oder bei Kunden landen. Alle angebotenen Dokumente gehören zum aktuell gewählten Workspace.",
-      placement: "bottom",
-      disableBeacon: true,
-    },
-    {
-      target: sel("guidelines-document-list"),
-      title: "Dokument öffnen",
-      content:
-        "Jede Karte ist ein hinterlegtes Lastenheft; das Projekt ist der Zuordnungskontext. Klicken Sie eine Karte, um die Guidelines-Prüfung zu starten.\n\n" +
-        "Oben simulieren Sie mit „Hochladen“ eine Datei ohne Dateidialog (wechselnde Demo-Dateinamen); nach dem Start erscheint der Eintrag in der Liste. Darunter sehen Sie den Analyse-Verlauf. Im Review lesen Sie den Demo-Text und die Befunde.",
-      placement: "top",
-      disableBeacon: true,
-    },
-    {
-      target: sel("guidelines-rules-btn"),
-      title: "Regeln",
-      content:
-        "Die Prüfung nutzt konfigurierbare Regelkataloge. Unter „Regeln verwalten“ legen Sie fest, welche Kriterien angewendet werden (z. B. projektspezifisch vs. workspace-weit).\n\n" +
-        "Änderungen wirken auf künftige Läufe – sinnvoll, wenn sich Standards oder Verträge ändern.",
-      placement: "left",
-      disableBeacon: true,
-    },
-  ];
-}
-
 /** Story-Abhängigkeiten (`/stories`): Projekt-Trigger, Filter, Liste, Detail. */
 export function getStoryDependenciesSteps(): Step[] {
   return [
@@ -173,8 +137,8 @@ export function getStoryDependenciesSteps(): Step[] {
       target: sel("stories-detail-relations"),
       title: "Zusammenhänge",
       content:
-        "Hier sehen Sie Duplikate, Abhängigkeiten, Blocker und verwandte Arbeit – inklusive KI- oder Regel-Vorschlägen.\n\n" +
-        "Sie können jeden Vorschlag annehmen oder ablehnen; so halten Sie den Graphen sauber und nachvollziehbar für Planning und Risiko-Reviews.",
+        "Verknüpfungen aus dem Ticket-System sind faktische Links; Vorschläge (Regeln/KI) stehen separat und tragen ein Konfidenz-Badge.\n\n" +
+        "Vorschläge können Sie übernehmen oder ignorieren — ignorierte Einträge verschwinden aus der Liste.",
       placement: "left",
       disableBeacon: true,
     },
@@ -189,7 +153,7 @@ export function getStepsForRoute(
     case "route:dashboard":
       return getDashboardSteps(options.includeMobileMenuStep);
     case "route:guidelines":
-      return getGuidelinesSteps();
+      return [];
     case "route:stories":
       return getStoryDependenciesSteps();
     case "route:story-generator":

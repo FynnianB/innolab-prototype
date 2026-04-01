@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -1114,6 +1115,220 @@ function LouisBvbRifleScene({
   );
 }
 
+/** Einfacher Cartoon-Vorschlaghammer (Metallkopf + Holzstiel), für Golo-Smash */
+function GoloCartoonHammer({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 100 168"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id="golo-hammer-metal" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#9ca3af" />
+          <stop offset="100%" stopColor="#4b5563" />
+        </linearGradient>
+        <linearGradient id="golo-hammer-wood" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#5c4033" />
+          <stop offset="100%" stopColor="#3d2a1f" />
+        </linearGradient>
+      </defs>
+      <rect
+        x="6"
+        y="10"
+        width="88"
+        height="52"
+        rx="6"
+        fill="url(#golo-hammer-metal)"
+        stroke="#374151"
+        strokeWidth="1.2"
+      />
+      <rect x="42" y="58" width="16" height="102" rx="3" fill="url(#golo-hammer-wood)" stroke="#2d221a" strokeWidth="1" />
+      <ellipse cx="50" cy="154" rx="14" ry="6" fill="#2d221a" opacity="0.5" />
+    </svg>
+  );
+}
+
+/**
+ * Golo: Schalke fliegt rein, nach ~2s zerquetscht ein Hammer das Wappen (mit Cartoon-„Blut“),
+ * danach erscheint das BVB-Wappen wie im Louis-Finale.
+ */
+function GoloSchalkeHammerScene({
+  reduced,
+  launchY,
+}: {
+  reduced: boolean;
+  launchY: number;
+}) {
+  const [hammerHit, setHammerHit] = useState(false);
+  const [showBvb, setShowBvb] = useState(false);
+
+  /** Pixel-Offset oberhalb des Viewports (Motion interpoliert reine px-Zuverlässig). */
+  const [hammerOffscreenY, setHammerOffscreenY] = useState(-1600);
+  const smashDuration = 0.56;
+
+  useLayoutEffect(() => {
+    setHammerOffscreenY(-(window.innerHeight * 1.15 + 180));
+  }, []);
+
+  useEffect(() => {
+    if (reduced) return;
+    const tHit = window.setTimeout(() => setHammerHit(true), 2000);
+    const tBvb = window.setTimeout(
+      () => setShowBvb(true),
+      2000 + Math.round(smashDuration * 1000) + 340,
+    );
+    return () => {
+      window.clearTimeout(tHit);
+      window.clearTimeout(tBvb);
+    };
+  }, [reduced]);
+
+  const logoClass =
+    "block w-[min(52vw,220px)] h-auto max-h-[40vh] aspect-square select-none";
+
+  if (reduced) {
+    return (
+      <motion.div
+        className="relative z-[1] drop-shadow-[0_24px_48px_rgba(0,0,0,0.45)]"
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.25 }}
+      >
+        <BvbEasterMarkWithEyes className={logoClass} />
+      </motion.div>
+    );
+  }
+
+  return (
+    <>
+      <div className="relative z-[1] flex min-h-[min(44vh,320px)] w-[min(92vw,420px)] items-center justify-center overflow-visible">
+        <div className="relative flex aspect-square w-[min(52vw,220px)] max-h-[40vh] max-w-[min(52vw,220px)] items-center justify-center">
+          {!showBvb ? (
+            <>
+              <motion.div
+                className="pointer-events-none fixed left-1/2 z-[100006] w-[min(76vw,380px)] max-w-[94vw] -translate-x-1/2"
+                style={{
+                  top: "calc(50vh - min(52vw, 248px))",
+                  transformOrigin: "50% 98%",
+                }}
+                initial={false}
+                animate={
+                  hammerHit
+                    ? {
+                        y: [hammerOffscreenY, 22, 6, 2],
+                        rotate: [-92, 18, 11, 9],
+                      }
+                    : { y: hammerOffscreenY, rotate: -92 }
+                }
+                transition={
+                  hammerHit
+                    ? {
+                        duration: smashDuration,
+                        times: [0, 0.62, 0.78, 1],
+                        ease: [0.12, 0.82, 0.28, 1],
+                      }
+                    : { duration: 0 }
+                }
+              >
+                <GoloCartoonHammer className="h-auto w-full drop-shadow-[0_22px_40px_rgba(0,0,0,0.58)]" />
+              </motion.div>
+
+              <motion.div
+                className="relative z-[1] inline-block drop-shadow-[0_24px_48px_rgba(0,40,80,0.5)]"
+                initial={{
+                  y: launchY,
+                  scale: 0.2,
+                  rotate: -14,
+                  opacity: 1,
+                }}
+                animate={
+                  hammerHit
+                    ? {
+                        y: [0, 0, 0, 10, 26, 34],
+                        x: [0, 0, 0, -4, 8, 4],
+                        scaleX: [1, 1, 1, 1.12, 1.62, 1.82],
+                        scaleY: [1, 1, 1, 0.72, 0.14, 0.02],
+                        rotate: [0, 0, 0, -4, 8, 12],
+                        opacity: [1, 1, 1, 1, 0.45, 0],
+                        filter: [
+                          "blur(0px)",
+                          "blur(0px)",
+                          "blur(0px)",
+                          "blur(0px)",
+                          "blur(2.5px)",
+                          "blur(5px)",
+                        ],
+                      }
+                    : {
+                        y: 0,
+                        scale: 1,
+                        rotate: 0,
+                        opacity: 1,
+                        filter: "blur(0px)",
+                      }
+                }
+                transition={
+                  hammerHit
+                    ? {
+                        duration: smashDuration,
+                        times: [0, 0.52, 0.58, 0.66, 0.88, 1],
+                        ease: [0.2, 0.75, 0.15, 1],
+                      }
+                    : {
+                        type: "spring",
+                        stiffness: 200,
+                        damping: 16,
+                        mass: 0.88,
+                      }
+                }
+              >
+                <motion.div
+                  className="relative"
+                  animate={
+                    hammerHit
+                      ? {}
+                      : {
+                          y: [0, -6, 0, -4, 0],
+                          rotate: [0, 1.2, -1, 0.6, 0],
+                        }
+                  }
+                  transition={{
+                    duration: 2.8,
+                    delay: 0.65,
+                    repeat: hammerHit ? 0 : Infinity,
+                    ease: "easeInOut",
+                  }}
+                >
+                  <SchalkeEasterMark className={logoClass} />
+                </motion.div>
+              </motion.div>
+            </>
+          ) : null}
+
+          <AnimatePresence>
+            {showBvb ? (
+              <motion.div
+                key="golo-bvb-finale"
+                className="absolute inset-0 z-[3] flex items-center justify-center"
+                initial={{ opacity: 0, scale: 0.78, y: 36 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, y: 12 }}
+                transition={{ type: "spring", stiffness: 280, damping: 24, mass: 0.9 }}
+              >
+                <BvbEasterMarkWithEyes className={logoClass} />
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      <LouisBloodLayer active={hammerHit && !showBvb} />
+    </>
+  );
+}
+
 function PulseRings({ reduced }: { reduced: boolean }) {
   if (reduced) return null;
   return (
@@ -1284,8 +1499,28 @@ export function SearchEasterEgg({
   const kind = spec?.kind;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const hsvAudioRef = useRef<HTMLAudioElement | null>(null);
   const reduceMotion = useReducedMotion();
   const reduced = reduceMotion === true;
+
+  const teardownHsvAudio = useCallback(() => {
+    const a = hsvAudioRef.current;
+    if (!a) return;
+    try {
+      a.pause();
+      a.currentTime = 0;
+    } catch {
+      /* ignore */
+    }
+    a.removeAttribute("src");
+    a.load();
+    hsvAudioRef.current = null;
+  }, []);
+
+  const handleClose = useCallback(() => {
+    teardownHsvAudio();
+    onClose();
+  }, [onClose, teardownHsvAudio]);
 
   useEffect(() => {
     if (!active || reduced || !kind) return;
@@ -1305,14 +1540,28 @@ export function SearchEasterEgg({
     };
   }, [active, reduced, kind]);
 
+  useEffect(() => {
+    if (!active || kind !== "hsv") return;
+    teardownHsvAudio();
+    const audio = new Audio("/sounds/hsv-torhymne.mp3");
+    hsvAudioRef.current = audio;
+    audio.volume = 0.9;
+    void audio.play().catch(() => {
+      /* Autoplay-Richtlinie o.ä. — stiller Fehler */
+    });
+    return () => {
+      teardownHsvAudio();
+    };
+  }, [active, kind, searchQuery, teardownHsvAudio]);
+
   const onKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        onClose();
+        handleClose();
       }
     },
-    [onClose],
+    [handleClose],
   );
 
   useEffect(() => {
@@ -1347,11 +1596,7 @@ export function SearchEasterEgg({
             </FlyInCenter>
           );
         case "schalke":
-          return (
-            <FlyInCenter reduced={reduced} launchY={launchY}>
-              <SchalkeEasterMark className="block w-[min(52vw,220px)] h-auto max-h-[40vh] select-none" />
-            </FlyInCenter>
-          );
+          return <GoloSchalkeHammerScene reduced={reduced} launchY={launchY} />;
         case "thumbUp":
           return <ThumbFlyIn reduced={reduced} launchY={launchY} />;
         case "bvbRifle":
@@ -1380,7 +1625,7 @@ export function SearchEasterEgg({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleClose}
             aria-hidden
           />
 

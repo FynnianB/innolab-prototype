@@ -18,7 +18,13 @@ export function GuidelinesTabNav({ activeTab, onTabChange }: GuidelinesTabNavPro
         <button
           key={tab.key}
           type="button"
-          data-tour={tab.key === "rules" ? "guidelines-rules-btn" : undefined}
+          data-tour={
+            tab.key === "overview"
+              ? "guidelines-nav-overview"
+              : tab.key === "rules"
+                ? "guidelines-nav-rules"
+                : "guidelines-nav-check"
+          }
           onClick={() => onTabChange(tab.key)}
           className={`px-4 py-2.5 text-[13px] border-b-2 transition-colors whitespace-nowrap shrink-0 ${
             activeTab === tab.key

@@ -34,6 +34,9 @@ export type StoryData = Story;
 /** @deprecated Use Story instead */
 export type JiraTicketData = Story;
 
+/** `system` = im Ticket-Tool angelegte Verknüpfung; `suggestion` (Default) = erkannte Vorschläge zur Prüfung. */
+export type TicketRelationOrigin = "suggestion" | "system";
+
 export interface TicketRelation {
   id: string;
   sourceId: string;
@@ -41,6 +44,13 @@ export interface TicketRelation {
   type: "depends_on" | "related_to" | "blocks" | "duplicates";
   confidence: number;
   description: string;
+  origin?: TicketRelationOrigin;
+}
+
+export function getTicketRelationOrigin(
+  r: TicketRelation,
+): TicketRelationOrigin {
+  return r.origin ?? "suggestion";
 }
 
 /* ------------------------------------------------------------------ */
@@ -2235,8 +2245,10 @@ export const allRelations: TicketRelation[] = [
     sourceId: "US-201",
     targetId: "US-202",
     type: "depends_on",
-    confidence: 72,
-    description: "Thematische Nähe im Projekt Versuchsteile & Entwicklungs-Analytics: gemeinsame Schnittstellen oder KPIs.",
+    confidence: 100,
+    description:
+      "Im Ticket-System als „hängt ab von“ verknüpft (Epic → Story im gleichen Vorhaben).",
+    origin: "system",
   },
   {
     id: "R-802",
@@ -2259,8 +2271,10 @@ export const allRelations: TicketRelation[] = [
     sourceId: "US-206",
     targetId: "US-207",
     type: "depends_on",
-    confidence: 72,
-    description: "Thematische Nähe im Projekt Fahrzeuglogistik & Vertriebs-Transparenz: gemeinsame Schnittstellen oder KPIs.",
+    confidence: 100,
+    description:
+      "Direkt in Jira verlinkt: Nacharbeit an US-207 blockiert den Abschluss von US-206.",
+    origin: "system",
   },
   {
     id: "R-805",
