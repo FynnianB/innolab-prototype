@@ -5,7 +5,6 @@ import {
   ChevronDown,
   ClipboardList,
   Copy,
-  Download,
   FileText,
   FolderOpen,
   GitCompare,
@@ -139,12 +138,17 @@ function ProjectFilterGlyph({
     size === "sm"
       ? "flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200/90 bg-white"
       : "flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200/90 bg-white";
-  const imgClass = size === "sm" ? "size-5 object-contain" : "size-[22px] object-contain";
+  const imgClass =
+    size === "sm" ? "size-5 object-contain" : "size-[22px] object-contain";
 
   if (!projectId) {
     return (
       <span className={cn(outer, "bg-slate-50")} aria-hidden>
-        <Layers className={size === "sm" ? "size-3.5 text-slate-500" : "size-4 text-slate-500"} />
+        <Layers
+          className={
+            size === "sm" ? "size-3.5 text-slate-500" : "size-4 text-slate-500"
+          }
+        />
       </span>
     );
   }
@@ -159,7 +163,9 @@ function ProjectFilterGlyph({
   return (
     <span className={cn(outer, "bg-slate-50")} aria-hidden>
       <FolderOpen
-        className={size === "sm" ? "size-3.5 text-slate-500" : "size-4 text-slate-500"}
+        className={
+          size === "sm" ? "size-3.5 text-slate-500" : "size-4 text-slate-500"
+        }
       />
     </span>
   );
@@ -369,7 +375,9 @@ function IssueDetailPane({
 
   const fieldRow = (label: string, value: ReactNode) => (
     <div className="grid grid-cols-[minmax(0,38%)_1fr] gap-x-3 gap-y-0.5 py-2.5 border-b border-slate-100/90 last:border-0">
-      <dt className="text-[11px] text-slate-500 leading-snug pt-0.5">{label}</dt>
+      <dt className="text-[11px] text-slate-500 leading-snug pt-0.5">
+        {label}
+      </dt>
       <dd className="text-[12px] text-slate-800 min-w-0 break-words leading-snug m-0">
         {value}
       </dd>
@@ -390,7 +398,11 @@ function IssueDetailPane({
             <Badge
               variant="secondary"
               className="text-[10px] shrink-0"
-              style={{ backgroundColor: sc.bg, color: sc.color, fontWeight: 500 }}
+              style={{
+                backgroundColor: sc.bg,
+                color: sc.color,
+                fontWeight: 500,
+              }}
             >
               {story.status}
             </Badge>
@@ -408,7 +420,7 @@ function IssueDetailPane({
         </div>
 
         <div className="p-4 sm:p-5 space-y-5">
-          <div>
+          <div data-tour="stories-detail-hero">
             <h2
               className="text-[17px] sm:text-[18px] text-slate-900 leading-snug mb-2"
               style={{ fontWeight: 600 }}
@@ -418,18 +430,21 @@ function IssueDetailPane({
             <p className="text-[13px] text-slate-600 leading-relaxed">
               {story.description}
             </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-[12px] border-slate-200 text-[#4f46e5] hover:bg-[#f1f5ff] mt-4"
+              onClick={() => navigate(`/story/${story.id}`)}
+            >
+              Vollständige Story-Ansicht
+            </Button>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-[12px] border-slate-200 text-[#4f46e5] hover:bg-[#f1f5ff]"
-            onClick={() => navigate(`/story/${story.id}`)}
+          <div
+            id="story-relations"
+            data-tour="stories-detail-relations"
+            className="scroll-mt-4"
           >
-            Vollständige Story-Ansicht
-          </Button>
-
-          <div id="story-relations" className="scroll-mt-4">
             <div className="flex items-center gap-2 mb-3">
               <GitCompare className="w-4 h-4 text-[#4f46e5]" />
               <h3
@@ -457,11 +472,15 @@ function IssueDetailPane({
             {relations.length > 0 &&
               Object.entries(grouped).map(([type, items]) => {
                 if (items.length === 0) return null;
-                const cfg = relationTypeConfig[type] || relationTypeConfig.related_to;
+                const cfg =
+                  relationTypeConfig[type] || relationTypeConfig.related_to;
                 return (
                   <div key={type} className="mb-5 last:mb-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <cfg.icon className="w-4 h-4" style={{ color: cfg.color }} />
+                      <cfg.icon
+                        className="w-4 h-4"
+                        style={{ color: cfg.color }}
+                      />
                       <h4
                         className="text-[13px] text-slate-800"
                         style={{ fontWeight: 600 }}
@@ -494,37 +513,55 @@ function IssueDetailPane({
 
       <aside className="w-full lg:w-[300px] xl:w-[320px] shrink-0 flex flex-col overflow-hidden border-t lg:border-t-0 lg:border-l border-slate-200 bg-gradient-to-b from-[#f8f7ff] via-white to-slate-50/90">
         <div className="shrink-0 px-4 py-3 border-b border-slate-200/80 bg-white/90 backdrop-blur-sm">
-          <p className="text-[10px] uppercase tracking-wider text-slate-500 mb-1" style={{ fontWeight: 600 }}>
+          <p
+            className="text-[10px] uppercase tracking-wider text-slate-500 mb-1"
+            style={{ fontWeight: 600 }}
+          >
             Kontext
           </p>
-          <p className="text-[13px] text-[#4f46e5] truncate" style={{ fontWeight: 600 }}>
+          <p
+            className="text-[13px] text-[#4f46e5] truncate"
+            style={{ fontWeight: 600 }}
+          >
             {story.id}
           </p>
-          <p className="text-[11px] text-slate-500 truncate mt-0.5" title={story.project}>
+          <p
+            className="text-[11px] text-slate-500 truncate mt-0.5"
+            title={story.project}
+          >
             {story.project}
           </p>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto p-4">
           <div className="rounded-xl border border-slate-200/90 bg-white shadow-sm ring-1 ring-slate-100/80 overflow-hidden">
             <div className="px-3 py-2 bg-gradient-to-r from-[#f1f5ff] to-white border-b border-slate-100">
-              <p className="text-[11px] text-[#4f46e5]" style={{ fontWeight: 600 }}>
+              <p
+                className="text-[11px] text-[#4f46e5]"
+                style={{ fontWeight: 600 }}
+              >
                 Eigenschaften
               </p>
             </div>
             <dl className="px-3 pb-1">
-              {fieldRow("Typ", (() => {
-                const TypeIc = typeIcons[story.type] || FileText;
-                return (
-                  <span className="flex items-center gap-1.5">
-                    <TypeIc className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                    {story.type}
-                  </span>
-                );
-              })())}
+              {fieldRow(
+                "Typ",
+                (() => {
+                  const TypeIc = typeIcons[story.type] || FileText;
+                  return (
+                    <span className="flex items-center gap-1.5">
+                      <TypeIc className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                      {story.type}
+                    </span>
+                  );
+                })(),
+              )}
               {fieldRow(
                 "Quelle",
                 <span className="flex items-center gap-1.5 min-w-0">
-                  <src.icon className="w-3.5 h-3.5 shrink-0" style={{ color: src.color }} />
+                  <src.icon
+                    className="w-3.5 h-3.5 shrink-0"
+                    style={{ color: src.color }}
+                  />
                   <span className="truncate">{src.label}</span>
                 </span>,
               )}
@@ -745,14 +782,11 @@ export function StoryAnalysis() {
     setProjectFilterOpen(false);
   }, [setSearchParams]);
 
-  const selectSingleProject = useCallback(
-    (id: string) => {
-      lastSyncedProjectIdFromUrl.current = id;
-      setSelectedProjectId(id);
-      setProjectFilterOpen(false);
-    },
-    [],
-  );
+  const selectSingleProject = useCallback((id: string) => {
+    lastSyncedProjectIdFromUrl.current = id;
+    setSelectedProjectId(id);
+    setProjectFilterOpen(false);
+  }, []);
 
   const onRelationTypeFilterClick = useCallback((type: RelationType) => {
     setRelationTypeFilter((prev) => (prev === type ? null : type));
@@ -796,9 +830,7 @@ export function StoryAnalysis() {
 
   const projectTriggerLabel = useMemo(() => {
     if (!selectedProjectId) return "Alle Projekte";
-    return (
-      PROJECT_SEARCH_META[selectedProjectId]?.name ?? "Projekt wählen"
-    );
+    return PROJECT_SEARCH_META[selectedProjectId]?.name ?? "Projekt wählen";
   }, [selectedProjectId]);
 
   const filteredStories = useMemo(() => {
@@ -864,16 +896,22 @@ export function StoryAnalysis() {
     searchQuery,
   ]);
 
-  useEffect(() => {
-    if (selectedStoryId == null) return;
-    if (filteredStories.some((s) => s.id === selectedStoryId)) return;
-    setSelectedStoryId(null);
+  useLayoutEffect(() => {
+    if (filteredStories.length === 0) {
+      setSelectedStoryId(null);
+      return;
+    }
+    const stillValid =
+      selectedStoryId != null &&
+      filteredStories.some((s) => s.id === selectedStoryId);
+    if (stillValid) return;
+    setSelectedStoryId(filteredStories[0].id);
   }, [filteredStories, selectedStoryId]);
 
   const selectedStory = selectedStoryId
-    ? stories.find((s) => s.id === selectedStoryId) ??
+    ? (stories.find((s) => s.id === selectedStoryId) ??
       allStoriesForRelations.find((s) => s.id === selectedStoryId) ??
-      null
+      null)
     : null;
 
   const handleConfirm = (id: string) => {
@@ -906,14 +944,22 @@ export function StoryAnalysis() {
     label: string;
     count: number;
   }[] = [
-    { type: "duplicates", label: "Duplikate", count: relationTypeCounts.duplicates },
+    {
+      type: "duplicates",
+      label: "Duplikate",
+      count: relationTypeCounts.duplicates,
+    },
     {
       type: "depends_on",
       label: "Abhängigkeiten",
       count: relationTypeCounts.depends_on,
     },
     { type: "blocks", label: "Blockaden", count: relationTypeCounts.blocks },
-    { type: "related_to", label: "Verwandt", count: relationTypeCounts.related_to },
+    {
+      type: "related_to",
+      label: "Verwandt",
+      count: relationTypeCounts.related_to,
+    },
   ];
 
   const chipBase =
@@ -947,18 +993,6 @@ export function StoryAnalysis() {
             </p>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5 text-[12px] shrink-0 border-slate-200"
-          onClick={() => {
-            setExportScope("jira");
-            setShowExportDialog(true);
-          }}
-        >
-          <Download className="w-3.5 h-3.5" />
-          Export
-        </Button>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm flex flex-col min-h-[min(72vh,760px)]">
@@ -974,13 +1008,17 @@ export function StoryAnalysis() {
                   type="button"
                   variant="outline"
                   size="sm"
+                  data-tour="stories-project-filter"
                   className={cn(
                     filterFieldTriggerClass,
-                    "h-10 min-h-10 w-full justify-between gap-2 px-3.5 font-medium sm:w-auto sm:min-w-[280px] border-slate-200 bg-white shadow-sm hover:bg-slate-50/80",
+                    "h-10 min-h-10 w-full max-w-full justify-between gap-2 px-3.5 font-medium sm:w-fit sm:min-w-[240px] sm:max-w-[min(100vw-2rem,22rem)] border-slate-200 bg-white shadow-sm hover:bg-slate-50/80",
                   )}
                 >
                   <span className="flex items-center gap-2.5 min-w-0 text-left">
-                    <ProjectFilterGlyph projectId={selectedProjectId} size="md" />
+                    <ProjectFilterGlyph
+                      projectId={selectedProjectId}
+                      size="md"
+                    />
                     <span className="min-w-0 truncate text-[13px] text-slate-800">
                       {projectTriggerLabel}
                     </span>
@@ -1034,199 +1072,219 @@ export function StoryAnalysis() {
                 </RadioGroup>
               </PopoverContent>
             </Popover>
-            <p className="text-[11px] text-slate-500 sm:pl-1 sm:flex-1 leading-snug">
-              Standard ist Ihr erstes Projekt im Team; „Alle Projekte“ zeigt den
-              ganzen Workspace.
-            </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[200px] max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-              <input
-                type="text"
-                placeholder="Vorgänge durchsuchen (ID, Titel, Projekt …)"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-[13px] bg-white border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/20 focus:border-[#4f46e5]/40"
-              />
-            </div>
+          <div className="space-y-3" data-tour="stories-filters">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex-1 min-w-[200px] max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Vorgänge durchsuchen (ID, Titel, Projekt …)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-[13px] bg-white border border-slate-200 rounded-xl text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4f46e5]/20 focus:border-[#4f46e5]/40"
+                />
+              </div>
 
-            <Select
-              key={`type-${selectedWorkspaceId}`}
-              value={typeFilter}
-              onValueChange={setTypeFilter}
-            >
-              <SelectTrigger
-                className={cn(
-                  filterFieldTriggerClass,
-                  "h-9 min-h-9 w-[min(100%,9.75rem)] shrink-0 px-3 font-normal",
-                )}
+              <Select
+                key={`type-${selectedWorkspaceId}`}
+                value={typeFilter}
+                onValueChange={setTypeFilter}
               >
-                <SelectValue placeholder="Typ" />
-              </SelectTrigger>
-              <SelectContent
-                position="popper"
-                className={filterSelectContentClass}
-              >
-                <SelectItem value="all" className="rounded-lg text-[12px]">
-                  Alle Typen
-                </SelectItem>
-                <SelectItem value="Story" className="rounded-lg text-[12px]">
-                  Story
-                </SelectItem>
-                <SelectItem value="Epic" className="rounded-lg text-[12px]">
-                  Epic
-                </SelectItem>
-                <SelectItem value="Bug" className="rounded-lg text-[12px]">
-                  Bug
-                </SelectItem>
-                <SelectItem value="Task" className="rounded-lg text-[12px]">
-                  Task
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select
-              key={`source-${selectedWorkspaceId}`}
-              value={sourceFilter}
-              onValueChange={setSourceFilter}
-            >
-              <SelectTrigger
-                className={cn(
-                  filterFieldTriggerClass,
-                  "h-9 min-h-9 w-[min(100%,11rem)] shrink-0 px-3 font-normal",
-                )}
-              >
-                <SelectValue placeholder="Quelle" />
-              </SelectTrigger>
-              <SelectContent
-                position="popper"
-                className={filterSelectContentClass}
-              >
-                <SelectItem value="all" className="rounded-lg text-[12px]">
-                  Alle Quellen
-                </SelectItem>
-                <SelectItem
-                  value="ai-generated"
-                  className="rounded-lg text-[12px]"
-                >
-                  AI-generiert
-                </SelectItem>
-                <SelectItem
-                  value="jira-import"
-                  className="rounded-lg text-[12px]"
-                >
-                  Jira-Import
-                </SelectItem>
-                <SelectItem value="manual" className="rounded-lg text-[12px]">
-                  Manuell
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Popover modal={false}>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
+                <SelectTrigger
                   className={cn(
                     filterFieldTriggerClass,
-                    "h-9 min-h-9 min-w-[9.5rem] gap-1.5 px-3 font-normal",
-                    relationTypeFilter && "text-[#4f46e5]",
+                    "h-9 min-h-9 w-[min(100%,9.75rem)] shrink-0 px-3 font-normal",
                   )}
                 >
-                  <span className="truncate">Beziehungen</span>
-                  {relationTypeFilter ? (
-                    <span
-                      className="size-1.5 shrink-0 rounded-full bg-[#4f46e5]"
-                      aria-hidden
-                    />
-                  ) : null}
-                  <ChevronDown className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-[min(100vw-2rem,280px)] rounded-xl border border-slate-200 p-0 shadow-lg z-[200]"
-                align="end"
-              >
-                <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-slate-500" style={{ fontWeight: 600 }}>
-                    Nach Beziehungstyp
-                  </span>
-                  {relationTypeFilter && (
-                    <button
-                      type="button"
-                      className="text-[11px] text-[#4f46e5] hover:underline font-medium"
-                      onClick={() => setRelationTypeFilter(null)}
-                    >
-                      Zurücksetzen
-                    </button>
-                  )}
-                </div>
-                <div className="p-1.5 space-y-0.5">
-                  {relationFilterRows.map(({ type, label, count }) => {
-                    const active = relationTypeFilter === type;
-                    const cfg = relationTypeConfig[type];
-                    return (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => onRelationTypeFilterClick(type)}
-                        className={cn(
-                          "w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left text-[12px] transition-colors",
-                          active
-                            ? "bg-[#f1f5ff] text-[#4f46e5]"
-                            : "hover:bg-slate-50 text-slate-800",
-                        )}
-                      >
-                        <cfg.icon className="w-4 h-4 shrink-0" style={{ color: cfg.color }} />
-                        <span className="flex-1 truncate">{label}</span>
-                        <span className="text-[11px] text-slate-400 tabular-nums">{count}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
+                  <SelectValue placeholder="Typ" />
+                </SelectTrigger>
+                <SelectContent
+                  position="popper"
+                  className={filterSelectContentClass}
+                >
+                  <SelectItem value="all" className="rounded-lg text-[12px]">
+                    Alle Typen
+                  </SelectItem>
+                  <SelectItem value="Story" className="rounded-lg text-[12px]">
+                    Story
+                  </SelectItem>
+                  <SelectItem value="Epic" className="rounded-lg text-[12px]">
+                    Epic
+                  </SelectItem>
+                  <SelectItem value="Bug" className="rounded-lg text-[12px]">
+                    Bug
+                  </SelectItem>
+                  <SelectItem value="Task" className="rounded-lg text-[12px]">
+                    Task
+                  </SelectItem>
+                </SelectContent>
+              </Select>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] text-slate-500 uppercase tracking-wide mr-0.5" style={{ fontWeight: 600 }}>
-              Quick-Filter
-            </span>
-            {statusQuickOptions.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setStatusQuickFilter(value)}
-                className={cn(
-                  chipBase,
-                  statusQuickFilter === value ? chipOn : chipOff,
-                )}
-                style={{ fontWeight: statusQuickFilter === value ? 600 : 500 }}
+              <Select
+                key={`source-${selectedWorkspaceId}`}
+                value={sourceFilter}
+                onValueChange={setSourceFilter}
               >
-                {label}
+                <SelectTrigger
+                  className={cn(
+                    filterFieldTriggerClass,
+                    "h-9 min-h-9 w-[min(100%,11rem)] shrink-0 px-3 font-normal",
+                  )}
+                >
+                  <SelectValue placeholder="Quelle" />
+                </SelectTrigger>
+                <SelectContent
+                  position="popper"
+                  className={filterSelectContentClass}
+                >
+                  <SelectItem value="all" className="rounded-lg text-[12px]">
+                    Alle Quellen
+                  </SelectItem>
+                  <SelectItem
+                    value="ai-generated"
+                    className="rounded-lg text-[12px]"
+                  >
+                    AI-generiert
+                  </SelectItem>
+                  <SelectItem
+                    value="jira-import"
+                    className="rounded-lg text-[12px]"
+                  >
+                    Jira-Import
+                  </SelectItem>
+                  <SelectItem value="manual" className="rounded-lg text-[12px]">
+                    Manuell
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Popover modal={false}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      filterFieldTriggerClass,
+                      "h-9 min-h-9 min-w-[9.5rem] gap-1.5 px-3 font-normal",
+                      relationTypeFilter && "text-[#4f46e5]",
+                    )}
+                  >
+                    <span className="truncate">Beziehungen</span>
+                    {relationTypeFilter ? (
+                      <span
+                        className="size-1.5 shrink-0 rounded-full bg-[#4f46e5]"
+                        aria-hidden
+                      />
+                    ) : null}
+                    <ChevronDown className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[min(100vw-2rem,280px)] rounded-xl border border-slate-200 p-0 shadow-lg z-[200]"
+                  align="end"
+                >
+                  <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between gap-2">
+                    <span
+                      className="text-[11px] text-slate-500"
+                      style={{ fontWeight: 600 }}
+                    >
+                      Nach Beziehungstyp
+                    </span>
+                    {relationTypeFilter && (
+                      <button
+                        type="button"
+                        className="text-[11px] text-[#4f46e5] hover:underline font-medium"
+                        onClick={() => setRelationTypeFilter(null)}
+                      >
+                        Zurücksetzen
+                      </button>
+                    )}
+                  </div>
+                  <div className="p-1.5 space-y-0.5">
+                    {relationFilterRows.map(({ type, label, count }) => {
+                      const active = relationTypeFilter === type;
+                      const cfg = relationTypeConfig[type];
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => onRelationTypeFilterClick(type)}
+                          className={cn(
+                            "w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left text-[12px] transition-colors",
+                            active
+                              ? "bg-[#f1f5ff] text-[#4f46e5]"
+                              : "hover:bg-slate-50 text-slate-800",
+                          )}
+                        >
+                          <cfg.icon
+                            className="w-4 h-4 shrink-0"
+                            style={{ color: cfg.color }}
+                          />
+                          <span className="flex-1 truncate">{label}</span>
+                          <span className="text-[11px] text-slate-400 tabular-nums">
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className="text-[11px] text-slate-500 uppercase tracking-wide mr-0.5"
+                style={{ fontWeight: 600 }}
+              >
+                Quick-Filter
+              </span>
+              {statusQuickOptions.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setStatusQuickFilter(value)}
+                  className={cn(
+                    chipBase,
+                    statusQuickFilter === value ? chipOn : chipOff,
+                  )}
+                  style={{
+                    fontWeight: statusQuickFilter === value ? 600 : 500,
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+              <span
+                className="hidden sm:inline w-px h-5 bg-slate-200 mx-1"
+                aria-hidden
+              />
+              <button
+                type="button"
+                onClick={() => setFilterWithLinks((v) => !v)}
+                className={cn(chipBase, filterWithLinks ? chipOn : chipOff)}
+                style={{ fontWeight: filterWithLinks ? 600 : 500 }}
+              >
+                Mit Verknüpfungen
               </button>
-            ))}
-            <span className="hidden sm:inline w-px h-5 bg-slate-200 mx-1" aria-hidden />
-            <button
-              type="button"
-              onClick={() => setFilterWithLinks((v) => !v)}
-              className={cn(chipBase, filterWithLinks ? chipOn : chipOff)}
-              style={{ fontWeight: filterWithLinks ? 600 : 500 }}
-            >
-              Mit Verknüpfungen
-            </button>
+            </div>
           </div>
         </div>
 
         <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
           {/* Linke Vorgangsliste (Navigator) */}
-          <div className="w-full lg:w-[min(100%,400px)] xl:w-[420px] shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50/40 min-h-[240px] max-h-[42vh] lg:max-h-none lg:min-h-0">
+          <div
+            className="w-full lg:w-[min(100%,400px)] xl:w-[420px] shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50/40 min-h-[240px] max-h-[42vh] lg:max-h-none lg:min-h-0"
+            data-tour="stories-story-list"
+          >
             <div className="px-3 py-2 border-b border-slate-200 bg-white/80 flex items-center justify-between shrink-0">
-              <span className="text-[12px] text-slate-600" style={{ fontWeight: 600 }}>
+              <span
+                className="text-[12px] text-slate-600"
+                style={{ fontWeight: 600 }}
+              >
                 {filteredStories.length} Vorgänge
               </span>
               <span className="text-[11px] text-slate-400 tabular-nums">
@@ -1290,9 +1348,7 @@ export function StoryAnalysis() {
                               </Badge>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {rc > 0 && (
-                                  <span
-                                    className="text-[10px] text-[#4f46e5] bg-[#f1f5ff] px-1.5 py-0.5 rounded-full font-medium tabular-nums"
-                                  >
+                                  <span className="text-[10px] text-[#4f46e5] bg-[#f1f5ff] px-1.5 py-0.5 rounded-full font-medium tabular-nums">
                                     {rc}
                                   </span>
                                 )}
@@ -1331,7 +1387,10 @@ export function StoryAnalysis() {
             ) : (
               <div className="flex-1 flex flex-col items-center justify-center text-center p-8 text-slate-500 min-h-[200px]">
                 <GitCompare className="w-10 h-10 text-slate-300 mb-3" />
-                <p className="text-[15px] text-slate-700 mb-1" style={{ fontWeight: 600 }}>
+                <p
+                  className="text-[15px] text-slate-700 mb-1"
+                  style={{ fontWeight: 600 }}
+                >
                   Vorgang auswählen
                 </p>
                 <p className="text-[13px] text-slate-500 max-w-sm">

@@ -481,7 +481,10 @@ export function ComplianceChecker() {
     return (
       <TooltipProvider>
         <div className="p-8 max-w-[900px] mx-auto">
-          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div
+            className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+            data-tour="compliance-intro"
+          >
             <div className="min-w-0">
               <h1 className="text-[#1e1e2e]">Compliance Checker</h1>
               <p className="text-[14px] text-muted-foreground mt-1">
@@ -497,6 +500,7 @@ export function ComplianceChecker() {
               type="button"
               variant="outline"
               className="gap-2 text-[13px] shrink-0 self-start"
+              data-tour="compliance-rules-btn"
               onClick={() => navigate("/rules")}
             >
               <BookOpen className="w-4 h-4" />
@@ -504,7 +508,7 @@ export function ComplianceChecker() {
             </Button>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-4" data-tour="compliance-project-list">
             {workspaceProjects.length === 0 && (
               <p className="text-[14px] text-muted-foreground rounded-lg border border-dashed border-border bg-muted/30 px-4 py-8 text-center">
                 Für diesen Workspace sind keine Compliance-Projekte hinterlegt.

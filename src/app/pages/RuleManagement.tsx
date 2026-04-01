@@ -20,6 +20,16 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Switch } from "../components/ui/switch";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -224,6 +234,7 @@ export function RuleManagement() {
   const [scopeFilter, setScopeFilter] = useState<"all" | "workspace" | "project">("all");
   const [projectScopeId, setProjectScopeId] = useState<string>("all");
   const [showNewRuleDialog, setShowNewRuleDialog] = useState(false);
+  const [rulePendingDelete, setRulePendingDelete] = useState<Rule | null>(null);
   const [newRule, setNewRule] = useState({
     name: "",
     description: "",
@@ -251,6 +262,11 @@ export function RuleManagement() {
     setRules((prev) =>
       prev.map((r) => (r.id === id ? { ...r, active: !r.active } : r))
     );
+  };
+
+  const removeRule = (id: string) => {
+    setRules((prev) => prev.filter((r) => r.id !== id));
+    setRulePendingDelete(null);
   };
 
   const filteredRules = rules.filter((rule) => {
@@ -534,7 +550,10 @@ export function RuleManagement() {
                                   <Copy className="w-3.5 h-3.5" /> Duplizieren
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem className="gap-2 text-[13px] text-[#ef4444]">
+                                <DropdownMenuItem
+                                  className="gap-2 text-[13px] text-[#ef4444] focus:text-[#ef4444]"
+                                  onSelect={() => setRulePendingDelete(rule)}
+                                >
                                   <Trash2 className="w-3.5 h-3.5" /> Löschen
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -547,7 +566,74 @@ export function RuleManagement() {
                 </div>
               </div>
             ))}
+          {rules.length === 0 && (
+            <Card className="border border-dashed border-border bg-muted/20">
+              <CardContent className="p-10 text-center space-y-3">
+                <p className="text-[14px] text-[#1e1e2e]" style={{ fontWeight: 500 }}>
+                  Noch keine Regeln im Katalog
+                </p>
+                <p className="text-[13px] text-muted-foreground max-w-md mx-auto">
+                  Legen Sie eine neue Regel an oder importieren Sie ein Regelset, um den
+                  Compliance Checker zu speisen.
+                </p>
+                <Button
+                  className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 text-[13px] mt-2"
+                  onClick={() => {
+                    setNewRule({
+                      name: "",
+                      description: "",
+                      category: "Sprachliche Standards",
+                      severity: "major",
+                      scope: "workspace",
+                      projectId: workspaceProjectOptions[0]?.id ?? "",
+                    });
+                    setShowNewRuleDialog(true);
+                  }}
+                >
+                  <Plus className="w-4 h-4" />
+                  Neue Regel
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
+
+        <AlertDialog
+          open={rulePendingDelete !== null}
+          onOpenChange={(open) => {
+            if (!open) setRulePendingDelete(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Regel löschen?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {rulePendingDelete ? (
+                  <>
+                    Die Regel{" "}
+                    <span className="font-medium text-foreground">
+                      „{rulePendingDelete.name}“
+                    </span>{" "}
+                    ({rulePendingDelete.id}) wird dauerhaft aus dem Katalog für
+                    diesen Workspace entfernt. Der Compliance Checker bezieht sie
+                    bei künftigen Prüfungen nicht mehr ein.
+                  </>
+                ) : null}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-[#ef4444] text-white hover:bg-[#dc2626] focus-visible:ring-[#ef4444]/40"
+                onClick={() => {
+                  if (rulePendingDelete) removeRule(rulePendingDelete.id);
+                }}
+              >
+                Löschen
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* New Rule Dialog */}
         <Dialog

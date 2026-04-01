@@ -89,14 +89,84 @@ export function getDashboardSteps(includeMobileMenuStep: boolean): Step[] {
   return [nav, ...tail];
 }
 
-/** Vorerst deaktiviert — Fokus liegt auf dem Dashboard. */
-export function getProjectsListSteps(): Step[] {
-  return [];
+/**
+ * Compliance Checker: nur Projekt-Auswahl (gleiche DOM-Struktur wie beim ersten Besuch).
+ * Nach Klick auf ein Projekt: Review-UI ohne neue Tour — Hinweise im letzten Schritt.
+ */
+export function getComplianceSteps(): Step[] {
+  return [
+    {
+      target: sel("compliance-intro"),
+      title: "Compliance Checker",
+      content:
+        "Hier prüfen Sie Lastenhefte und Anforderungsdokumente gegen Regeln (z. B. DSGVO, Unternehmensstandards). Projekte sind auf den aktuellen Workspace bezogen.",
+      placement: "bottom",
+      disableBeacon: true,
+    },
+    {
+      target: sel("compliance-project-list"),
+      title: "Projekt wählen",
+      content:
+        "Jede Karte ist ein prüfbares Dokument. Nach der Auswahl sehen Sie das Volltext-Review: markierte Stellen, Befunde rechts, Seitenwahl unten und Aktionen wie Export oder Auto-Korrektur.",
+      placement: "top",
+      disableBeacon: true,
+    },
+    {
+      target: sel("compliance-rules-btn"),
+      title: "Regeln",
+      content:
+        "Unter „Regeln verwalten“ passen Sie die Prüfkataloge an. Die Prüfung im Checker nutzt genau diese Regeln.",
+      placement: "left",
+      disableBeacon: true,
+    },
+  ];
 }
 
-/** Vorerst deaktiviert — Fokus liegt auf dem Dashboard. */
-export function getProjectsDetailSteps(): Step[] {
-  return [];
+/** Story-Abhängigkeiten (`/stories`): Projekt-Trigger, Filter, Liste, Detail. */
+export function getStoryDependenciesSteps(): Step[] {
+  return [
+    {
+      target: sel("stories-project-filter"),
+      title: "Projekt-Scope",
+      content:
+        "Nur dieser Button: wählen Sie ein Projekt oder „Alle Projekte“ – Liste und Zähler beziehen sich auf den aktuellen Workspace.",
+      placement: "bottom-start",
+      disableBeacon: true,
+      spotlightPadding: 6,
+    },
+    {
+      target: sel("stories-filters"),
+      title: "Suche & Filter",
+      content:
+        "Suche, Typ, Quelle und Beziehungen; darunter Quick-Filter und „Mit Verknüpfungen“, um die Vorgangsliste einzugrenzen.",
+      placement: "bottom",
+      disableBeacon: true,
+    },
+    {
+      target: sel("stories-story-list"),
+      title: "Vorgangsliste",
+      content:
+        "Hier navigieren Sie wie im Jira-Issue-Navigator: ein Eintrag ist vorausgewählt, Sie können jederzeit einen anderen Vorgang wählen.",
+      placement: "right",
+      disableBeacon: true,
+    },
+    {
+      target: sel("stories-detail-hero"),
+      title: "Detailansicht",
+      content:
+        "Titel, Beschreibung und Link zur vollständigen Story – der Fokus für das ausgewählte Arbeitspaket.",
+      placement: "left",
+      disableBeacon: true,
+    },
+    {
+      target: sel("stories-detail-relations"),
+      title: "Zusammenhänge",
+      content:
+        "Duplikate, Abhängigkeiten, Blockaden und Verwandtes: pro Verknüpfung können Sie Vorschläge bestätigen oder verwerfen.",
+      placement: "left",
+      disableBeacon: true,
+    },
+  ];
 }
 
 export function getStepsForRoute(
@@ -106,10 +176,10 @@ export function getStepsForRoute(
   switch (key) {
     case "route:dashboard":
       return getDashboardSteps(options.includeMobileMenuStep);
-    case "route:projects-list":
-      return getProjectsListSteps();
-    case "route:projects-detail":
-      return getProjectsDetailSteps();
+    case "route:compliance":
+      return getComplianceSteps();
+    case "route:stories":
+      return getStoryDependenciesSteps();
     default:
       return [];
   }

@@ -13,6 +13,7 @@ import {
   Edit3,
   Copy,
   ArrowUpDown,
+  Check,
   GitBranch,
   Star,
   ArrowLeft,
@@ -31,6 +32,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "../components/ui/dropdown-menu";
@@ -349,6 +351,67 @@ const getScoreColor = (score: number) => {
   return "#ef4444";
 };
 
+const PROJECT_SORT_OPTIONS = [
+  { value: "name-asc" as const, label: "Name A → Z" },
+  { value: "name-desc" as const, label: "Name Z → A" },
+  { value: "starred-first" as const, label: "Favoriten zuerst" },
+  { value: "compliance-desc" as const, label: "Compliance (höchste zuerst)" },
+  { value: "compliance-asc" as const, label: "Compliance (niedrigste zuerst)" },
+  { value: "stories-desc" as const, label: "Meiste Stories zuerst" },
+  { value: "stories-asc" as const, label: "Wenigste Stories zuerst" },
+  { value: "id-asc" as const, label: "Projekt-ID (aufsteigend)" },
+] as const;
+
+type ProjectSortOption = (typeof PROJECT_SORT_OPTIONS)[number]["value"];
+
+function projectIdNumeric(id: string): number {
+  const m = id.match(/^P-(\d+)$/i);
+  return m ? parseInt(m[1], 10) : 0;
+}
+
+function sortProjects(list: Project[], option: ProjectSortOption): Project[] {
+  const arr = [...list];
+  const byName = (a: Project, b: Project) =>
+    a.name.localeCompare(b.name, "de", { sensitivity: "base" });
+  switch (option) {
+    case "name-asc":
+      arr.sort(byName);
+      break;
+    case "name-desc":
+      arr.sort((a, b) => byName(b, a));
+      break;
+    case "starred-first":
+      arr.sort(
+        (a, b) =>
+          Number(b.starred) - Number(a.starred) || byName(a, b),
+      );
+      break;
+    case "compliance-desc":
+      arr.sort(
+        (a, b) => b.compliance - a.compliance || byName(a, b),
+      );
+      break;
+    case "compliance-asc":
+      arr.sort(
+        (a, b) => a.compliance - b.compliance || byName(a, b),
+      );
+      break;
+    case "stories-desc":
+      arr.sort((a, b) => b.stories - a.stories || byName(a, b));
+      break;
+    case "stories-asc":
+      arr.sort((a, b) => a.stories - b.stories || byName(a, b));
+      break;
+    case "id-asc":
+      arr.sort(
+        (a, b) =>
+          projectIdNumeric(a.id) - projectIdNumeric(b.id) || byName(a, b),
+      );
+      break;
+  }
+  return arr;
+}
+
 export function Projects() {
   const navigate = useNavigate();
   const { projectId } = useParams<{ projectId?: string }>();
@@ -361,6 +424,7 @@ export function Projects() {
     removeMemberFromProjectTeam,
   } = useAppContext();
   const [searchQuery, setSearchQuery] = useState("");
+  const [projectSort, setProjectSort] = useState<ProjectSortOption>("name-asc");
   const [activeTab, setActiveTab] = useState<
     "overview" | "history" | "team"
   >("overview");
@@ -393,13 +457,22 @@ export function Projects() {
     }
   }, [selectedProject, selectedWorkspaceId, navigate]);
 
-  const filteredProjects = projects
-    .filter((p) => p.workspaceId === selectedWorkspaceId)
-    .filter(
-      (p) =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
+  const filteredProjects = useMemo(
+    () =>
+      projects
+        .filter((p) => p.workspaceId === selectedWorkspaceId)
+        .filter(
+          (p) =>
+            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            p.description.toLowerCase().includes(searchQuery.toLowerCase()),
+        ),
+    [selectedWorkspaceId, searchQuery],
+  );
+
+  const sortedProjects = useMemo(
+    () => sortProjects(filteredProjects, projectSort),
+    [filteredProjects, projectSort],
+  );
 
   // Project Detail View
   if (selectedProject) {
@@ -523,10 +596,7 @@ export function Projects() {
           </div>
 
           {/* Tabs */}
-          <div
-            className="flex items-center gap-1 border-b border-border mb-6"
-            data-tour="projects-detail-tabs"
-          >
+          <div className="flex items-center gap-1 border-b border-border mb-6">
             {[
               { key: "overview" as const, label: "Übersicht" },
               { key: "history" as const, label: "Versionshistorie" },
@@ -538,7 +608,6 @@ export function Projects() {
               <button
                 key={tab.key}
                 type="button"
-                data-tour={tab.key === "team" ? "projects-detail-tab-team" : undefined}
                 onClick={() => setActiveTab(tab.key)}
                 className={`px-4 py-2.5 text-[13px] border-b-2 transition-colors ${
                   activeTab === tab.key
@@ -882,7 +951,7 @@ export function Projects() {
         </div>
 
         {/* Search + Filters */}
-        <div className="flex items-center gap-4 mb-6" data-tour="projects-list-search">
+        <div className="flex items-center gap-4 mb-6">
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-white flex-1 max-w-md">
             <Search className="w-4 h-4 text-muted-foreground" />
             <input
@@ -893,10 +962,34 @@ export function Projects() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="text-[13px] gap-2">
-              <ArrowUpDown className="w-4 h-4" />
-              Sortieren
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="text-[13px] gap-2">
+                  <ArrowUpDown className="w-4 h-4" />
+                  Sortieren
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[min(100vw-2rem,280px)]">
+                <DropdownMenuLabel className="text-[11px] text-muted-foreground font-normal">
+                  Sortierung
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {PROJECT_SORT_OPTIONS.map((opt) => (
+                  <DropdownMenuItem
+                    key={opt.value}
+                    className="text-[13px] gap-2"
+                    onSelect={() => setProjectSort(opt.value)}
+                  >
+                    <span className="w-4 h-4 flex items-center justify-center shrink-0">
+                      {projectSort === opt.value ? (
+                        <Check className="w-4 h-4 text-[#4f46e5]" />
+                      ) : null}
+                    </span>
+                    {opt.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline" size="sm" className="text-[13px] gap-2">
               <Download className="w-4 h-4" />
               Export
@@ -905,8 +998,8 @@ export function Projects() {
         </div>
 
         {/* Projects Grid */}
-        <div data-tour="projects-list-grid">
-        {filteredProjects.length === 0 ? (
+        <div>
+        {sortedProjects.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border bg-[#fafbfc] py-16 text-center">
             <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-60" />
             <p className="text-[14px] text-muted-foreground">
@@ -915,7 +1008,7 @@ export function Projects() {
           </div>
         ) : (
         <div className="grid grid-cols-2 gap-4">
-          {filteredProjects.map((project) => (
+          {sortedProjects.map((project) => (
             <Card
               key={project.id}
               className="border border-border bg-white hover:shadow-md transition-all duration-200 cursor-pointer group"
