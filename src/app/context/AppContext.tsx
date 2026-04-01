@@ -130,6 +130,7 @@ export interface WorkspacePushResult {
 
 export interface PushWorkspaceOptions {
   onProgress?: (message: string) => void;
+  extraStories?: Story[];
 }
 
 export interface WorkspaceProject {
@@ -824,9 +825,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const storiesForLinkUpdate: Story[] = [];
 
       try {
-        const workspaceStories = storiesRef.current.filter(
+        const workspaceStoriesBase = storiesRef.current.filter(
           (s) => s.workspaceId === workspaceId,
         );
+        const extraStories = (options.extraStories ?? []).filter(
+          (s) => s.workspaceId === workspaceId,
+        );
+        const workspaceStoryMap = new Map(
+          workspaceStoriesBase.map((s) => [s.id, s]),
+        );
+        for (const story of extraStories) {
+          workspaceStoryMap.set(story.id, story);
+        }
+        const workspaceStories = Array.from(workspaceStoryMap.values());
         const linksSnapshot = jiraSyncLinksRef.current;
         options.onProgress?.(
           `Jira-Export gestartet (${workspaceStories.length} Stories im Workspace).`,
