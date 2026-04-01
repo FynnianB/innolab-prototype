@@ -20,6 +20,10 @@ import {
   PROTOTYPE_USER_ROLE,
 } from "../../data/workspaces";
 import type { Workspace } from "../../data/workspaces";
+import {
+  isSearchEasterEggQuery,
+  SearchEasterEgg,
+} from "../SearchEasterEgg";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -232,6 +236,7 @@ export function Topbar() {
   const resolveSearch = () => {
     const q = searchQuery.trim();
     if (!q) return;
+    if (isSearchEasterEggQuery(q)) return;
     const storyCand = normalizeIdCandidates(q);
     const byExactStory = storiesInWorkspace.find((s) =>
       storyCand.some((c) => s.id.toUpperCase() === c.toUpperCase()),
@@ -448,6 +453,7 @@ export function Topbar() {
           aria-expanded={
             searchFocused &&
             searchQuery.trim().length > 0 &&
+            !isSearchEasterEggQuery(searchQuery) &&
             flatSearchItems.length > 0
           }
           aria-activedescendant={
@@ -468,6 +474,7 @@ export function Topbar() {
             const suggestOpen =
               searchFocused &&
               searchQuery.trim().length > 0 &&
+              !isSearchEasterEggQuery(searchQuery) &&
               flatSearchItems.length > 0;
             const len = flatSearchItems.length;
 
@@ -507,7 +514,9 @@ export function Topbar() {
           className="bg-transparent outline-none w-full min-w-0 text-[13px] placeholder:text-muted-foreground"
         />
       </div>
-      {searchFocused && searchQuery.trim().length > 0 && (
+      {searchFocused &&
+        searchQuery.trim().length > 0 &&
+        !isSearchEasterEggQuery(searchQuery) && (
         <div
           id="topbar-search-suggestions"
           role="listbox"
@@ -621,6 +630,7 @@ export function Topbar() {
   );
 
   return (
+    <>
     <header
       className="grid shrink-0 min-w-0 border-b border-border bg-white px-4 py-2 sm:px-6 gap-x-2 gap-y-2
       grid-cols-[minmax(0,1fr)_auto]
@@ -683,5 +693,10 @@ export function Topbar() {
         {searchField}
       </div>
     </header>
+    <SearchEasterEgg
+      searchQuery={searchQuery}
+      onClose={() => setSearchQuery("")}
+    />
+    </>
   );
 }

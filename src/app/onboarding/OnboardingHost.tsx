@@ -6,30 +6,8 @@ import { markRouteTourDone, isRouteTourDone } from "./onboardingStorage";
 import { OnboardingTooltip } from "./OnboardingTooltip";
 import { getOnboardingKey } from "./routeKeys";
 import { getStepsForRoute } from "./stepsByRoute";
+import { appJoyrideLocale, appJoyrideStyles } from "./joyrideUi";
 import { useOnboardingReset } from "./OnboardingResetContext";
-
-const joyrideLocale = {
-  back: "Zurück",
-  close: "Schließen",
-  last: "Fertig",
-  next: "Weiter",
-  skip: "Überspringen",
-  nextLabelWithProgress: "Weiter (Schritt {step} von {steps})",
-};
-
-const joyrideStyles = {
-  options: {
-    zIndex: 10050,
-    arrowColor: "#ffffff",
-    backgroundColor: "#ffffff",
-    primaryColor: "#4f46e5",
-    textColor: "#1e1e2e",
-    /** Etwas dunkler als 0,38, weiterhin deutlich unter früher ~0,72. */
-    overlayColor: "rgba(15, 23, 42, 0.46)",
-    spotlightShadow:
-      "0 0 0 2px rgba(99, 102, 241, 0.55), 0 12px 40px rgba(15, 23, 42, 0.12)",
-  },
-};
 
 export function OnboardingHost() {
   const location = useLocation();
@@ -100,8 +78,8 @@ export function OnboardingHost() {
       disableOverlayClose
       callback={handleCallback}
       tooltipComponent={OnboardingTooltip}
-      locale={joyrideLocale}
-      styles={joyrideStyles}
+      locale={appJoyrideLocale}
+      styles={appJoyrideStyles}
       floaterProps={{
         styles: {
           floater: { zIndex: 10055 },

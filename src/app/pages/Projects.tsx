@@ -36,6 +36,10 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "../components/ui/dropdown-menu";
+import {
+  isSearchEasterEggQuery,
+  SearchEasterEgg,
+} from "../components/SearchEasterEgg";
 import { TooltipProvider } from "../components/ui/tooltip";
 import { useAppContext } from "../context/AppContext";
 import {
@@ -461,11 +465,14 @@ export function Projects() {
     () =>
       projects
         .filter((p) => p.workspaceId === selectedWorkspaceId)
-        .filter(
-          (p) =>
-            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.description.toLowerCase().includes(searchQuery.toLowerCase()),
-        ),
+        .filter((p) => {
+          if (isSearchEasterEggQuery(searchQuery)) return true;
+          const q = searchQuery.toLowerCase();
+          return (
+            p.name.toLowerCase().includes(q) ||
+            p.description.toLowerCase().includes(q)
+          );
+        }),
     [selectedWorkspaceId, searchQuery],
   );
 
@@ -929,6 +936,7 @@ export function Projects() {
   // Project List View
   return (
     <TooltipProvider>
+      <>
       <div className="p-8 max-w-[1200px] mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -1164,6 +1172,11 @@ export function Projects() {
         )}
         </div>
       </div>
+      <SearchEasterEgg
+        searchQuery={searchQuery}
+        onClose={() => setSearchQuery("")}
+      />
+      </>
     </TooltipProvider>
   );
 }

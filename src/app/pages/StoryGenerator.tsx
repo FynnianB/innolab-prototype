@@ -38,8 +38,8 @@ import {
   Wand2,
   XCircle,
 } from "lucide-react";
-import { useCallback, useState } from "react";
-import { useNavigate } from "react-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router";
 import { ALL_DEMO_PROJECT_OPTIONS } from "../data/workspaces";
 import { StoryLink } from "../components/StoryLink";
 import { Badge } from "../components/ui/badge";
@@ -63,6 +63,10 @@ import { Textarea } from "../components/ui/textarea";
 import { TooltipProvider } from "../components/ui/tooltip";
 import { WorkflowStepper } from "../components/WorkflowStepper";
 import { useAppContext } from "../context/AppContext";
+import { useOnboardingReset } from "../onboarding/OnboardingResetContext";
+import { getOnboardingKey } from "../onboarding/routeKeys";
+import { isRouteTourDone } from "../onboarding/onboardingStorage";
+import { StoryGeneratorJoyride } from "../onboarding/StoryGeneratorJoyride";
 
 // --- Types ---
 type Phase =
@@ -519,6 +523,9 @@ const effortConfig: Record<string, { color: string; bg: string }> = {
 
 export function StoryGenerator() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { revision } = useOnboardingReset();
+  const prevOnboardingRevisionRef = useRef<number | null>(null);
   const { setShowExportDialog, setExportScope } = useAppContext();
   const [phase, setPhase] = useState<Phase>("upload");
   const [dragOver, setDragOver] = useState(false);
@@ -574,16 +581,52 @@ export function StoryGenerator() {
     ]);
   }, []);
 
-  const simulateUpload = () => {
+  const simulateUpload = useCallback(() => {
     setUploadedFiles([
       "Lastenheft_v2.3.pdf",
       "Meeting_Notizen_Sprint42.docx",
       "Anforderungen_Kunde.pdf",
       "Meeting_Recording_Sprint42.mp3",
     ]);
-  };
+  }, []);
 
-  const startDocAnalysis = () => {
+  useEffect(() => {
+    if (prevOnboardingRevisionRef.current === null) {
+      prevOnboardingRevisionRef.current = revision;
+      return;
+    }
+    if (revision > prevOnboardingRevisionRef.current) {
+      prevOnboardingRevisionRef.current = revision;
+      if (
+        getOnboardingKey(location.pathname) === "route:story-generator" &&
+        !isRouteTourDone("route:story-generator")
+      ) {
+        setPhase("upload");
+        setUploadedFiles([]);
+        setFreeTextSource("");
+        setAnalyzeStep(0);
+        setAnalyzeProgress(0);
+        setDocIssues(initialDocIssues);
+        setStories(initialStories);
+        setExpandedStories(new Set());
+        setDocFixDialog(null);
+        setSelectedProject("");
+        setSearchQuery("");
+        setJiraMatches(initialJiraMatches);
+        setJiraFilter("all");
+        setStoryActions({});
+        setEditingStory(null);
+        setSaveSuccess(false);
+        setJiraExportDialog(false);
+        setJiraExportProgress(0);
+        setJiraExportPhase("config");
+      }
+    } else {
+      prevOnboardingRevisionRef.current = revision;
+    }
+  }, [revision, location.pathname]);
+
+  const startDocAnalysis = useCallback(() => {
     setPhase("doc-analyzing");
     setAnalyzeStep(0);
     setAnalyzeProgress(0);
@@ -601,9 +644,9 @@ export function StoryGenerator() {
         }, 500);
       }
     }, 700);
-  };
+  }, []);
 
-  const startStoryGeneration = () => {
+  const startStoryGeneration = useCallback(() => {
     setPhase("generating");
     setAnalyzeStep(0);
     setAnalyzeProgress(0);
@@ -618,7 +661,7 @@ export function StoryGenerator() {
         setTimeout(() => setPhase("results"), 500);
       }
     }, 900);
-  };
+  }, []);
 
   const handleDocIssueAction = (
     issueId: string,
@@ -637,13 +680,13 @@ export function StoryGenerator() {
     );
   };
 
-  const handleDocIgnoreAllPending = () => {
+  const handleDocIgnoreAllPending = useCallback(() => {
     setDocIssues((prev) =>
       prev.map((i) =>
         i.status === "pending" ? { ...i, status: "dismissed" as const } : i,
       ),
     );
-  };
+  }, []);
 
   const toggleStory = (id: string) => {
     setExpandedStories((prev) => {
@@ -703,6 +746,33 @@ export function StoryGenerator() {
     }, 2000);
   };
 
+  const tourCompleteSaveDemo = useCallback(() => {
+    const id = selectedProject || availableProjects[0]?.id;
+    if (!id) return;
+    if (!selectedProject) setSelectedProject(id);
+    setSaveSuccess(true);
+    setTimeout(() => {
+      navigate("/");
+    }, 2000);
+  }, [selectedProject, availableProjects, navigate]);
+
+  const tourHandlers = useMemo(
+    () => ({
+      startDocAnalysis,
+      ignoreAllDocIssues: handleDocIgnoreAllPending,
+      startStoryGeneration,
+      goToJiraCompare: () => setPhase("jira-compare"),
+      goToSave: () => setPhase("save"),
+      completeSaveDemo: tourCompleteSaveDemo,
+    }),
+    [
+      startDocAnalysis,
+      handleDocIgnoreAllPending,
+      startStoryGeneration,
+      tourCompleteSaveDemo,
+    ],
+  );
+
   const startJiraExport = () => {
     setJiraExportPhase("exporting");
     setJiraExportProgress(0);
@@ -735,6 +805,10 @@ export function StoryGenerator() {
     (a) => a === "rejected",
   ).length;
 
+  const storiesToSaveCount = stories.filter(
+    (s) => storyActions[s.id] !== "rejected",
+  ).length;
+
   const filteredJiraMatches = jiraMatches.filter((m) => {
     if (m.status !== "pending") return false;
     if (jiraFilter === "all") return true;
@@ -745,11 +819,25 @@ export function StoryGenerator() {
     (m) => m.status !== "pending",
   ).length;
 
+  const storyGenTourSlot = (
+    <StoryGeneratorJoyride
+      phase={phase}
+      allResolved={allResolved}
+      saveSuccess={saveSuccess}
+      revision={revision}
+      onSeedDemoSources={simulateUpload}
+      tourHandlers={tourHandlers}
+      pendingDocIssues={pendingDocIssues}
+      storiesToSaveCount={storiesToSaveCount}
+    />
+  );
+
   // ==============================
   // UPLOAD PHASE
   // ==============================
   if (phase === "upload") {
     return (
+      <>
       <div className="p-4 sm:p-6 xl:p-8 max-w-[1000px] mx-auto">
         <div className="mb-6">
           <h1 className="text-[#1e1e2e]">AI Story Generator</h1>
@@ -759,7 +847,10 @@ export function StoryGenerator() {
           </p>
         </div>
 
-        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 min-w-0">
+        <div
+          className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 min-w-0"
+          data-tour="storygen-workflow"
+        >
           <WorkflowStepper
             steps={workflowSteps}
             currentStep={0}
@@ -966,6 +1057,8 @@ export function StoryGenerator() {
           </Card>
         )}
       </div>
+      {storyGenTourSlot}
+    </>
     );
   }
 
@@ -974,13 +1067,17 @@ export function StoryGenerator() {
   // ==============================
   if (phase === "doc-analyzing") {
     return (
+      <>
       <div className="p-4 sm:p-6 xl:p-8 max-w-[800px] mx-auto mt-8">
         <WorkflowStepper
           steps={workflowSteps}
           currentStep={1}
           className="mb-8 justify-center flex flex-col items-center"
         />
-        <Card className="border border-border bg-white max-w-[600px] mx-auto">
+        <Card
+          className="border border-border bg-white max-w-[600px] mx-auto"
+          data-tour="storygen-analyzing-panel"
+        >
           <CardContent className="p-6 sm:p-8 text-center">
             <div className="w-16 h-16 rounded-2xl bg-[#f1f0ff] flex items-center justify-center mx-auto mb-6">
               <Loader2 className="w-7 h-7 text-[#4f46e5] animate-spin" />
@@ -1022,6 +1119,8 @@ export function StoryGenerator() {
           </CardContent>
         </Card>
       </div>
+      {storyGenTourSlot}
+    </>
     );
   }
 
@@ -1036,6 +1135,7 @@ export function StoryGenerator() {
     const resolvedCount = fixedCount + dismissedCount;
 
     return (
+      <>
       <TooltipProvider>
         <div className="h-full flex flex-col">
           <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-b border-border bg-white flex-shrink-0">
@@ -1078,6 +1178,7 @@ export function StoryGenerator() {
                   className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 text-[13px]"
                   disabled={!allResolved}
                   onClick={startStoryGeneration}
+                  data-tour="storygen-generate-stories-btn"
                 >
                   <Sparkles className="w-4 h-4" />
                   User Stories generieren
@@ -1251,7 +1352,10 @@ export function StoryGenerator() {
                   {pendingDocIssues} offen
                 </Badge>
               </div>
-              <div className="flex flex-wrap items-center gap-2 mb-4">
+              <div
+                className="flex flex-wrap items-center gap-2 mb-4"
+                data-tour="storygen-doc-bulk-actions"
+              >
                 <Button
                   size="sm"
                   className="text-[11px] h-7 bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-1.5 px-2.5"
@@ -1496,6 +1600,8 @@ export function StoryGenerator() {
           </Dialog>
         </div>
       </TooltipProvider>
+      {storyGenTourSlot}
+    </>
     );
   }
 
@@ -1504,13 +1610,17 @@ export function StoryGenerator() {
   // ==============================
   if (phase === "generating") {
     return (
+      <>
       <div className="p-4 sm:p-6 xl:p-8 max-w-[600px] mx-auto mt-8">
         <WorkflowStepper
           steps={workflowSteps}
           currentStep={2}
           className="mb-8 justify-center"
         />
-        <Card className="border border-border bg-white">
+        <Card
+          className="border border-border bg-white"
+          data-tour="storygen-generating-panel"
+        >
           <CardContent className="p-6 sm:p-8 text-center">
             <div className="w-16 h-16 rounded-2xl bg-[#f1f0ff] flex items-center justify-center mx-auto mb-6">
               <Loader2 className="w-7 h-7 text-[#4f46e5] animate-spin" />
@@ -1559,6 +1669,8 @@ export function StoryGenerator() {
           </CardContent>
         </Card>
       </div>
+      {storyGenTourSlot}
+    </>
     );
   }
 
@@ -1574,6 +1686,7 @@ export function StoryGenerator() {
     };
 
     return (
+      <>
       <TooltipProvider>
         <div className="h-full flex flex-col">
           <div className="px-4 sm:px-6 lg:px-8 py-3 sm:py-4 border-b border-border bg-white flex-shrink-0">
@@ -1611,6 +1724,7 @@ export function StoryGenerator() {
                 <Button
                   className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 text-[13px]"
                   onClick={() => setPhase("save")}
+                  data-tour="storygen-jira-continue"
                 >
                   <ArrowRight className="w-4 h-4" />
                   Weiter zum Speichern
@@ -1943,6 +2057,8 @@ export function StoryGenerator() {
           </div>
         </div>
       </TooltipProvider>
+      {storyGenTourSlot}
+    </>
     );
   }
 
@@ -1957,6 +2073,7 @@ export function StoryGenerator() {
     );
 
     return (
+      <>
       <div className="p-4 sm:p-6 xl:p-8 max-w-[800px] mx-auto">
         <div className="mb-4">
           <Button
@@ -2002,7 +2119,7 @@ export function StoryGenerator() {
         )}
 
         {!saveSuccess && (
-          <>
+          <div data-tour="storygen-save-panel">
             {/* Project Selection */}
             <Card className="border border-border bg-white mb-6">
               <CardHeader className="pb-3 border-b border-border">
@@ -2194,9 +2311,11 @@ export function StoryGenerator() {
                 Direkt nach Jira exportieren (automatisiert)
               </Button>
             </div>
-          </>
+          </div>
         )}
       </div>
+      {storyGenTourSlot}
+    </>
     );
   }
 
@@ -2204,6 +2323,7 @@ export function StoryGenerator() {
   // RESULTS PHASE (Clean, final stories)
   // ==============================
   return (
+    <>
     <TooltipProvider>
       <div className="h-full flex flex-col">
         {/* Results Header */}
@@ -2291,7 +2411,10 @@ export function StoryGenerator() {
         {/* Content */}
         <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
           {/* Main: Stories */}
-          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
+          <div
+            className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6"
+            data-tour="storygen-results-stories"
+          >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 min-w-0">
               <h3 className="text-[#1e1e2e]">Prüfen & Auswählen</h3>
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-white min-w-0 w-full sm:w-auto">
@@ -3038,5 +3161,7 @@ export function StoryGenerator() {
         </DialogContent>
       </Dialog>
     </TooltipProvider>
+    {storyGenTourSlot}
+    </>
   );
 }
