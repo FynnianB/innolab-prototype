@@ -23,6 +23,7 @@ import {
   History,
   UserPlus,
   Users,
+  BarChart3,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -51,6 +52,11 @@ import {
   TEAM_MEMBER_LABELS,
   TEAM_MEMBER_ROLE_BY_INITIALS,
 } from "../data/workspaces";
+import {
+  getProjectQualityInsights,
+  getTopProblemsForProject,
+} from "../data/qualityInsights";
+import { QualityInsightsView } from "../components/QualityInsightsView";
 
 interface SavedStory {
   id: string;
@@ -430,7 +436,7 @@ export function Projects() {
   const [searchQuery, setSearchQuery] = useState("");
   const [projectSort, setProjectSort] = useState<ProjectSortOption>("name-asc");
   const [activeTab, setActiveTab] = useState<
-    "overview" | "history" | "team"
+    "overview" | "history" | "team" | "quality"
   >("overview");
 
   const selectedProject = projectId
@@ -446,6 +452,22 @@ export function Projects() {
     () =>
       ALL_TEAM_ROSTER_INITIALS.filter((i) => !detailEffectiveTeam.includes(i)),
     [detailEffectiveTeam],
+  );
+
+  const projectQualityInsights = useMemo(
+    () =>
+      selectedProject
+        ? getProjectQualityInsights(selectedProject.id)
+        : null,
+    [selectedProject],
+  );
+
+  const projectQualityTop = useMemo(
+    () =>
+      projectQualityInsights
+        ? getTopProblemsForProject(projectQualityInsights)
+        : [],
+    [projectQualityInsights],
   );
 
   useEffect(() => {
@@ -606,6 +628,7 @@ export function Projects() {
           <div className="flex items-center gap-1 border-b border-border mb-6">
             {[
               { key: "overview" as const, label: "Übersicht" },
+              { key: "quality" as const, label: "Qualität & Prüfungen" },
               { key: "history" as const, label: "Versionshistorie" },
               {
                 key: "team" as const,
@@ -702,6 +725,55 @@ export function Projects() {
                   ))}
                 </CardContent>
               </Card>
+            </div>
+          )}
+
+          {/* Tab Content: Quality */}
+          {activeTab === "quality" && (
+            <div>
+              {!projectQualityInsights ? (
+                <div className="text-center py-16 max-w-md mx-auto">
+                  <div className="w-16 h-16 rounded-2xl bg-[#f1f0ff] flex items-center justify-center mx-auto mb-4">
+                    <BarChart3 className="w-7 h-7 text-[#4f46e5]" />
+                  </div>
+                  <p className="text-[16px] text-[#1e1e2e] mb-1" style={{ fontWeight: 600 }}>
+                    Noch keine Prüfdaten
+                  </p>
+                  <p className="text-[13px] text-muted-foreground mb-6">
+                    Für dieses Projekt liegen noch keine aggregierten Guideline- und
+                    Dokumentenprüfungen vor. Führen Sie Checks aus, um Auswertungen zu sehen.
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-[13px] gap-2"
+                      onClick={() => navigate("/guidelines")}
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      Guidelines prüfen
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-[13px] gap-2"
+                      onClick={() => navigate("/story-generator")}
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Stories & Dokumente
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <QualityInsightsView
+                  guidelinesByCategory={projectQualityInsights.guidelinesByCategory}
+                  guidelinesBySeverity={projectQualityInsights.guidelinesBySeverity}
+                  docReviewByType={projectQualityInsights.docReviewByType}
+                  topProblems={projectQualityTop}
+                  lastAnalyzed={projectQualityInsights.lastAnalyzed}
+                  showActionLinks
+                />
+              )}
             </div>
           )}
 

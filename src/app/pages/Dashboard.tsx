@@ -26,6 +26,8 @@ import {
   PROJECT_WORKSPACE,
   PROTOTYPE_USER_ROLE,
 } from "../data/workspaces";
+import { aggregateWorkspaceQualityInsights } from "../data/qualityInsights";
+import { QualityInsightsView } from "../components/QualityInsightsView";
 
 const kpiCards = [
   {
@@ -136,9 +138,13 @@ export function Dashboard() {
     [selectedWorkspaceId],
   );
 
-  const workspaceProjectCount = getProjectIdsForWorkspace(
-    selectedWorkspaceId,
-  ).length;
+  const workspaceProjectIds = getProjectIdsForWorkspace(selectedWorkspaceId);
+  const workspaceProjectCount = workspaceProjectIds.length;
+
+  const workspaceQuality = useMemo(
+    () => aggregateWorkspaceQualityInsights(selectedWorkspaceId),
+    [selectedWorkspaceId],
+  );
 
   const myProjectCount = myProjectIdsInWorkspace.length;
 
@@ -394,31 +400,36 @@ export function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Guidelines-Überblick (Mini) */}
-            <Card className="border border-border bg-white">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-[16px]" style={{ fontWeight: 600 }}>Guidelines-Überblick</CardTitle>
+            {/* Qualität: Workspace-Aggregat */}
+            <Card className="border border-border bg-white min-w-0">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-[16px]" style={{ fontWeight: 600 }}>
+                  Qualität & Prüfungen
+                </CardTitle>
+                <p className="text-[12px] text-muted-foreground font-normal mt-1 leading-snug">
+                  Häufigste Problemarten aus Guidelines und Dokumentenprüfungen über alle
+                  Projekte dieses Workspaces.
+                </p>
               </CardHeader>
-              <CardContent className="px-5 pb-5 space-y-4">
-                {[
-                  { label: "Sprachliche Standards", score: 97, color: "#10b981" },
-                  { label: "Strukturvorgaben", score: 91, color: "#4f46e5" },
-                  { label: "DSGVO / Rechtlich", score: 88, color: "#f59e0b" },
-                  { label: "ISO 29148", score: 95, color: "#10b981" },
-                ].map((item, i) => (
-                  <div key={i}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[13px] text-[#475569]">{item.label}</span>
-                      <span className="text-[13px]" style={{ color: item.color, fontWeight: 600 }}>{item.score}%</span>
-                    </div>
-                    <div className="w-full h-2 rounded-full bg-[#f1f5f9] overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${item.score}%`, backgroundColor: item.color }}
-                      />
-                    </div>
-                  </div>
-                ))}
+              <CardContent className="px-3 sm:px-4 pb-4 min-w-0">
+                {workspaceQuality.projectCount === 0 ? (
+                  <p className="text-[13px] text-muted-foreground py-4 text-center px-2">
+                    Für Projekte in diesem Workspace liegen noch keine aggregierten
+                    Prüfdaten vor.
+                  </p>
+                ) : (
+                  <QualityInsightsView
+                    guidelinesByCategory={workspaceQuality.guidelinesByCategory}
+                    guidelinesBySeverity={workspaceQuality.guidelinesBySeverity}
+                    docReviewByType={workspaceQuality.docReviewByType}
+                    topProblems={workspaceQuality.topProblems}
+                    subtitle={`${workspaceQuality.projectCount} Projekt${
+                      workspaceQuality.projectCount === 1 ? "" : "e"
+                    } mit Auswertung · ${workspaceQuality.totalGuidelineFindings} Guideline-Befunde · ${workspaceQuality.totalDocIssues} Doc-Issues`}
+                    compact
+                    showCategoryCharts={false}
+                  />
+                )}
               </CardContent>
             </Card>
           </div>
