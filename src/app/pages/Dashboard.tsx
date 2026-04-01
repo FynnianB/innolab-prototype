@@ -28,7 +28,6 @@ import {
   PROTOTYPE_USER_ROLE,
 } from "../data/workspaces";
 import { aggregateWorkspaceQualityInsights } from "../data/qualityInsights";
-import { QualityInsightsView } from "../components/QualityInsightsView";
 
 const kpiCards = [
   {
@@ -401,35 +400,92 @@ export function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Qualität: Workspace-Aggregat */}
+            {/* Qualität: Kurzüberblick → Guidelines */}
             <Card className="border border-border bg-white min-w-0">
               <CardHeader className="pb-2">
                 <CardTitle className="text-[16px]" style={{ fontWeight: 600 }}>
-                  Qualität & Prüfungen
+                  Qualität & Guidelines
                 </CardTitle>
                 <p className="text-[12px] text-muted-foreground font-normal mt-1 leading-snug">
-                  Häufigste Problemarten aus Guidelines und Dokumentenprüfungen über alle
-                  Projekte dieses Workspaces.
+                  Kurzüberblick für diesen Workspace. Charts, Projektvergleich und Prüfungen finden
+                  Sie unter Guidelines.
                 </p>
               </CardHeader>
-              <CardContent className="px-3 sm:px-4 pb-4 min-w-0">
+              <CardContent className="px-3 sm:px-4 pb-4 min-w-0 space-y-4">
                 {workspaceQuality.projectCount === 0 ? (
                   <p className="text-[13px] text-muted-foreground py-4 text-center px-2">
                     Für Projekte in diesem Workspace liegen noch keine aggregierten
                     Prüfdaten vor.
                   </p>
                 ) : (
-                  <QualityInsightsView
-                    guidelinesByCategory={workspaceQuality.guidelinesByCategory}
-                    guidelinesBySeverity={workspaceQuality.guidelinesBySeverity}
-                    docReviewByType={workspaceQuality.docReviewByType}
-                    topProblems={workspaceQuality.topProblems}
-                    subtitle={`${workspaceQuality.projectCount} Projekt${
-                      workspaceQuality.projectCount === 1 ? "" : "e"
-                    } mit Auswertung · ${workspaceQuality.totalGuidelineFindings} Guideline-Befunde · ${workspaceQuality.totalDocIssues} Doc-Issues`}
-                    compact
-                    showCategoryCharts={false}
-                  />
+                  <>
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
+                      <div className="rounded-lg border border-border bg-[#fafbfc] px-2 py-2.5">
+                        <p className="text-[11px] text-muted-foreground">Projekte</p>
+                        <p className="text-[18px] text-[#1e1e2e] tabular-nums" style={{ fontWeight: 600 }}>
+                          {workspaceQuality.projectCount}
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-border bg-[#fafbfc] px-2 py-2.5">
+                        <p className="text-[11px] text-muted-foreground">Guideline-Befunde</p>
+                        <p className="text-[18px] text-[#1e1e2e] tabular-nums" style={{ fontWeight: 600 }}>
+                          {workspaceQuality.totalGuidelineFindings}
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-border bg-[#fafbfc] px-2 py-2.5">
+                        <p className="text-[11px] text-muted-foreground">Doc-Issues</p>
+                        <p className="text-[18px] text-[#1e1e2e] tabular-nums" style={{ fontWeight: 600 }}>
+                          {workspaceQuality.totalDocIssues}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-[12px] text-muted-foreground justify-center sm:justify-start">
+                      <span>
+                        <span className="text-[#ef4444] font-semibold tabular-nums">
+                          {workspaceQuality.guidelinesBySeverity.critical}
+                        </span>{" "}
+                        kritisch
+                      </span>
+                      <span>
+                        <span className="text-[#f59e0b] font-semibold tabular-nums">
+                          {workspaceQuality.guidelinesBySeverity.major}
+                        </span>{" "}
+                        wichtig
+                      </span>
+                      <span>
+                        <span className="text-[#64748b] font-semibold tabular-nums">
+                          {workspaceQuality.guidelinesBySeverity.minor}
+                        </span>{" "}
+                        gering
+                      </span>
+                    </div>
+                    {workspaceQuality.topProblems.length > 0 ? (
+                      <div>
+                        <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-2" style={{ fontWeight: 600 }}>
+                          Häufigste Themen (Auszug)
+                        </p>
+                        <ul className="space-y-1.5">
+                          {workspaceQuality.topProblems.slice(0, 3).map((p) => (
+                            <li
+                              key={p.key}
+                              className="flex items-center justify-between gap-2 text-[13px] rounded-md border border-border/80 bg-white px-2.5 py-1.5"
+                            >
+                              <span className="text-[#1e1e2e] truncate min-w-0">{p.label}</span>
+                              <span className="tabular-nums shrink-0 text-muted-foreground">{p.count}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+                    <Button
+                      type="button"
+                      className="w-full sm:w-auto bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 text-[13px]"
+                      onClick={() => navigate("/guidelines?tab=overview")}
+                    >
+                      Zur Guidelines-Analyse
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </>
                 )}
               </CardContent>
             </Card>

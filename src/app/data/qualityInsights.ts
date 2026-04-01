@@ -1,6 +1,6 @@
 /**
  * Aggregierte Demo-Daten zu Guidelines-Checks und Dokumentenprüfungen pro Projekt.
- * Dient Projekt-Tab „Qualität“ und Dashboard-Workspace-Aggregation.
+ * Dient Guidelines-Übersicht (Workspace/Projekt) und der Dashboard-Kurzübersicht.
  */
 
 import { getProjectIdsForWorkspace } from "./workspaces";

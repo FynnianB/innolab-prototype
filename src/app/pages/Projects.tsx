@@ -23,7 +23,6 @@ import {
   History,
   UserPlus,
   Users,
-  BarChart3,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -52,12 +51,6 @@ import {
   TEAM_MEMBER_LABELS,
   TEAM_MEMBER_ROLE_BY_INITIALS,
 } from "../data/workspaces";
-import {
-  getProjectQualityInsights,
-  getTopProblemsForProject,
-} from "../data/qualityInsights";
-import { QualityInsightsView } from "../components/QualityInsightsView";
-
 interface SavedStory {
   id: string;
   title: string;
@@ -436,7 +429,7 @@ export function Projects() {
   const [searchQuery, setSearchQuery] = useState("");
   const [projectSort, setProjectSort] = useState<ProjectSortOption>("name-asc");
   const [activeTab, setActiveTab] = useState<
-    "overview" | "history" | "team" | "quality"
+    "overview" | "history" | "team"
   >("overview");
 
   const selectedProject = projectId
@@ -452,22 +445,6 @@ export function Projects() {
     () =>
       ALL_TEAM_ROSTER_INITIALS.filter((i) => !detailEffectiveTeam.includes(i)),
     [detailEffectiveTeam],
-  );
-
-  const projectQualityInsights = useMemo(
-    () =>
-      selectedProject
-        ? getProjectQualityInsights(selectedProject.id)
-        : null,
-    [selectedProject],
-  );
-
-  const projectQualityTop = useMemo(
-    () =>
-      projectQualityInsights
-        ? getTopProblemsForProject(projectQualityInsights)
-        : [],
-    [projectQualityInsights],
   );
 
   useEffect(() => {
@@ -555,13 +532,18 @@ export function Projects() {
                 <Sparkles className="w-4 h-4" />
                 Stories generieren
               </Button>
-              <Button variant="outline" size="sm" className="text-[13px] gap-2" onClick={() =>
-                navigate(
-                  `/guidelines?tab=check&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
-                )
-              }>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-[13px] gap-2"
+                onClick={() =>
+                  navigate(
+                    `/guidelines?tab=overview&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
+                  )
+                }
+              >
                 <ShieldCheck className="w-4 h-4" />
-                Guidelines prüfen
+                Guidelines
               </Button>
             </div>
           </div>
@@ -591,7 +573,22 @@ export function Projects() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border border-border bg-white">
+            <Card
+              role="button"
+              tabIndex={0}
+              className="border border-border bg-white cursor-pointer hover:border-[#4f46e5]/30 hover:shadow-sm transition-all outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5]/25"
+              onClick={() =>
+                navigate(
+                  `/guidelines?tab=overview&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
+                )
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ")
+                  navigate(
+                    `/guidelines?tab=overview&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
+                  );
+              }}
+            >
               <CardContent className="p-4 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[#d1fae5] flex items-center justify-center">
                   <ShieldCheck className="w-5 h-5 text-[#10b981]" />
@@ -601,6 +598,9 @@ export function Projects() {
                     {selectedProject.guidelinesQuote}%
                   </p>
                   <p className="text-[12px] text-muted-foreground">Guidelines-Quote</p>
+                  <p className="text-[11px] text-[#4f46e5] mt-0.5" style={{ fontWeight: 500 }}>
+                    Zur Analyse in Guidelines
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -632,7 +632,6 @@ export function Projects() {
           <div className="flex items-center gap-1 border-b border-border mb-6">
             {[
               { key: "overview" as const, label: "Übersicht" },
-              { key: "quality" as const, label: "Qualität & Prüfungen" },
               { key: "history" as const, label: "Versionshistorie" },
               {
                 key: "team" as const,
@@ -699,13 +698,29 @@ export function Projects() {
                       </Button>
                     </div>
                   </div>
-                  <div className="flex justify-between text-[13px]">
-                    <span className="text-muted-foreground">Guidelines-Quote</span>
-                    <div className="flex items-center gap-2">
-                      <Progress value={selectedProject.guidelinesQuote} className="h-1.5 w-24" />
-                      <span style={{ fontWeight: 600, color: getScoreColor(selectedProject.guidelinesQuote) }}>
+                  <div className="flex justify-between items-center text-[13px] gap-2">
+                    <span className="text-muted-foreground shrink-0">Guidelines-Quote</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Progress value={selectedProject.guidelinesQuote} className="h-1.5 w-24 shrink" />
+                      <span
+                        className="shrink-0"
+                        style={{ fontWeight: 600, color: getScoreColor(selectedProject.guidelinesQuote) }}
+                      >
                         {selectedProject.guidelinesQuote}%
                       </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-[12px] h-8 px-2 text-[#4f46e5] shrink-0"
+                        onClick={() =>
+                          navigate(
+                            `/guidelines?tab=overview&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
+                          )
+                        }
+                      >
+                        Guidelines
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -729,60 +744,6 @@ export function Projects() {
                   ))}
                 </CardContent>
               </Card>
-            </div>
-          )}
-
-          {/* Tab Content: Quality */}
-          {activeTab === "quality" && (
-            <div>
-              {!projectQualityInsights ? (
-                <div className="text-center py-16 max-w-md mx-auto">
-                  <div className="w-16 h-16 rounded-2xl bg-[#f1f0ff] flex items-center justify-center mx-auto mb-4">
-                    <BarChart3 className="w-7 h-7 text-[#4f46e5]" />
-                  </div>
-                  <p className="text-[16px] text-[#1e1e2e] mb-1" style={{ fontWeight: 600 }}>
-                    Noch keine Prüfdaten
-                  </p>
-                  <p className="text-[13px] text-muted-foreground mb-6">
-                    Für dieses Projekt liegen noch keine aggregierten Guideline- und
-                    Dokumentenprüfungen vor. Führen Sie Checks aus, um Auswertungen zu sehen.
-                  </p>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-[13px] gap-2"
-                      onClick={() =>
-                navigate(
-                  `/guidelines?tab=check&scope=project&project=${encodeURIComponent(selectedProject.id)}`,
-                )
-              }
-                    >
-                      <ShieldCheck className="w-4 h-4" />
-                      Guidelines prüfen
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-[13px] gap-2"
-                      onClick={() => navigate("/story-generator")}
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      Stories & Dokumente
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <QualityInsightsView
-                  guidelinesByCategory={projectQualityInsights.guidelinesByCategory}
-                  guidelinesBySeverity={projectQualityInsights.guidelinesBySeverity}
-                  docReviewByType={projectQualityInsights.docReviewByType}
-                  topProblems={projectQualityTop}
-                  lastAnalyzed={projectQualityInsights.lastAnalyzed}
-                  showActionLinks
-                  guidelinesCheckProjectId={selectedProject.id}
-                />
-              )}
             </div>
           )}
 
