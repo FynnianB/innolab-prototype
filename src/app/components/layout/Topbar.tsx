@@ -17,6 +17,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAppContext } from "../../context/AppContext";
 import { useMobileNav } from "../../context/MobileNavContext";
+import type { TicketSystemId } from "../../data/ticketSystems";
 import {
   PROJECT_LOGO_BY_ID,
   PROTOTYPE_USER_DISPLAY_NAME,
@@ -138,6 +139,7 @@ export function Topbar() {
     unreadCount,
     setShowExportDialog,
     setExportScope,
+    addWorkspace,
     createWorkspace,
     syncWorkspaceFromJira,
     workspaceSyncStateById,
@@ -387,6 +389,28 @@ export function Topbar() {
     setWorkspaceCreatePhase("form");
     setWorkspaceCreateMessage(null);
     setWorkspaceCreateLogs([]);
+  };
+
+  const handleNewWorkspaceRequested = (input: {
+    name: string;
+    ticketSystemId: TicketSystemId;
+  }) => {
+    const normalizedName = input.name.trim() || "Neuer Workspace";
+    if (input.ticketSystemId === "jira") {
+      resetWorkspaceForm();
+      setWorkspaceForm((prev) => ({
+        ...prev,
+        name: normalizedName,
+        enableJira: true,
+      }));
+      setShowNewWorkspaceDialog(true);
+      return;
+    }
+
+    addWorkspace({
+      name: normalizedName,
+      ticketSystemId: input.ticketSystemId,
+    });
   };
 
   const onLogoPicked = async (file: File | null) => {
@@ -922,7 +946,7 @@ export function Topbar() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => {
-                setShowNewWorkspaceDialog(true);
+                setNewWorkspaceOpen(true);
                 setWorkspaceFormError(null);
               }}
             >
@@ -955,6 +979,7 @@ export function Topbar() {
     <NewWorkspaceDialog
       open={newWorkspaceOpen}
       onOpenChange={setNewWorkspaceOpen}
+      onCreateRequested={handleNewWorkspaceRequested}
     />
     <ManageWorkspacesDialog
       open={manageWorkspacesOpen}
