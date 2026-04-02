@@ -64,6 +64,8 @@ import { Textarea } from "../components/ui/textarea";
 import { TooltipProvider } from "../components/ui/tooltip";
 import { WorkflowStepper } from "../components/WorkflowStepper";
 import { useAppContext } from "../context/AppContext";
+import { useProjectNavContext } from "../context/ProjectNavContext";
+import { isNewNavEnabled } from "../featureFlags";
 import { useOnboardingReset } from "../onboarding/OnboardingResetContext";
 import { getOnboardingKey } from "../onboarding/routeKeys";
 import { isRouteTourDone } from "../onboarding/onboardingStorage";
@@ -528,6 +530,8 @@ export function StoryGenerator() {
     ticketSystem,
     selectedWorkspaceId,
   } = useAppContext();
+  const { routeProjectId, projectId: navEffectiveProjectId } =
+    useProjectNavContext();
 
   const projectsInWorkspace = useMemo(
     () =>
@@ -563,6 +567,14 @@ export function StoryGenerator() {
   );
   const [docFixDialog, setDocFixDialog] = useState<DocIssue | null>(null);
   const [selectedProject, setSelectedProject] = useState<string>("");
+  useEffect(() => {
+    if (!isNewNavEnabled()) return;
+    const pid = routeProjectId ?? navEffectiveProjectId;
+    if (!pid) return;
+    if (projectsInWorkspace.some((p) => p.id === pid)) {
+      setSelectedProject(pid);
+    }
+  }, [routeProjectId, navEffectiveProjectId, projectsInWorkspace]);
   useEffect(() => {
     if (!selectedProject) return;
     if (!projectsInWorkspace.some((p) => p.id === selectedProject)) {
@@ -646,7 +658,11 @@ export function StoryGenerator() {
         setStories(initialStories);
         setExpandedStories(new Set());
         setDocFixDialog(null);
-        setSelectedProject("");
+        setSelectedProject(
+          isNewNavEnabled()
+            ? (routeProjectId ?? navEffectiveProjectId ?? "")
+            : "",
+        );
         setSearchQuery("");
         setJiraMatches(initialJiraMatches);
         setJiraFilter("all");
@@ -660,7 +676,12 @@ export function StoryGenerator() {
     } else {
       prevOnboardingRevisionRef.current = revision;
     }
-  }, [revision, location.pathname]);
+  }, [
+    revision,
+    location.pathname,
+    routeProjectId,
+    navEffectiveProjectId,
+  ]);
 
   const startDocAnalysis = useCallback(() => {
     setPhase("doc-analyzing");
@@ -2124,8 +2145,9 @@ export function StoryGenerator() {
           </Button>
           <h1 className="text-[#1e1e2e]">User Stories speichern</h1>
           <p className="text-[14px] text-muted-foreground mt-1">
-            Wählen Sie ein Zielprojekt und speichern Sie die generierten User
-            Stories.
+            {isNewNavEnabled()
+              ? "Speichern Sie die generierten User Stories im in der Navigation gewählten Projekt."
+              : "Wählen Sie ein Zielprojekt und speichern Sie die generierten User Stories."}
           </p>
         </div>
 
@@ -2158,34 +2180,36 @@ export function StoryGenerator() {
 
         {!saveSuccess && (
           <div data-tour="storygen-save-panel">
-            {/* Project Selection */}
-            <Card className="border border-border bg-white mb-6">
-              <CardHeader className="pb-3 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <FolderOpen className="w-4 h-4 text-[#4f46e5]" />
-                  <CardTitle
-                    className="text-[14px]"
-                    style={{ fontWeight: 600 }}
+            {/* Project Selection (ausgeblendet bei Navigation mit Projektkontext in der URL) */}
+            {!isNewNavEnabled() ? (
+              <Card className="border border-border bg-white mb-6">
+                <CardHeader className="pb-3 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <FolderOpen className="w-4 h-4 text-[#4f46e5]" />
+                    <CardTitle
+                      className="text-[14px]"
+                      style={{ fontWeight: 600 }}
+                    >
+                      Zielprojekt auswählen
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-5">
+                  <select
+                    value={selectedProject}
+                    onChange={(e) => setSelectedProject(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-border bg-white text-[14px] outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10 transition-all"
                   >
-                    Zielprojekt auswählen
-                  </CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-5">
-                <select
-                  value={selectedProject}
-                  onChange={(e) => setSelectedProject(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg border border-border bg-white text-[14px] outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10 transition-all"
-                >
-                  <option value="">Projekt wählen...</option>
-                  {projectsInWorkspace.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </CardContent>
-            </Card>
+                    <option value="">Projekt wählen...</option>
+                    {projectsInWorkspace.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </CardContent>
+              </Card>
+            ) : null}
 
             {/* Summary */}
             <Card className="border border-border bg-white mb-6">

@@ -14,6 +14,8 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { TooltipProvider } from "../components/ui/tooltip";
 import { useAppContext } from "../context/AppContext";
+import { useProjectNavContext } from "../context/ProjectNavContext";
+import { isNewNavEnabled } from "../featureFlags";
 import {
   PROJECT_LOGO_BY_ID,
   getProjectIdsForWorkspace,
@@ -65,6 +67,8 @@ export function GuidelinesChecker() {
     selectedWorkspaceId,
     selectedWorkspace,
   } = useAppContext();
+  const { routeProjectId } = useProjectNavContext();
+  const newNav = isNewNavEnabled();
 
   const check = useGuidelinesCheckState();
   const mockUploadSeq = useRef(0);
@@ -112,13 +116,28 @@ export function GuidelinesChecker() {
 
   const firstProjectId = workspaceProjects[0]?.id ?? null;
 
-  const activeTab = parseTab(searchParams.get("tab"));
-  const scopeMode: GuidelinesScopeMode =
-    searchParams.get("scope") === "project" ? "project" : "workspace";
+  const activeTab = (() => {
+    const raw = searchParams.get("tab");
+    if (newNav && raw === "rules") return "check" as GuidelinesMainTab;
+    return parseTab(raw);
+  })();
+
+  const scopeMode: GuidelinesScopeMode = newNav
+    ? routeProjectId && workspaceProjectIds.includes(routeProjectId)
+      ? "project"
+      : "workspace"
+    : searchParams.get("scope") === "project"
+      ? "project"
+      : "workspace";
 
   const urlProject = searchParams.get("project");
-  const scopeProjectId =
-    scopeMode === "project"
+  const scopeProjectId = newNav
+    ? scopeMode === "project" &&
+        routeProjectId &&
+        workspaceProjectIds.includes(routeProjectId)
+      ? routeProjectId
+      : null
+    : scopeMode === "project"
       ? urlProject && workspaceProjectIds.includes(urlProject)
         ? urlProject
         : firstProjectId
@@ -160,6 +179,30 @@ export function GuidelinesChecker() {
     [setSearchParams],
   );
 
+  const scopeParam = searchParams.get("scope");
+  const projectParam = searchParams.get("project");
+
+  useEffect(() => {
+    if (newNav) return;
+    if (!routeProjectId) return;
+    if (scopeParam === "workspace") return;
+    if (projectParam === routeProjectId) return;
+    syncQuery({ scope: "project", project: routeProjectId });
+  }, [newNav, routeProjectId, scopeParam, projectParam, syncQuery]);
+
+  useEffect(() => {
+    if (!newNav) return;
+    if (searchParams.get("tab") !== "rules") return;
+    setSearchParams(
+      (prev) => {
+        const n = new URLSearchParams(prev);
+        n.set("tab", "check");
+        return n;
+      },
+      { replace: true },
+    );
+  }, [newNav, searchParams, setSearchParams]);
+
   const setActiveTab = useCallback(
     (tab: GuidelinesMainTab) => {
       if (tab !== "check" && check.phase === "review") {
@@ -183,13 +226,22 @@ export function GuidelinesChecker() {
 
   const openCheckFromHistoryRun = useCallback(
     (run: GuidelinesAnalysisRun) => {
-      syncQuery({ tab: "check", scope: "project", project: run.projectId });
       const proj = workspaceProjects.find((p) => p.id === run.projectId);
+      if (newNav) {
+        navigate(
+          `/projects/${run.projectId}/compliance-check?tab=check`,
+        );
+        if (proj) {
+          check.handleProjectSelect(proj, { fileLabel: run.documentLabel });
+        }
+        return;
+      }
+      syncQuery({ tab: "check", scope: "project", project: run.projectId });
       if (proj) {
         check.handleProjectSelect(proj, { fileLabel: run.documentLabel });
       }
     },
-    [syncQuery, workspaceProjects, check],
+    [newNav, navigate, syncQuery, workspaceProjects, check],
   );
 
   const listProjects =
@@ -201,9 +253,15 @@ export function GuidelinesChecker() {
     check.phase === "review" && check.selectedProject != null;
 
   const goToRulesFromReview = useCallback(() => {
+    const pid = check.selectedProject?.id;
     check.resetCheckFlow();
+    if (newNav) {
+      if (pid) navigate(`/projects/${pid}/rules`);
+      else navigate("/rules");
+      return;
+    }
     syncQuery({ tab: "rules" });
-  }, [check, syncQuery]);
+  }, [check, newNav, navigate, syncQuery]);
 
   if (showReviewShell) {
     return (
@@ -229,13 +287,19 @@ export function GuidelinesChecker() {
           </p>
         </div>
 
-        <GuidelinesScopeBar
-          workspaceId={selectedWorkspaceId}
-          value={scopeBarValue}
-          onValueChange={setScopeFromSelect}
-        />
+        {!newNav ? (
+          <GuidelinesScopeBar
+            workspaceId={selectedWorkspaceId}
+            value={scopeBarValue}
+            onValueChange={setScopeFromSelect}
+          />
+        ) : null}
 
-        <GuidelinesTabNav activeTab={activeTab} onTabChange={setActiveTab} />
+        <GuidelinesTabNav
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          hideRulesTab={newNav}
+        />
 
         {activeTab === "overview" && (
           <GuidelinesOverviewTab
@@ -243,18 +307,22 @@ export function GuidelinesChecker() {
             scopeMode={scopeMode}
             scopeProjectId={scopeProjectId}
             onRowProjectClick={(id) => {
+              if (newNav) {
+                navigate(`/projects/${id}/compliance-check`);
+                return;
+              }
               syncQuery({ scope: "project", project: id });
             }}
           />
         )}
 
-        {activeTab === "rules" && (
+        {!newNav && activeTab === "rules" ? (
           <RuleManagementContent
             embedded
             hideGeltungsbereich
             guidelinesEvalScope={guidelinesRulesEvalScope}
           />
-        )}
+        ) : null}
 
         {activeTab === "check" && (
           <div className="space-y-8">

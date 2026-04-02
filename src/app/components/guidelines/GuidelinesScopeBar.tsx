@@ -1,3 +1,7 @@
+/**
+ * Kontrollierte Bereichswahl. Bei Routen `/projects/:projectId/compliance-check` setzt
+ * {@link GuidelinesChecker} die Query-Parameter passend zum Navigationskontext.
+ */
 import { useMemo, useState } from "react";
 import { Building2, ChevronDown } from "lucide-react";
 import { Button } from "../ui/button";

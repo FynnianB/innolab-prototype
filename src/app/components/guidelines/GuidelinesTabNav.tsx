@@ -9,12 +9,20 @@ const TABS: { key: GuidelinesMainTab; label: string }[] = [
 interface GuidelinesTabNavProps {
   activeTab: GuidelinesMainTab;
   onTabChange: (tab: GuidelinesMainTab) => void;
+  /** Bei neuer Sidebar-Navigation: Regelwerk nur unter „Regeln“ in der Nav, nicht als Tab hier. */
+  hideRulesTab?: boolean;
 }
 
-export function GuidelinesTabNav({ activeTab, onTabChange }: GuidelinesTabNavProps) {
+export function GuidelinesTabNav({
+  activeTab,
+  onTabChange,
+  hideRulesTab = false,
+}: GuidelinesTabNavProps) {
+  const tabs = hideRulesTab ? TABS.filter((t) => t.key !== "rules") : TABS;
+
   return (
     <div className="flex items-center gap-1 border-b border-border mb-6 overflow-x-auto">
-      {TABS.map((tab) => (
+      {tabs.map((tab) => (
         <button
           key={tab.key}
           type="button"

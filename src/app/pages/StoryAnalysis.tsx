@@ -45,6 +45,8 @@ import {
 } from "../components/ui/select";
 import { cn } from "../components/ui/utils";
 import { useAppContext } from "../context/AppContext";
+import { useProjectNavContext } from "../context/ProjectNavContext";
+import { isNewNavEnabled } from "../featureFlags";
 import {
   allRelations,
   getRelationsForId,
@@ -819,6 +821,8 @@ export function StoryAnalysis() {
   } = useAppContext();
   const ticketImportLabel = `${ticketSystem.name}-Import`;
   const [searchParams, setSearchParams] = useSearchParams();
+  const { routeProjectId: navRouteProjectId, projectId: navProjectId } =
+    useProjectNavContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStoryId, setSelectedStoryId] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<string>("all");
@@ -854,7 +858,9 @@ export function StoryAnalysis() {
   /** Default „Meine Projekte“ nur einmal pro Workspace (ohne projectId in der URL). */
   const defaultsAppliedForWorkspace = useRef<string | null>(null);
 
-  const projectIdFromUrl = searchParams.get("projectId");
+  const projectIdFromUrl =
+    navRouteProjectId ??
+    (isNewNavEnabled() ? navProjectId : searchParams.get("projectId"));
 
   const projectOptions = useMemo(() => {
     return getProjectIdsForWorkspace(selectedWorkspaceId)
@@ -951,6 +957,7 @@ export function StoryAnalysis() {
 
   /** State → URL (Deep Links / Teilen), ohne Schleife wenn bereits konsistent. */
   useEffect(() => {
+    if (isNewNavEnabled()) return;
     const pid = projectIdFromUrl;
     if (selectedProjectId) {
       if (pid === selectedProjectId) return;
@@ -1198,80 +1205,98 @@ export function StoryAnalysis() {
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm flex flex-col min-h-[min(72vh,760px)]">
         <div className="shrink-0 border-b border-slate-200 px-3 sm:px-4 py-3 space-y-3 bg-white">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <Popover
-              modal={false}
-              open={projectFilterOpen}
-              onOpenChange={setProjectFilterOpen}
-            >
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  data-tour="stories-project-filter"
-                  className={cn(
-                    filterFieldTriggerClass,
-                    "h-10 min-h-10 w-full max-w-full justify-between gap-2 px-3.5 font-medium sm:w-fit sm:min-w-[240px] sm:max-w-[min(100vw-2rem,22rem)] border-slate-200 bg-white shadow-sm hover:bg-slate-50/80",
-                  )}
-                >
-                  <span className="flex items-center gap-2.5 min-w-0 text-left">
-                    <ProjectFilterGlyph
-                      projectId={selectedProjectId}
-                      size="md"
-                    />
-                    <span className="min-w-0 truncate text-[13px] text-slate-800">
-                      {projectTriggerLabel}
-                    </span>
-                  </span>
-                  <ChevronDown className="w-4 h-4 shrink-0 text-slate-400" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-[min(100vw-2rem,320px)] rounded-xl border border-slate-200 p-0 shadow-lg z-[200]"
-                align="start"
+            {!isNewNavEnabled() ? (
+              <Popover
+                modal={false}
+                open={projectFilterOpen}
+                onOpenChange={setProjectFilterOpen}
               >
-                <div
-                  className="px-3 py-2 border-b border-slate-100 text-[11px] text-slate-500"
-                  style={{ fontWeight: 600 }}
-                >
-                  Projekt (eine Auswahl)
-                </div>
-                <RadioGroup
-                  value={selectedProjectId ?? "__all__"}
-                  onValueChange={(v) => {
-                    if (v === "__all__") clearProjectSelection();
-                    else selectSingleProject(v);
-                  }}
-                  className="gap-0"
-                >
-                  <label
-                    htmlFor="story-proj-all"
-                    className="flex cursor-pointer items-center gap-2.5 border-b border-slate-100 px-3 py-2.5 text-[12px] text-slate-800 hover:bg-slate-50/90"
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    data-tour="stories-project-filter"
+                    className={cn(
+                      filterFieldTriggerClass,
+                      "h-10 min-h-10 w-full max-w-full justify-between gap-2 px-3.5 font-medium sm:w-fit sm:min-w-[240px] sm:max-w-[min(100vw-2rem,22rem)] border-slate-200 bg-white shadow-sm hover:bg-slate-50/80",
+                    )}
                   >
-                    <RadioGroupItem value="__all__" id="story-proj-all" />
-                    <ProjectFilterGlyph projectId={null} size="sm" />
-                    <span className="min-w-0 flex-1 font-medium text-[#4f46e5]">
-                      Alle Projekte
+                    <span className="flex items-center gap-2.5 min-w-0 text-left">
+                      <ProjectFilterGlyph
+                        projectId={selectedProjectId}
+                        size="md"
+                      />
+                      <span className="min-w-0 truncate text-[13px] text-slate-800">
+                        {projectTriggerLabel}
+                      </span>
                     </span>
-                  </label>
-                  <div className="max-h-[min(52vh,280px)] overflow-y-auto p-2">
-                    {projectOptions.map(({ id, name }) => (
-                      <label
-                        key={id}
-                        htmlFor={`story-proj-${id}`}
-                        className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-2 text-[12px] text-slate-800 hover:bg-slate-50"
-                      >
-                        <RadioGroupItem value={id} id={`story-proj-${id}`} />
-                        <ProjectFilterGlyph projectId={id} size="sm" />
-                        <span className="min-w-0 flex-1 truncate" title={name}>
-                          {name}
-                        </span>
-                      </label>
-                    ))}
+                    <ChevronDown className="w-4 h-4 shrink-0 text-slate-400" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[min(100vw-2rem,320px)] rounded-xl border border-slate-200 p-0 shadow-lg z-[200]"
+                  align="start"
+                >
+                  <div
+                    className="px-3 py-2 border-b border-slate-100 text-[11px] text-slate-500"
+                    style={{ fontWeight: 600 }}
+                  >
+                    Projekt (eine Auswahl)
                   </div>
-                </RadioGroup>
-              </PopoverContent>
-            </Popover>
+                  <RadioGroup
+                    value={selectedProjectId ?? "__all__"}
+                    onValueChange={(v) => {
+                      if (v === "__all__") clearProjectSelection();
+                      else selectSingleProject(v);
+                    }}
+                    className="gap-0"
+                  >
+                    <label
+                      htmlFor="story-proj-all"
+                      className="flex cursor-pointer items-center gap-2.5 border-b border-slate-100 px-3 py-2.5 text-[12px] text-slate-800 hover:bg-slate-50/90"
+                    >
+                      <RadioGroupItem value="__all__" id="story-proj-all" />
+                      <ProjectFilterGlyph projectId={null} size="sm" />
+                      <span className="min-w-0 flex-1 font-medium text-[#4f46e5]">
+                        Alle Projekte
+                      </span>
+                    </label>
+                    <div className="max-h-[min(52vh,280px)] overflow-y-auto p-2">
+                      {projectOptions.map(({ id, name }) => (
+                        <label
+                          key={id}
+                          htmlFor={`story-proj-${id}`}
+                          className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-2 text-[12px] text-slate-800 hover:bg-slate-50"
+                        >
+                          <RadioGroupItem value={id} id={`story-proj-${id}`} />
+                          <ProjectFilterGlyph projectId={id} size="sm" />
+                          <span className="min-w-0 flex-1 truncate" title={name}>
+                            {name}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </RadioGroup>
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <div
+                className={cn(
+                  filterFieldTriggerClass,
+                  "inline-flex h-10 min-h-10 items-center gap-2.5 px-3.5 text-[13px] text-slate-800",
+                )}
+                data-tour="stories-project-filter"
+              >
+                <ProjectFilterGlyph
+                  projectId={selectedProjectId}
+                  size="md"
+                />
+                <span className="truncate font-medium">
+                  {projectTriggerLabel}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="space-y-3" data-tour="stories-filters">

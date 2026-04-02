@@ -1,5 +1,12 @@
 import { RuleManagementContent } from "../components/RuleManagementContent";
+import { useProjectNavContext } from "../context/ProjectNavContext";
 
 export function RuleManagement() {
-  return <RuleManagementContent embedded={false} />;
+  const { routeProjectId } = useProjectNavContext();
+  return (
+    <RuleManagementContent
+      embedded={false}
+      lockProjectScopeId={routeProjectId}
+    />
+  );
 }

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import {
   Sparkles,
   AlertTriangle,
@@ -20,6 +20,11 @@ import { Button } from "../components/ui/button";
 import { Progress } from "../components/ui/progress";
 import { TooltipProvider } from "../components/ui/tooltip";
 import { useAppContext } from "../context/AppContext";
+import {
+  disableNewNav,
+  enableNewNav,
+  isNewNavEnabled,
+} from "../featureFlags";
 import {
   getProjectIdsForWorkspace,
   PROJECT_LOGO_BY_ID,
@@ -105,6 +110,7 @@ const recentActivity: {
 
 export function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     selectedWorkspaceId,
     selectedWorkspace,
@@ -149,6 +155,10 @@ export function Dashboard() {
 
   const myProjectCount = myProjectIdsInWorkspace.length;
 
+  const isSettingsPage =
+    location.pathname === "/settings" ||
+    location.pathname.endsWith("/settings");
+
   const kpiCardsResolved = useMemo(() => {
     return kpiCards.map((kpi, i) =>
       i === 3
@@ -170,6 +180,41 @@ export function Dashboard() {
     selectedWorkspace.name,
     storiesInWorkspace.length,
   ]);
+
+  if (isSettingsPage) {
+    return (
+      <TooltipProvider>
+        <div className="p-6 sm:p-8 max-w-[560px] mx-auto min-w-0">
+          <h1 className="text-[#1e1e2e] text-xl sm:text-2xl mb-2">
+            Einstellungen
+          </h1>
+          <p className="text-[13px] text-muted-foreground mb-8">
+            Prototyp-Einstellungen und Entwickler-Optionen.
+          </p>
+          <div className="rounded-xl border border-border bg-white p-5 space-y-4">
+            <label className="flex items-center gap-3 cursor-pointer text-[14px] text-[#1e1e2e]">
+              <input
+                type="checkbox"
+                className="rounded border-border w-4 h-4 accent-[#4f46e5]"
+                checked={isNewNavEnabled()}
+                onChange={(e) => {
+                  if (e.target.checked) enableNewNav();
+                  else disableNewNav();
+                  window.location.reload();
+                }}
+              />
+              <span style={{ fontWeight: 500 }}>New Navigation (Dev Preview)</span>
+            </label>
+            <p className="text-[12px] text-muted-foreground leading-relaxed">
+              Aktiviert die projekt-basierte Sidebar-Navigation (
+              <code className="text-[11px] bg-slate-100 px-1 rounded">reqwise.new-nav</code>
+              ). Die Seite wird neu geladen.
+            </p>
+          </div>
+        </div>
+      </TooltipProvider>
+    );
+  }
 
   return (
     <TooltipProvider>

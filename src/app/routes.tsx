@@ -21,6 +21,11 @@ export const router = createBrowserRouter(
     Component: Layout,
     children: [
       { index: true, Component: Dashboard },
+      { path: "projects/:projectId/story-generator", Component: StoryGenerator },
+      { path: "projects/:projectId/compliance-check", Component: GuidelinesChecker },
+      { path: "projects/:projectId/stories", Component: StoryAnalysis },
+      { path: "projects/:projectId/customer-journey", Component: CustomerJourney },
+      { path: "projects/:projectId/rules", Component: RuleManagement },
       { path: "story-generator", Component: StoryGenerator },
       { path: "compliance-check", Component: GuidelinesChecker },
       { path: "guidelines", Component: LegacyGuidelinesRouteRedirect },

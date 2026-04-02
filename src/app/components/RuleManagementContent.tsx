@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   Search,
@@ -234,20 +234,37 @@ export function RuleManagementContent({
   embedded = false,
   hideGeltungsbereich = false,
   guidelinesEvalScope,
+  lockProjectScopeId = null,
 }: {
   embedded?: boolean;
   /** Im Compliance Check eingebettet: Filter „Geltungsbereich“ ausblenden (entspricht globalem Bereich oben). */
   hideGeltungsbereich?: boolean;
   /** Einzelprojekt gewählt → nur Workspace-Regeln plus Regeln dieses Projekts (Gesamter Workspace: alle Regeln). */
   guidelinesEvalScope?: GuidelinesRulesEvalScope;
+  /** Route `/projects/:id/rules`: Geltungsbereich auf dieses Projekt fixieren und Filter ausblenden. */
+  lockProjectScopeId?: string | null;
 }) {
   const { selectedWorkspaceId, selectedWorkspace } = useAppContext();
   const ruleScopeRadioName = embedded ? "rule-scope-guidelines" : "rule-scope-rules-page";
   const [rules, setRules] = useState<Rule[]>(initialRules);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [scopeFilter, setScopeFilter] = useState<"all" | "workspace" | "project">("all");
-  const [projectScopeId, setProjectScopeId] = useState<string>("all");
+  const [scopeFilter, setScopeFilter] = useState<"all" | "workspace" | "project">(
+    lockProjectScopeId ? "project" : "all",
+  );
+  const [projectScopeId, setProjectScopeId] = useState<string>(
+    lockProjectScopeId ?? "all",
+  );
+
+  useEffect(() => {
+    if (lockProjectScopeId) {
+      setScopeFilter("project");
+      setProjectScopeId(lockProjectScopeId);
+      return;
+    }
+    setScopeFilter("all");
+    setProjectScopeId("all");
+  }, [lockProjectScopeId]);
   const [showNewRuleDialog, setShowNewRuleDialog] = useState(false);
   const [rulePendingDelete, setRulePendingDelete] = useState<Rule | null>(null);
   const [newRule, setNewRule] = useState({
@@ -406,7 +423,7 @@ export function RuleManagementContent({
           })}
         </div>
 
-        {!hideGeltungsbereich ? (
+        {!hideGeltungsbereich && !lockProjectScopeId ? (
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:flex-wrap mb-4">
             <span className="text-[12px] text-muted-foreground shrink-0" style={{ fontWeight: 500 }}>
               Geltungsbereich

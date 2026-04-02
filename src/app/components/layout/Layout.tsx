@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation } from "react-router";
 import { Sidebar } from "./Sidebar";
+import { NewSidebar } from "./NewSidebar";
+import { isNewNavEnabled } from "../../featureFlags";
+import { ProjectNavProvider } from "../../context/ProjectNavContext";
 import { Topbar } from "./Topbar";
 import { Breadcrumb } from "./Breadcrumb";
 import { motion, AnimatePresence } from "motion/react";
@@ -23,8 +26,11 @@ export function Layout() {
     [],
   );
 
+  const newNav = isNewNavEnabled();
+
   return (
     <OnboardingResetProvider>
+    <ProjectNavProvider>
     <MobileNavContext.Provider value={mobileNavValue}>
       <div className="h-screen w-screen flex overflow-hidden">
         <button
@@ -37,10 +43,17 @@ export function Layout() {
           }`}
           onClick={() => setMobileNavOpen(false)}
         />
-        <Sidebar
-          mobileOpen={mobileNavOpen}
-          onMobileOpenChange={setMobileNavOpen}
-        />
+        {newNav ? (
+          <NewSidebar
+            mobileOpen={mobileNavOpen}
+            onMobileOpenChange={setMobileNavOpen}
+          />
+        ) : (
+          <Sidebar
+            mobileOpen={mobileNavOpen}
+            onMobileOpenChange={setMobileNavOpen}
+          />
+        )}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <Topbar />
           <Breadcrumb />
@@ -64,6 +77,7 @@ export function Layout() {
         <OnboardingHost />
       </div>
     </MobileNavContext.Provider>
+    </ProjectNavProvider>
     </OnboardingResetProvider>
   );
 }
