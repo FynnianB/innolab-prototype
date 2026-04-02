@@ -12,6 +12,7 @@ export interface Story {
   priority: "Hoch" | "Mittel" | "Niedrig";
   effort: "Niedrig" | "Mittel" | "Hoch";
   project: string;
+  workspaceId?: string;
   tags: string[];
   source: "ai-generated" | "jira-import" | "manual";
 
@@ -27,6 +28,11 @@ export interface Story {
   assignee?: string;
   sprint?: string;
   storyPoints?: number;
+
+  // Jira sync metadata (optional, only for connected workspaces)
+  jiraIssueKey?: string;
+  jiraProjectKey?: string;
+  jiraUpdatedAt?: string;
 }
 
 /** @deprecated Use Story instead */

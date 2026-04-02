@@ -14,7 +14,6 @@ import {
   Clock,
   Copy,
   Download,
-  ExternalLink,
   FileText,
   FolderOpen,
   GitCompare,
@@ -28,19 +27,16 @@ import {
   RefreshCw,
   Save,
   Search,
-  Send,
   Sparkles,
   ThumbsDown,
   ThumbsUp,
   Unlink,
   Upload,
-  Users,
   Wand2,
   XCircle,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { listProjectsForSearchInWorkspace } from "../data/workspaces";
 import { StoryLink } from "../components/StoryLink";
 import { GermanUserStoryFormulaLine } from "../components/UserStoryFormulaText";
 import { Badge } from "../components/ui/badge";
@@ -68,6 +64,7 @@ import { useOnboardingReset } from "../onboarding/OnboardingResetContext";
 import { getOnboardingKey } from "../onboarding/routeKeys";
 import { isRouteTourDone } from "../onboarding/onboardingStorage";
 import { StoryGeneratorJoyride } from "../onboarding/StoryGeneratorJoyride";
+import { type Story as PersistedStory } from "../data/stories";
 
 // --- Types ---
 type Phase =
@@ -527,16 +524,11 @@ export function StoryGenerator() {
     setExportScope,
     ticketSystem,
     selectedWorkspaceId,
+    selectedWorkspace,
+    workspaceProjects,
+    addStories,
+    pushWorkspaceToJira,
   } = useAppContext();
-
-  const projectsInWorkspace = useMemo(
-    () =>
-      listProjectsForSearchInWorkspace(selectedWorkspaceId).map(
-        ({ id, name }) => ({ id, name }),
-      ),
-    [selectedWorkspaceId],
-  );
-
   const workflowSteps = useMemo(
     () => [
       { label: "Hochladen", shortLabel: "Hochladen" },
@@ -562,13 +554,14 @@ export function StoryGenerator() {
     new Set(),
   );
   const [docFixDialog, setDocFixDialog] = useState<DocIssue | null>(null);
+  const availableProjects = workspaceProjects;
   const [selectedProject, setSelectedProject] = useState<string>("");
   useEffect(() => {
     if (!selectedProject) return;
-    if (!projectsInWorkspace.some((p) => p.id === selectedProject)) {
+    if (!availableProjects.some((p) => p.id === selectedProject)) {
       setSelectedProject("");
     }
-  }, [projectsInWorkspace, selectedProject]);
+  }, [availableProjects, selectedProject]);
   const [searchQuery, setSearchQuery] = useState("");
   const [jiraMatches, setJiraMatches] =
     useState<JiraMatch[]>(initialJiraMatches);
@@ -581,30 +574,27 @@ export function StoryGenerator() {
     goal: "",
     benefit: "",
   });
+  const [autoExportToJira, setAutoExportToJira] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveHadJiraExportError, setSaveHadJiraExportError] = useState(false);
+  const [saveStatusMessage, setSaveStatusMessage] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [jiraExportDialog, setJiraExportDialog] = useState(false);
-  const [jiraExportProgress, setJiraExportProgress] = useState(0);
-  const [jiraExportPhase, setJiraExportPhase] = useState<
-    "config" | "exporting" | "done"
-  >("config");
   const [confluenceSync, setConfluenceSync] = useState(true);
-  const [jiraExportConfig, setJiraExportConfig] = useState({
-    project: "BMWVTE",
-    sprintTarget: "Sprint 44",
-    autoAssign: true,
-    createEpic: true,
-    syncConfluence: true,
-  });
-
-  useEffect(() => {
-    setJiraExportConfig((c) => ({
-      ...c,
-      project: ticketSystem.keyPrefixPlaceholder,
-    }));
-  }, [ticketSystem.id]);
 
   const storyGenSourceCount =
     uploadedFiles.length + (freeTextSource.trim() ? 1 : 0);
+  const jiraConnectionReady = Boolean(
+    selectedWorkspace.jira?.enabled &&
+      selectedWorkspace.jira.baseUrl.trim() &&
+      selectedWorkspace.jira.email.trim() &&
+      selectedWorkspace.jira.apiToken.trim() &&
+      ((selectedWorkspace.jira.importScope ?? "selected") === "all" ||
+        (selectedWorkspace.jira.projectKeys ?? []).some((k) => k.trim().length > 0)),
+  );
+
+  useEffect(() => {
+    setAutoExportToJira(jiraConnectionReady);
+  }, [jiraConnectionReady, selectedWorkspaceId]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -653,9 +643,9 @@ export function StoryGenerator() {
         setStoryActions({});
         setEditingStory(null);
         setSaveSuccess(false);
-        setJiraExportDialog(false);
-        setJiraExportProgress(0);
-        setJiraExportPhase("config");
+        setSaveHadJiraExportError(false);
+        setSaveStatusMessage(null);
+        setIsSaving(false);
       }
     } else {
       prevOnboardingRevisionRef.current = revision;
@@ -774,23 +764,80 @@ export function StoryGenerator() {
     );
   };
 
-  const handleSaveAll = () => {
-    if (!selectedProject) return;
-    setSaveSuccess(true);
-    setTimeout(() => {
-      navigate("/");
-    }, 2000);
+  const handleSaveAll = async () => {
+    if (!selectedProject || isSaving) return;
+    const selectedProjectMeta = availableProjects.find(
+      (p) => p.id === selectedProject,
+    );
+    if (!selectedProjectMeta) return;
+
+    setIsSaving(true);
+    setSaveHadJiraExportError(false);
+    setSaveStatusMessage(null);
+
+    const storiesToPersist = stories.filter(
+      (s) => storyActions[s.id] !== "rejected",
+    );
+    const saveBatchId = Date.now().toString(36).toUpperCase();
+    const mappedStories: PersistedStory[] = storiesToPersist.map(
+      (story, index) => ({
+        id: `SG-${saveBatchId}-${String(index + 1).padStart(2, "0")}`,
+        title: story.title,
+        description: `Als ${story.role} möchte ich ${story.goal}, damit ${story.benefit}.`,
+        type: "Story",
+        status: "Draft",
+        priority: story.priority,
+        effort: story.effort,
+        project: selectedProjectMeta.name,
+        workspaceId: selectedWorkspaceId,
+        tags: [],
+        source: "ai-generated",
+        jiraProjectKey: selectedProjectMeta.jiraProjectKey,
+        role: story.role,
+        goal: story.goal,
+        benefit: story.benefit,
+        acceptance: story.acceptance,
+      }),
+    );
+    addStories(mappedStories);
+    try {
+      if (autoExportToJira && jiraConnectionReady) {
+        await pushWorkspaceToJira(selectedWorkspaceId, {
+          extraStories: mappedStories,
+        });
+        setSaveStatusMessage(
+          `${storiesToPersist.length} Stories wurden in "${selectedProjectMeta.name}" gespeichert und automatisch nach Jira exportiert. Sie werden zum Dashboard weitergeleitet...`,
+        );
+      } else {
+        setSaveStatusMessage(
+          `${storiesToPersist.length} Stories wurden in "${selectedProjectMeta.name}" gespeichert. Sie werden zum Dashboard weitergeleitet...`,
+        );
+      }
+      setSaveSuccess(true);
+      setTimeout(() => {
+        navigate("/");
+      }, 2000);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      setSaveHadJiraExportError(true);
+      setSaveStatusMessage(
+        `${storiesToPersist.length} Stories wurden gespeichert, aber der automatische Jira-Export ist fehlgeschlagen: ${msg}`,
+      );
+      setSaveSuccess(true);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const tourCompleteSaveDemo = useCallback(() => {
-    const id = selectedProject || projectsInWorkspace[0]?.id;
+    const id = selectedProject || availableProjects[0]?.id;
     if (!id) return;
     if (!selectedProject) setSelectedProject(id);
     setSaveSuccess(true);
     setTimeout(() => {
       navigate("/");
     }, 2000);
-  }, [selectedProject, projectsInWorkspace, navigate]);
+  }, [selectedProject, availableProjects, navigate]);
 
   const tourHandlers = useMemo(
     () => ({
@@ -808,21 +855,6 @@ export function StoryGenerator() {
       tourCompleteSaveDemo,
     ],
   );
-
-  const startJiraExport = () => {
-    setJiraExportPhase("exporting");
-    setJiraExportProgress(0);
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 15 + 5;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        setTimeout(() => setJiraExportPhase("done"), 400);
-      }
-      setJiraExportProgress(Math.min(Math.round(progress), 100));
-    }, 600);
-  };
 
   const pendingDocIssues = docIssues.filter(
     (i) => i.status === "pending",
@@ -2105,7 +2137,7 @@ export function StoryGenerator() {
   // ==============================
   if (phase === "save") {
     const projectName =
-      projectsInWorkspace.find((p) => p.id === selectedProject)?.name || "";
+      availableProjects.find((p) => p.id === selectedProject)?.name || "";
     const storiesToSave = stories.filter(
       (s) => storyActions[s.id] !== "rejected",
     );
@@ -2137,20 +2169,42 @@ export function StoryGenerator() {
 
         {/* Success Message */}
         {saveSuccess && (
-          <div className="mb-6 p-5 rounded-xl bg-[#d1fae5] border border-[#10b981]/30 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-[#10b981] flex items-center justify-center flex-shrink-0">
-              <CheckCircle2 className="w-6 h-6 text-white" />
+          <div
+            className={`mb-6 p-5 rounded-xl border flex items-center gap-4 ${
+              saveHadJiraExportError
+                ? "bg-[#fef3c7] border-[#f59e0b]/30"
+                : "bg-[#d1fae5] border-[#10b981]/30"
+            }`}
+          >
+            <div
+              className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                saveHadJiraExportError ? "bg-[#f59e0b]" : "bg-[#10b981]"
+              }`}
+            >
+              {saveHadJiraExportError ? (
+                <AlertTriangle className="w-6 h-6 text-white" />
+              ) : (
+                <CheckCircle2 className="w-6 h-6 text-white" />
+              )}
             </div>
             <div>
               <p
-                className="text-[16px] text-[#065f46]"
+                className={`text-[16px] ${
+                  saveHadJiraExportError ? "text-[#92400e]" : "text-[#065f46]"
+                }`}
                 style={{ fontWeight: 600 }}
               >
-                User Stories erfolgreich gespeichert!
+                {saveHadJiraExportError
+                  ? "Stories gespeichert, Jira-Export fehlgeschlagen"
+                  : "User Stories erfolgreich gespeichert!"}
               </p>
-              <p className="text-[13px] text-[#047857] mt-0.5">
-                {storiesToSave.length} Stories wurden in "{projectName}"
-                gespeichert. Sie werden zum Dashboard weitergeleitet...
+              <p
+                className={`text-[13px] mt-0.5 whitespace-pre-wrap break-words ${
+                  saveHadJiraExportError ? "text-[#92400e]" : "text-[#047857]"
+                }`}
+              >
+                {saveStatusMessage ||
+                  `${storiesToSave.length} Stories wurden in "${projectName}" gespeichert. Sie werden zum Dashboard weitergeleitet...`}
               </p>
             </div>
           </div>
@@ -2178,7 +2232,7 @@ export function StoryGenerator() {
                   className="w-full px-4 py-3 rounded-lg border border-border bg-white text-[14px] outline-none focus:border-[#4f46e5] focus:ring-2 focus:ring-[#4f46e5]/10 transition-all"
                 >
                   <option value="">Projekt wählen...</option>
-                  {projectsInWorkspace.map((p) => (
+                  {availableProjects.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
@@ -2323,6 +2377,35 @@ export function StoryGenerator() {
                     </span>
                   </p>
                 </div>
+
+                <label
+                  className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                    jiraConnectionReady
+                      ? "border-[#2684ff]/20 hover:bg-[#2684ff]/5 cursor-pointer"
+                      : "border-border bg-[#f8fafc] opacity-70 cursor-not-allowed"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={jiraConnectionReady && autoExportToJira}
+                    onChange={(e) => setAutoExportToJira(e.target.checked)}
+                    disabled={!jiraConnectionReady}
+                    className="w-4 h-4 accent-[#2684ff]"
+                  />
+                  <div className="flex-1">
+                    <p
+                      className="text-[13px] text-[#1e1e2e]"
+                      style={{ fontWeight: 500 }}
+                    >
+                      Nach dem Speichern automatisch nach Jira exportieren
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {jiraConnectionReady
+                        ? "Der Jira-Export startet direkt nach dem Speichern der Stories."
+                        : "Für diesen Workspace ist keine aktive Jira-Verbindung konfiguriert."}
+                    </p>
+                  </div>
+                </label>
               </CardContent>
             </Card>
 
@@ -2330,23 +2413,22 @@ export function StoryGenerator() {
             <div className="space-y-3">
               <Button
                 className="w-full h-12 bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 shadow-sm text-[15px]"
-                disabled={!selectedProject}
-                onClick={handleSaveAll}
-              >
-                <Save className="w-5 h-5" />
-                {storiesToSave.length} User Stories speichern
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full h-10 gap-2 text-[13px] border-[#2684ff]/30 text-[#2684ff] hover:bg-[#2684ff]/5"
+                disabled={!selectedProject || isSaving}
                 onClick={() => {
-                  setJiraExportDialog(true);
-                  setJiraExportPhase("config");
-                  setJiraExportProgress(0);
+                  void handleSaveAll();
                 }}
               >
-                <ExternalLink className="w-4 h-4" />
-                Direkt nach {ticketSystem.name} exportieren (automatisiert)
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Speichern...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" />
+                    {storiesToSave.length} User Stories speichern
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -2381,6 +2463,10 @@ export function StoryGenerator() {
                   setDocIssues(initialDocIssues);
                   setJiraMatches(initialJiraMatches);
                   setStoryActions({});
+                  setAutoExportToJira(jiraConnectionReady);
+                  setSaveHadJiraExportError(false);
+                  setSaveStatusMessage(null);
+                  setIsSaving(false);
                 }}
                 className="text-muted-foreground gap-1 shrink-0 self-start"
               >
@@ -2424,18 +2510,6 @@ export function StoryGenerator() {
               >
                 <Download className="w-4 h-4" />
                 CSV/PDF
-              </Button>
-              <Button
-                variant="outline"
-                className="text-[13px] gap-2 border-[#2684ff]/30 text-[#2684ff] hover:bg-[#2684ff]/5"
-                onClick={() => {
-                  setJiraExportDialog(true);
-                  setJiraExportPhase("config");
-                  setJiraExportProgress(0);
-                }}
-              >
-                <ExternalLink className="w-4 h-4" />
-                {ticketSystem.shortName}-Export
               </Button>
               <Button
                 className="bg-[#4f46e5] hover:bg-[#4338ca] text-white gap-2 text-[13px]"
@@ -2874,321 +2948,6 @@ export function StoryGenerator() {
           </div>
         </div>
       </div>
-
-      {/* Ticket-Tool-Export-Dialog (Prototyp) */}
-      <Dialog
-        open={jiraExportDialog}
-        onOpenChange={(open) => {
-          if (!open) {
-            setJiraExportDialog(false);
-            setJiraExportPhase("config");
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-[560px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded bg-[#2684ff]/10 flex items-center justify-center">
-                <span
-                  className="text-[12px]"
-                  style={{ fontWeight: 700, color: "#2684ff" }}
-                >
-                  J
-                </span>
-              </div>
-              {ticketSystem.exportAutomateTitle}
-            </DialogTitle>
-            <DialogDescription>
-              Stories direkt als {ticketSystem.exportSuccessNoun} anlegen – ohne
-              manuelles Kopieren und Einfügen.
-            </DialogDescription>
-          </DialogHeader>
-
-          {jiraExportPhase === "config" && (
-            <div className="my-4 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label
-                    className="text-[12px] text-muted-foreground mb-1 block"
-                    style={{ fontWeight: 500 }}
-                  >
-                    {ticketSystem.targetProjectLabel}
-                  </label>
-                  <select
-                    value={jiraExportConfig.project}
-                    onChange={(e) =>
-                      setJiraExportConfig((c) => ({
-                        ...c,
-                        project: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-border bg-white text-[13px] outline-none focus:border-[#4f46e5]"
-                  >
-                    <option value="BMWVTE">BMWVTE - Versuchsteile & Analytics</option>
-                    <option value="BMWLOG">BMWLOG - Fahrzeuglogistik</option>
-                    <option value="VWDATA">VWDATA - Datenraum Mobilität</option>
-                    <option value="MBEMOB">MBEMOB - E-Mobility Software</option>
-                    <option value="AUDIHMI">AUDIHMI - Infotainment</option>
-                    <option value="PORENA">PORENA - Motorsport Telemetrie</option>
-                  </select>
-                </div>
-                <div>
-                  <label
-                    className="text-[12px] text-muted-foreground mb-1 block"
-                    style={{ fontWeight: 500 }}
-                  >
-                    Ziel-Sprint
-                  </label>
-                  <select
-                    value={jiraExportConfig.sprintTarget}
-                    onChange={(e) =>
-                      setJiraExportConfig((c) => ({
-                        ...c,
-                        sprintTarget: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 rounded-lg border border-border bg-white text-[13px] outline-none focus:border-[#4f46e5]"
-                  >
-                    <option value="Sprint 44">Sprint 44</option>
-                    <option value="Sprint 45">Sprint 45</option>
-                    <option value="Backlog">Backlog</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-2.5">
-                <label className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-[#f8fafc] cursor-pointer transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={jiraExportConfig.createEpic}
-                    onChange={(e) =>
-                      setJiraExportConfig((c) => ({
-                        ...c,
-                        createEpic: e.target.checked,
-                      }))
-                    }
-                    className="w-4 h-4 accent-[#4f46e5]"
-                  />
-                  <div className="flex-1">
-                    <p
-                      className="text-[13px] text-[#1e1e2e]"
-                      style={{ fontWeight: 500 }}
-                    >
-                      Epic automatisch anlegen
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Fasst die erzeugten User Stories unter einem neuen Epic zusammen
-                    </p>
-                  </div>
-                </label>
-                <label className="flex items-center gap-3 p-3 rounded-lg border border-border hover:bg-[#f8fafc] cursor-pointer transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={jiraExportConfig.autoAssign}
-                    onChange={(e) =>
-                      setJiraExportConfig((c) => ({
-                        ...c,
-                        autoAssign: e.target.checked,
-                      }))
-                    }
-                    className="w-4 h-4 accent-[#4f46e5]"
-                  />
-                  <div className="flex-1">
-                    <p
-                      className="text-[13px] text-[#1e1e2e]"
-                      style={{ fontWeight: 500 }}
-                    >
-                      Automatische Zuweisung
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Basierend auf Kompetenzabgleich und aktueller Auslastung
-                    </p>
-                  </div>
-                </label>
-                <label className="flex items-center gap-3 p-3 rounded-lg border border-[#0052cc]/20 hover:bg-[#0052cc]/5 cursor-pointer transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={jiraExportConfig.syncConfluence}
-                    onChange={(e) =>
-                      setJiraExportConfig((c) => ({
-                        ...c,
-                        syncConfluence: e.target.checked,
-                      }))
-                    }
-                    className="w-4 h-4 accent-[#0052cc]"
-                  />
-                  <div className="flex-1">
-                    <p
-                      className="text-[13px] text-[#1e1e2e] flex items-center gap-1.5"
-                      style={{ fontWeight: 500 }}
-                    >
-                      Confluence automatisch aktualisieren
-                      <Badge
-                        variant="secondary"
-                        className="text-[9px] px-1 bg-[#0052cc]/10 text-[#0052cc]"
-                      >
-                        Auto-Synchronisation
-                      </Badge>
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      Anforderungsseite in Confluence wird automatisch mit neuen
-                      Stories aktualisiert
-                    </p>
-                  </div>
-                </label>
-              </div>
-
-              <div className="p-3 rounded-lg bg-[#f1f0ff]/50 border border-[#4f46e5]/10">
-                <p
-                  className="text-[12px] text-[#4f46e5]"
-                  style={{ fontWeight: 500 }}
-                >
-                  {
-                    stories.filter((s) => storyActions[s.id] !== "rejected")
-                      .length
-                  }{" "}
-                  Stories werden als {ticketSystem.exportSuccessNoun} erstellt
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Duplikat-Prüfung gegen bestehende Tickets wird automatisch
-                  durchgeführt
-                </p>
-              </div>
-            </div>
-          )}
-
-          {jiraExportPhase === "exporting" && (
-            <div className="my-6 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-[#2684ff]/10 flex items-center justify-center mx-auto mb-4">
-                <Loader2 className="w-6 h-6 text-[#2684ff] animate-spin" />
-              </div>
-              <p
-                className="text-[14px] text-[#1e1e2e] mb-1"
-                style={{ fontWeight: 500 }}
-              >
-                Tickets werden erstellt...
-              </p>
-              <p className="text-[12px] text-muted-foreground mb-4">
-                Duplikatprüfung, Anlage der Storys, Verlinkung
-              </p>
-              <Progress value={jiraExportProgress} className="h-2 mb-3" />
-              <p className="text-[11px] text-muted-foreground">
-                {jiraExportProgress}% abgeschlossen
-              </p>
-            </div>
-          )}
-
-          {jiraExportPhase === "done" && (
-            <div className="my-6">
-              <div className="text-center mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-[#d1fae5] flex items-center justify-center mx-auto mb-3">
-                  <CheckCircle2 className="w-6 h-6 text-[#10b981]" />
-                </div>
-                <p
-                  className="text-[14px] text-[#1e1e2e]"
-                  style={{ fontWeight: 600 }}
-                >
-                  Export erfolgreich!
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#d1fae5]/50 border border-[#10b981]/20">
-                  <CheckCircle2 className="w-4 h-4 text-[#10b981]" />
-                  <span
-                    className="text-[12px] text-[#1e1e2e]"
-                    style={{ fontWeight: 500 }}
-                  >
-                    {
-                      stories.filter((s) => storyActions[s.id] !== "rejected")
-                        .length
-                    }{" "}
-                    {ticketSystem.exportSuccessNoun} erstellt
-                  </span>
-                  <span className="text-[11px] text-muted-foreground ml-auto">
-                    {jiraExportConfig.project}-401 bis{" "}
-                    {jiraExportConfig.project}-407
-                  </span>
-                </div>
-                {jiraExportConfig.createEpic && (
-                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#d1fae5]/50 border border-[#10b981]/20">
-                    <CheckCircle2 className="w-4 h-4 text-[#10b981]" />
-                    <span
-                      className="text-[12px] text-[#1e1e2e]"
-                      style={{ fontWeight: 500 }}
-                    >
-                      Epic "{jiraExportConfig.project}-400" erstellt
-                    </span>
-                  </div>
-                )}
-                {jiraExportConfig.autoAssign && (
-                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#d1fae5]/50 border border-[#10b981]/20">
-                    <Users className="w-4 h-4 text-[#10b981]" />
-                    <span
-                      className="text-[12px] text-[#1e1e2e]"
-                      style={{ fontWeight: 500 }}
-                    >
-                      Automatische Zuweisung an 4 Entwickler
-                    </span>
-                  </div>
-                )}
-                {jiraExportConfig.syncConfluence && (
-                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#0052cc]/5 border border-[#0052cc]/20">
-                    <CheckCircle2 className="w-4 h-4 text-[#0052cc]" />
-                    <span
-                      className="text-[12px] text-[#1e1e2e]"
-                      style={{ fontWeight: 500 }}
-                    >
-                      Confluence-Seite aktualisiert
-                    </span>
-                    <span className="text-[11px] text-muted-foreground ml-auto">
-                      Anforderungen/Sprint-44
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#fef3c7]/50 border border-[#f59e0b]/20">
-                  <AlertTriangle className="w-4 h-4 text-[#f59e0b]" />
-                  <span
-                    className="text-[12px] text-[#1e1e2e]"
-                    style={{ fontWeight: 500 }}
-                  >
-                    1 Duplikat erkannt und übersprungen
-                  </span>
-                  <span className="text-[11px] text-muted-foreground ml-auto">
-                    DBNAV-501 (Touch&Travel Belegvalidierung)
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            {jiraExportPhase === "config" && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => setJiraExportDialog(false)}
-                >
-                  Abbrechen
-                </Button>
-                <Button
-                  className="bg-[#2684ff] hover:bg-[#1a73e8] text-white gap-2"
-                  onClick={startJiraExport}
-                >
-                  <Send className="w-4 h-4" /> Export starten
-                </Button>
-              </>
-            )}
-            {jiraExportPhase === "done" && (
-              <Button
-                className="bg-[#4f46e5] hover:bg-[#4338ca] text-white"
-                onClick={() => setJiraExportDialog(false)}
-              >
-                Schließen
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </TooltipProvider>
     {storyGenTourSlot}
     </>

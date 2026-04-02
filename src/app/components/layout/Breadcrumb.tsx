@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router";
 import { ChevronRight, Home } from "lucide-react";
-import { getItemTitle } from "../../data/stories";
+import { useAppContext } from "../../context/AppContext";
 
 const routeLabels: Record<string, string> = {
   "": "Dashboard",
@@ -25,6 +25,7 @@ interface BreadcrumbItem {
 export function Breadcrumb() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { stories } = useAppContext();
 
   const segments = location.pathname.split("/").filter(Boolean);
 
@@ -42,7 +43,7 @@ export function Breadcrumb() {
       // Story detail page: Dashboard > Story-Detail > [ID]
       items.push({ label: "Story-Detail", path: "/projects", isCurrent: false });
       const decodedId = decodeURIComponent(segments[1]);
-      const title = getItemTitle(decodedId);
+      const title = stories.find((s) => s.id === decodedId)?.title || decodedId;
       const displayLabel = title !== decodedId ? `${decodedId} - ${title}` : decodedId;
       items.push({ label: displayLabel, path: location.pathname, isCurrent: true });
     } else if (firstSegment === "projects" && segments[1]) {

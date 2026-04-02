@@ -14,10 +14,30 @@ export interface Workspace {
   logoSrc?: string;
   /** Verknüpftes Ticket-/Backlog-Tool (Jira, Asana, …). */
   ticketSystemId?: TicketSystemId;
+  isCustom?: boolean;
+  jira?: JiraConnectionConfig;
+}
+
+export interface JiraConnectionConfig {
+  enabled: boolean;
+  baseUrl: string;
+  /**
+   * Legacy field (single project) for backward compatibility.
+   * New code should use `projectKeys`.
+   */
+  projectKey?: string;
+  projectKeys: string[];
+  importScope?: "selected" | "all";
+  email: string;
+  apiToken: string;
+  lastSyncAt?: string;
+  lastSyncStatus?: "idle" | "success" | "error";
+  lastSyncError?: string;
 }
 
 export const WORKSPACE_STORAGE_KEY = "reqwise.selectedWorkspaceId.v2";
 export const EXTRA_WORKSPACES_STORAGE_KEY = "reqwise.extraWorkspaces.v1";
+export const CUSTOM_WORKSPACES_STORAGE_KEY = "reqwise.customWorkspaces.v1";
 
 export const DEFAULT_WORKSPACE_ID = "ws-bmw";
 
@@ -210,12 +230,25 @@ export const STORY_PROJECT_TO_WORKSPACE: Record<string, string> = {
   "Porsche AG — Supply Chain & Teile-Transparenz": "ws-porsche",
 };
 
-export function getWorkspaceById(id: string): Workspace | undefined {
-  return WORKSPACES.find((w) => w.id === id);
+export function mergeWorkspaces(customWorkspaces: Workspace[]): Workspace[] {
+  const byId = new Map<string, Workspace>();
+  for (const ws of WORKSPACES) byId.set(ws.id, ws);
+  for (const ws of customWorkspaces) byId.set(ws.id, ws);
+  return Array.from(byId.values());
 }
 
-export function isValidWorkspaceId(id: string): boolean {
-  return WORKSPACES.some((w) => w.id === id);
+export function getWorkspaceById(
+  id: string,
+  workspaces: Workspace[] = WORKSPACES,
+): Workspace | undefined {
+  return workspaces.find((w) => w.id === id);
+}
+
+export function isValidWorkspaceId(
+  id: string,
+  workspaces: Workspace[] = WORKSPACES,
+): boolean {
+  return workspaces.some((w) => w.id === id);
 }
 
 /** Eingebaute Demo-Workspaces (nicht löschbar). */
@@ -333,6 +366,7 @@ export function getWorkspaceIdForProjectId(projectId: string): string | undefine
 }
 
 export function storyBelongsToWorkspace(story: Story, workspaceId: string): boolean {
+  if (story.workspaceId) return story.workspaceId === workspaceId;
   const ws = STORY_PROJECT_TO_WORKSPACE[story.project];
   return ws === workspaceId;
 }
@@ -361,6 +395,7 @@ function allKnownWorkspaceIds(): Set<string> {
   return new Set([
     ...WORKSPACES.map((w) => w.id),
     ...readExtraWorkspaces().map((w) => w.id),
+    ...readCustomWorkspaces().map((w) => w.id),
   ]);
 }
 
@@ -434,6 +469,128 @@ export function persistProjectTeamOverrides(
       PROJECT_TEAM_OVERRIDES_KEY,
       JSON.stringify(toStore),
     );
+  } catch {
+    /* ignore */
+  }
+}
+
+function isJiraConfig(
+  value: unknown,
+): value is JiraConnectionConfig {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  const hasProjectKey = typeof v.projectKey === "string";
+  const hasProjectKeys =
+    Array.isArray(v.projectKeys) &&
+    v.projectKeys.every((k) => typeof k === "string");
+  return (
+    typeof v.enabled === "boolean" &&
+    typeof v.baseUrl === "string" &&
+    (hasProjectKey || hasProjectKeys) &&
+    typeof v.email === "string" &&
+    typeof v.apiToken === "string"
+  );
+}
+
+function sanitizeWorkspaceCandidate(value: unknown): Workspace | null {
+  if (!value || typeof value !== "object") return null;
+  const v = value as Record<string, unknown>;
+  if (typeof v.id !== "string" || typeof v.name !== "string") return null;
+
+  const ws: Workspace = {
+    id: v.id,
+    name: v.name,
+    isCustom: true,
+  };
+  if (typeof v.logoSrc === "string" && v.logoSrc.trim()) {
+    ws.logoSrc = v.logoSrc;
+  }
+  if (isJiraConfig(v.jira)) {
+    const legacyKey =
+      typeof v.jira.projectKey === "string" ? v.jira.projectKey.trim() : "";
+    const parsedProjectKeys = Array.isArray(v.jira.projectKeys)
+      ? v.jira.projectKeys
+          .filter((x): x is string => typeof x === "string")
+          .map((x) => x.trim())
+          .filter(Boolean)
+      : [];
+    const projectKeys =
+      parsedProjectKeys.length > 0
+        ? parsedProjectKeys
+        : legacyKey
+          ? [legacyKey]
+          : [];
+    ws.jira = {
+      enabled: v.jira.enabled,
+      baseUrl: v.jira.baseUrl,
+      projectKey: legacyKey || undefined,
+      projectKeys,
+      importScope:
+        v.jira.importScope === "all" || v.jira.importScope === "selected"
+          ? v.jira.importScope
+          : "selected",
+      email: v.jira.email,
+      apiToken: v.jira.apiToken,
+      lastSyncAt: v.jira.lastSyncAt,
+      lastSyncStatus: v.jira.lastSyncStatus,
+      lastSyncError: v.jira.lastSyncError,
+    };
+  }
+  return ws;
+}
+
+export function readCustomWorkspaces(): Workspace[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const rawSession = window.sessionStorage.getItem(
+      CUSTOM_WORKSPACES_STORAGE_KEY,
+    );
+    const rawLocalLegacy = window.localStorage.getItem(
+      CUSTOM_WORKSPACES_STORAGE_KEY,
+    );
+    const raw = rawSession ?? rawLocalLegacy;
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+
+    const out: Workspace[] = [];
+    for (const item of parsed) {
+      const ws = sanitizeWorkspaceCandidate(item);
+      if (!ws) continue;
+      if (!ws.id.startsWith("ws-custom-")) continue;
+      out.push(ws);
+    }
+
+    // Legacy-Migration: alte lokale Persistenz in Session-Persistenz überführen.
+    if (!rawSession && rawLocalLegacy) {
+      window.sessionStorage.setItem(CUSTOM_WORKSPACES_STORAGE_KEY, rawLocalLegacy);
+      window.localStorage.removeItem(CUSTOM_WORKSPACES_STORAGE_KEY);
+    }
+
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+export function persistCustomWorkspaces(workspaces: Workspace[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    const toStore = workspaces
+      .filter((w) => w.isCustom)
+      .map((w) => ({
+        id: w.id,
+        name: w.name,
+        logoSrc: w.logoSrc,
+        isCustom: true,
+        jira: w.jira,
+      }));
+    window.sessionStorage.setItem(
+      CUSTOM_WORKSPACES_STORAGE_KEY,
+      JSON.stringify(toStore),
+    );
+    // Alte Persistenz nicht weiterverwenden.
+    window.localStorage.removeItem(CUSTOM_WORKSPACES_STORAGE_KEY);
   } catch {
     /* ignore */
   }

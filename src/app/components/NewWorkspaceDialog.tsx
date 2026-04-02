@@ -26,9 +26,14 @@ import {
 export function NewWorkspaceDialog({
   open,
   onOpenChange,
+  onCreateRequested,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCreateRequested?: (input: {
+    name: string;
+    ticketSystemId: TicketSystemId;
+  }) => void;
 }) {
   const { addWorkspace } = useAppContext();
   const [name, setName] = useState("");
@@ -36,7 +41,15 @@ export function NewWorkspaceDialog({
     useState<TicketSystemId>("jira");
 
   const handleSubmit = () => {
-    addWorkspace({ name: name.trim() || "Neuer Workspace", ticketSystemId });
+    const payload = {
+      name: name.trim() || "Neuer Workspace",
+      ticketSystemId,
+    };
+    if (onCreateRequested) {
+      onCreateRequested(payload);
+    } else {
+      addWorkspace(payload);
+    }
     setName("");
     setTicketSystemId("jira");
     onOpenChange(false);
